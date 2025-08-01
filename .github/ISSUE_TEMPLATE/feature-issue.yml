@@ -1,5 +1,4 @@
-name: ":wq
-:::✨ Feature"
+name: "✨ Feature"
 description: "새로운 기능 추가"
 labels: ["feature"]
 body:
