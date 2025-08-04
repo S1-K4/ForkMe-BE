@@ -6,9 +6,6 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * @author : 김관중
  * @packageName : com.S1_K4.ForkMe_BE.global.common.redis
@@ -22,7 +19,7 @@ public class WebSocketEventListener {
 
     private final RedisService redisService;
     private final ViewerBroadcaster viewerBroadcaster;
-    private final Map<String, ViewerInfo> viewerMap = new ConcurrentHashMap<>();
+    private final RedisViewerSessionService sessionService;
 
     //연결시
     @EventListener
@@ -38,7 +35,7 @@ public class WebSocketEventListener {
         Long userPk = Long.parseLong(userPkStr);
         Long projectPk = Long.parseLong(projectPkStr);
 
-        viewerMap.put(sessionId, new ViewerInfo(userPk, projectPk));
+        sessionService.saveSessionInfo(sessionId, userPk, projectPk);
         redisService.enterPost(projectPk,userPk);
 
         viewerBroadcaster.broadcastViewerCount(projectPk);
@@ -49,12 +46,11 @@ public class WebSocketEventListener {
     public void handlerWebSocketDisconnectListener(SessionConnectEvent event) {
         String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
 
-        ViewerInfo info = viewerMap.remove(sessionId);
+        RedisViewerSessionService.ViewerInfo info = sessionService.getSessionInfo(sessionId);
         if(info != null) {
             redisService.leavePost(info.projectPk(), info.userPk());
             viewerBroadcaster.broadcastViewerCount(info.projectPk());
+            sessionService.deleteSessionInfo(sessionId);
         }
     }
-
-    private record ViewerInfo(Long userPk, Long projectPk) {}
 }
