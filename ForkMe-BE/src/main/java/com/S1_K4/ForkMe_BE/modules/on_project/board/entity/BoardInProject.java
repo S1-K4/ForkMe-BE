@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.on_project.board.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
