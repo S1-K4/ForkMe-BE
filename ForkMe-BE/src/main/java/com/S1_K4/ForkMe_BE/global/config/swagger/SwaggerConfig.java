@@ -66,7 +66,7 @@ public class SwaggerConfig {
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("👤 사용자 API")
-                .pathsToMatch("/api/v1/users/**")
+                .pathsToMatch("/api/user/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }
@@ -76,7 +76,7 @@ public class SwaggerConfig {
     public GroupedOpenApi projectApi() {
         return GroupedOpenApi.builder()
                 .group("\uD83D\uDCBB 프로젝트 API")
-                .pathsToMatch("/api/v1/project/**")
+                .pathsToMatch("/api/project/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }
@@ -86,7 +86,7 @@ public class SwaggerConfig {
     public GroupedOpenApi chatApi() {
         return GroupedOpenApi.builder()
                 .group("💬 채팅 API")
-                .pathsToMatch("/api/v1/chat/**")
+                .pathsToMatch("/api/chat/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }
@@ -96,7 +96,7 @@ public class SwaggerConfig {
     public GroupedOpenApi boardApi() {
         return GroupedOpenApi.builder()
                 .group("📝 게시판 API")
-                .pathsToMatch("/api/v1/boards/**")
+                .pathsToMatch("/api/boards/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }
@@ -106,7 +106,7 @@ public class SwaggerConfig {
     public GroupedOpenApi scheduleApi() {
         return GroupedOpenApi.builder()
                 .group("\uD83D\uDCC5 일정 API")
-                .pathsToMatch("/api/v1/schedule/**")
+                .pathsToMatch("/api/schedule/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }
@@ -116,7 +116,7 @@ public class SwaggerConfig {
     public GroupedOpenApi webHookApi() {
         return GroupedOpenApi.builder()
                 .group("\uD83D\uDC19 깃 webHook API")
-                .pathsToMatch("/api/v1/webHook/**")
+                .pathsToMatch("/api/webHook/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }

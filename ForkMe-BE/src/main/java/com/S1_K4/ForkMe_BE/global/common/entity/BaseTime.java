@@ -29,9 +29,9 @@ public abstract class BaseTime {
 
     //수정될 때마다 기록
     @LastModifiedDate
-    @Column(name = "modified_at", columnDefinition = "DATETIME",
+    @Column(name = "updated_at", columnDefinition = "DATETIME",
             nullable = false)
-    private LocalDateTime modifiedAt;
+    private LocalDateTime updatedAt;
 
     //삭제 처리될 때마다 기록
     @Column(name = "deleted_yn",columnDefinition = "CHAR(1) NOT NULL DEFAULT 'N'")
