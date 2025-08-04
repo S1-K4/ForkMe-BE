@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.entity;
 
+import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +21,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BoardInProject {
+public class BoardInProject extends BaseTime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,17 +35,6 @@ public class BoardInProject {
     @Column(name = "content")
     private String content;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
-    @Column(name = "deleted_yn", length = 1)
-    private String deletedYn;
 
     // 🔁 관계 매핑 (ManyToOne) – Project
     @ManyToOne(fetch = FetchType.LAZY)

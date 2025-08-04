@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.comment.entity;
 
+import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,7 +23,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CommentInProject {
+public class CommentInProject extends BaseTime {
 
 
     @Id
@@ -32,15 +33,6 @@ public class CommentInProject {
 
     @Column(length = 255, nullable = false)
     private String comment;
-
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "deleted_yn", length = 1)
-    private String deletedYn;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_in_project_pk", nullable = false)
