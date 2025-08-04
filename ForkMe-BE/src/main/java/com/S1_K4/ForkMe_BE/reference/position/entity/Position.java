@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
  * @description : position 엔티티
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Entity
 @Table(name="position")
 @Builder

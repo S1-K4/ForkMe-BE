@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.entity;
 
-import com.S1_K4.ForkMe_BE.modules.project.enums.IsReader;
+import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,8 +24,8 @@ public class ProjectMember {
     @Column(name="project_member_pk")
     private Long projectMemberPk;
 
-    @Column(name="is_reader")
-    private IsReader isReader;
+    @Column(name="is_leader")
+    private IsLeader isLeader;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_pk", nullable = false)
