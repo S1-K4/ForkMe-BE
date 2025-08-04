@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.review.entity;
 
+import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import jakarta.persistence.*;
 import lombok.*;
 
