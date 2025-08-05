@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity;
 
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
