@@ -46,4 +46,8 @@ public class RedisService {
     public boolean isViewing(Long projectPk,Long userPk) {
         return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(getPostViewersKey(projectPk), userPk.toString()));
     }
+
+    public RedisTemplate<String, String> getTemplate() {
+        return redisTemplate;
+    }
 }
