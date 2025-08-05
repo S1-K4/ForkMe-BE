@@ -5,6 +5,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 /**
  * @author : 김관중
@@ -43,7 +44,7 @@ public class WebSocketEventListener {
 
     //연결 해제시
     @EventListener
-    public void handlerWebSocketDisconnectListener(SessionConnectEvent event) {
+    public void handlerWebSocketDisconnectListener(SessionDisconnectEvent event) {
         String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
 
         RedisViewerSessionService.ViewerInfo info = sessionService.getSessionInfo(sessionId);

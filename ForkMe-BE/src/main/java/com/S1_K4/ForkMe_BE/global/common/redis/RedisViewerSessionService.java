@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -26,6 +27,8 @@ public class RedisViewerSessionService {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
         hashOps.put(key, "userPk", userPk.toString());
         hashOps.put(key, "projectPk", projectPk.toString());
+
+        redisTemplate.expire(key, Duration.ofMinutes(3));
     }
 
     //세션 정보 조회
