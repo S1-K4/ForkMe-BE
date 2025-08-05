@@ -19,6 +19,6 @@ public class ViewerBroadcaster {
 
     public void broadcastViewerCount(Long projectPk) {
         long count = redisService.getViewerCount(projectPk);
-        simpMessagingTemplate.convertAndSend("/post/" + projectPk + "/viewers", count);
+        simpMessagingTemplate.convertAndSend("/sub/post/" + projectPk + "/viewers", count);
     }
 }
