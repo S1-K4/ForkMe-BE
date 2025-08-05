@@ -8,7 +8,7 @@ import lombok.*;
 /**
  * @author : 선순주
  * @packageName : com.S1_K4.ForkMe_BE.modules.like.entity
- * @fileName : Like
+ * @fileName : Likes
  * @date : 2025-08-04
  * @description : 좋아요 엔티티
  */
@@ -17,8 +17,8 @@ import lombok.*;
 @Getter
 @Builder
 @AllArgsConstructor
-@Table(name="like")
-public class Like {
+@Table(name="likes")
+public class Likes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="like_pk")

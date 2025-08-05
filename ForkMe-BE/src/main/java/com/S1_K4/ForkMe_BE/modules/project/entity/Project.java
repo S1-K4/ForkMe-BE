@@ -27,6 +27,10 @@ public class Project extends BaseTime {
     @Column(name="project_pk")
     private Long projectPk;
 
+    //프로젝트 프로필과 양방향
+    @OneToOne(mappedBy = "project", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private ProjectProfile projectProfile;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_pk", nullable = false)
     private User user;

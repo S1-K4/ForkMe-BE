@@ -30,7 +30,10 @@ public class CustomException extends RuntimeException {
         INVALID_PASSWORD(400, "비밀번호가 너무 짧습니다."),
         INTERNAL_SERVER_ERROR(500, "서버 오류입니다."),
         UNAUTHORIZED_REQUEST(401, "권한이 없습니다."),
-        UNAUTHORIZED(401, "인증이 필요합니다.");
+        UNAUTHORIZED(401, "인증이 필요합니다."),
+
+        //프로젝트 관련 에러코드
+        PROJECT_NOT_FOUND(404,"프로젝트를 찾을 수 없습니다.");
 
         private final int code;
         private final String message;

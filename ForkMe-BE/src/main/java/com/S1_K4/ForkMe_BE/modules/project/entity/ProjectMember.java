@@ -24,6 +24,7 @@ public class ProjectMember {
     @Column(name="project_member_pk")
     private Long projectMemberPk;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="is_leader")
     private IsLeader isLeader;
 

@@ -2,10 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.user.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author : 선순주
@@ -17,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Entity
+@Getter
 @Table(name="user")
 @Builder
 public class User extends BaseTime {

@@ -24,7 +24,7 @@ public class ProjectTechStack {
     private Long projectTechStackPk;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="tech_stack_pk", nullable = false)
+    @JoinColumn(name="tech_pk", nullable = false)
     private TechStack techStack;
 
     @ManyToOne(fetch = FetchType.LAZY)

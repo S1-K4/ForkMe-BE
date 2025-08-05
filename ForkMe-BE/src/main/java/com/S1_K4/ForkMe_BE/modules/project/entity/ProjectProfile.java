@@ -36,11 +36,12 @@ public class ProjectProfile extends BaseTime {
     @Column(name="project_profile_content", columnDefinition = "TEXT", nullable = false)
     private String projectProfileContent;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="progress_type", nullable = false)
     private ProgressType progressType;
 
-    @Column(name="expected_member", nullable = false)
-    private int expectedMember;
+    @Column(name="expected_members", nullable = false)
+    private int expectedMembers;
 
     @Column(name="recruitment_start_date", nullable = false)
     private LocalDate recruitmentStartDate; //모집 시작 날짜
