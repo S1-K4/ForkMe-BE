@@ -48,5 +48,13 @@ public class BoardInProject extends BaseTime {
     @JoinColumn(name = "user_pk")
     private User user;
 
-    // 🚨 created_at 자동 세팅하려면 Auditing 추가 필요
+    //정적 팩토리 메소드 추가
+    public static BoardInProject create(String title, String content, Project project, User user){
+        return BoardInProject.builder()
+                .title(title)
+                .content(content)
+                .project(project)
+                .user(user)
+                .build();
+    }
 }
