@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Toast UI Editor 파일 업로드</title>
+    <!-- Toast UI Editor CSS -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <style>
+        #editor-wrapper {
+          max-width: 800px;
+          margin: 40px auto;
+        }
+    </style>
+</head>
+<body>
+
+<div id="editor-wrapper">
+    <h2>팀 게시판 작성</h2>
+    <div id="editor"></div>
+    <button id="saveBtn">저장하기</button>
+</div>
+
+<!-- Toast UI Editor JS -->
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+<script>
+    const teamName = "forkme-team-a"; // 팀명은 백엔드에서 동적으로 주는 게 보통이지만 하드코딩 가능
+
+    const editor = new toastui.Editor({
+      el: document.querySelector('#editor'),
+      height: '500px',
+      initialEditType: 'wysiwyg',
+      previewStyle: 'vertical',
+      hooks: {
+        /**
+         * 이미지 업로드 처리
+         */
+        addImageBlobHook: async (blob, callback) => {
+          const formData = new FormData();
+          formData.append('file', blob);
+
+          try {
+            const res = await fetch(`/api/files/upload/${teamName}`, {
+              method: 'POST',
+              body: formData
+            });
+
+            const data = await res.json();
+            callback(data.url, blob.name); // 에디터에 이미지 삽입
+          } catch (err) {
+            alert("이미지 업로드에 실패했습니다.");
+            console.error(err);
+          }
+        }
+      }
+    });
+
+    /**
+     * 게시글 저장 버튼
+     */
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const content = editor.getHTML(); // 또는 getMarkdown()
+      console.log("최종 내용:", content);
+
+      // 서버로 전송 예시
+      fetch('/api/boards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          teamName,
+          content
+        })
+      }).then(res => {
+        if (res.ok) {
+          alert("저장 완료!");
+        } else {
+          alert("저장 실패");
+        }
+      });
+    });
+</script>
+
+</body>
+</html>
