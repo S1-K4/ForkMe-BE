@@ -32,7 +32,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public String getUsername() {
-        return user.getNickname();
+        return String.valueOf(user.getGitId());
     }
 
     @Override
@@ -42,7 +42,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public String getName() {
-        return user.getEmail();
+        return this.getUsername();
     }
 
     @Override

@@ -24,6 +24,9 @@ public class User extends BaseTime {
     @Column(name="user_pk")
     private Long userPk;
 
+    @Column(name = "git_id")
+    private Long gitId;
+
     @Column(name="email")
     private String email;
 
@@ -33,7 +36,8 @@ public class User extends BaseTime {
     @Column(name="profile_url")
     private String profileUrl;
 
-    public User(String email, String nickname, String profileUrl) {
+    public User(Long gitId, String email, String nickname, String profileUrl) {
+        this.gitId = gitId;
         this.email = email;
         this.nickname = nickname;
         this.profileUrl = profileUrl;

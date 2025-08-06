@@ -19,13 +19,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService{
+public class AuthServiceImpl implements AuthService {
 
     private final AuthRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    public void logout(String refreshToken){
+    public void logout(String refreshToken) {
         log.info("logout / refreshToken = " + refreshToken + " /");
         Auth auth = authRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new IllegalArgumentException("Refresh token is not found"));
@@ -35,9 +35,9 @@ public class AuthServiceImpl implements AuthService{
 
 
     @Override
-    public TokenRefreshResponseDto reissueToken(String refreshToken){
+    public TokenRefreshResponseDto reissueToken(String refreshToken) {
         log.info("reissueToken / refreshToken = " + refreshToken + " /");
-        if(!jwtTokenProvider.validateToken(refreshToken)){
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid refresh token");
         }
 

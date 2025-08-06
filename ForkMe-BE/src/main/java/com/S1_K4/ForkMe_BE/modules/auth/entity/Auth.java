@@ -3,7 +3,9 @@ package com.S1_K4.ForkMe_BE.modules.auth.entity;
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -14,6 +16,7 @@ import lombok.Setter;
  * @description : auth 테이블 엔티티입니다
  */
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Setter
 @Entity
