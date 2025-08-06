@@ -22,13 +22,13 @@ import java.util.List;
 @RequestMapping("/api/on-project/inboard")
 public class InBoardController {
 
-    public ResponseEntity<InBoardDetailResponse> createdBoard(@AuthenticationPrincipal UserDetailSimpl userDetails,
-                                                              @RequestPart("projectPk")Long projectPk,
-                                                              @RequestPart("title") String title,
-                                                              @RequestPart("content") String content,
-                                                              @RequestPart(value= "images", required = false) List<MultipartFile> images,
-                                                              @RequestPart(value = "files", required = false) List<MultipartFile> files){
-
-
-    }
+//    public ResponseEntity<InBoardDetailResponse> createdBoard(@AuthenticationPrincipal UserDetailSimpl userDetails,
+//                                                              @RequestPart("projectPk")Long projectPk,
+//                                                              @RequestPart("title") String title,
+//                                                              @RequestPart("content") String content,
+//                                                              @RequestPart(value= "images", required = false) List<MultipartFile> images,
+//                                                              @RequestPart(value = "files", required = false) List<MultipartFile> files){
+//
+//
+//    }
 }

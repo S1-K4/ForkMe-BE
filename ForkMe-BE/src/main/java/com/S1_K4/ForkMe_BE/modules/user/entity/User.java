@@ -16,7 +16,6 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Entity
-@Getter
 @Table(name="user")
 @Builder
 public class User extends BaseTime {
