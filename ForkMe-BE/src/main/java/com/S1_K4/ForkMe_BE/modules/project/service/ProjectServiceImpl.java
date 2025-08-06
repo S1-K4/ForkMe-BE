@@ -10,8 +10,10 @@ import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectPositionRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectTechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
+import com.S1_K4.ForkMe_BE.reference.position.entity.Position;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,8 @@ public class ProjectServiceImpl implements ProjectService{
     @Override
     @Transactional(readOnly = true)
     public ProjectDetailResponseDTO getProjectDetail(Long projectPK){
+        System.out.println("=============projectPk = "+projectPK +"=================");
+
         Optional<Project> projectOpt = projectRepository.findWithProfileAndUserByProjectPk(projectPK);
         System.out.println("projectOpt = " + projectOpt);
         Project project = projectOpt.orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));

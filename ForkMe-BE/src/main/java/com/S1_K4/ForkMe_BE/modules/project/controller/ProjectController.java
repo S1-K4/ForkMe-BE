@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.modules.project.controller;
 
 import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
-import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectListResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

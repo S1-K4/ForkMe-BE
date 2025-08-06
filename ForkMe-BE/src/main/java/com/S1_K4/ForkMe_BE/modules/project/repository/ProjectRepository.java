@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.project.repository;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
