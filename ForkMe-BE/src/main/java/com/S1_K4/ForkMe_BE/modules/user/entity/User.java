@@ -2,10 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.user.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author : 선순주
@@ -14,6 +11,8 @@ import lombok.NoArgsConstructor;
  * @date : 2025-08-04
  * @description : 유저 엔티티
  */
+@ToString
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Entity
@@ -34,4 +33,15 @@ public class User extends BaseTime {
     @Column(name="profile_url")
     private String profileUrl;
 
+    public User(String email, String nickname, String profileUrl) {
+        this.email = email;
+        this.nickname = nickname;
+        this.profileUrl = profileUrl;
+    }
+
+    public void updateUser(String email, String nickname, String profileUrl) {
+        this.email = email;
+        this.nickname = nickname;
+        this.profileUrl = profileUrl;
+    }
 }
