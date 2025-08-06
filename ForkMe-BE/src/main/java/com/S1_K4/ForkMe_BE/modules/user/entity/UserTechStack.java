@@ -30,6 +30,6 @@ public class UserTechStack {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="teck_pk", nullable = false)
+    @JoinColumn(name="tech_pk", nullable = false)
     private TechStack techStack;
 }
