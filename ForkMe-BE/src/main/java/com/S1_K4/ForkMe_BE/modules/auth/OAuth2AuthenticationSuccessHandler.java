@@ -1,9 +1,9 @@
 package com.S1_K4.ForkMe_BE.modules.auth;
 
-import com.S1_K4.ForkMe_BE.modules.auth.service.JwtTokenProvider;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.auth.entity.Auth;
 import com.S1_K4.ForkMe_BE.modules.auth.repository.AuthRepository;
+import com.S1_K4.ForkMe_BE.modules.auth.service.JwtTokenProvider;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

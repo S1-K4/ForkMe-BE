@@ -15,12 +15,13 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
 
 /**
  * @author : 김종국
- * @packageName : com.S1_K4.ForkMe_BE.global.security.jwt
+ * @packageName : com.S1_K4.ForkMe_BE.modules.auth.service
  * @fileName : JwtTokenProvider
  * @date : 2025-08-04
  * @description : JWT 생성,
@@ -96,10 +97,12 @@ public class JwtTokenProvider {
     public Authentication getAuthenticationByToken(String accessToken) {
         Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(accessToken).getBody();
 
+        Object authoritiesClaim = claims.get("auth");
         Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                authoritiesClaim == null ? Collections.emptyList() : // null이면 빈 권한 목록을 반환
+                        Arrays.stream(authoritiesClaim.toString().split(","))
+                                .map(SimpleGrantedAuthority::new)
+                                .collect(Collectors.toList());
 
         UserDetails principal = new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
 
@@ -126,11 +129,7 @@ public class JwtTokenProvider {
 
     // User 엔티티로 Authentication 객체 생성
     public Authentication getAuthenticationByUser(User user) {
-        UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(String.valueOf(user.getEmail()))
-                .password("")
-                .roles("ROLE_USER")
-                .build();
+        CustomUserDetails userDetails = new CustomUserDetails(user, Collections.emptyMap());
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 

@@ -17,7 +17,7 @@ import java.io.IOException;
 
 /**
  * @author : 김종국
- * @packageName : com.S1_K4.ForkMe_BE.global.security
+ * @packageName : com.S1_K4.ForkMe_BE.global.security.jwt
  * @fileName : JwtTokenFilter
  * @date : 2025-08-04
  * @description : JWT 토큰 검사
@@ -37,7 +37,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         log.info("accessToken : " + accessToken + " /");
 
         // 토큰 유효성 검사
-        if(StringUtils.hasText(accessToken) && jwtTokenProvider.validateToken(accessToken)){
+        if (StringUtils.hasText(accessToken) && jwtTokenProvider.validateToken(accessToken)) {
             Authentication authentication = jwtTokenProvider.getAuthenticationByToken(accessToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

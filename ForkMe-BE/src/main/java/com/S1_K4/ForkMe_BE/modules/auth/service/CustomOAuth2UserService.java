@@ -41,26 +41,27 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
         // git에서 받은 사용자 정보 추출
+        Long gitId = ((Number) attributes.get("id")).longValue();
         String nickname = (String) attributes.get("login");
         String email = (String) attributes.get("email");
         String profileUrl = (String) attributes.get("avatar_url");
 
 
-        log.info("nickname : " + nickname + " / email : " + email + " / profileUrl : " + profileUrl);
+        log.info("gitId : " + gitId + " / nickname : " + nickname + " / email : " + email + " / profileUrl : " + profileUrl);
 
-        if(email == null){
+        if (email == null) {
             email = getEmailFromApi(userRequest);
             log.info("email from api = " + email);
         }
         final String emailFinal = email;
 
-        User user = userRepository.findByEmail(emailFinal)
+        User user = userRepository.findByGitId(gitId)
                 .map(entity -> {
                     entity.updateUser(emailFinal, nickname, profileUrl);
                     return entity;
                 })
                 .orElseGet(() -> {
-                    return new User(emailFinal, nickname, profileUrl);
+                    return new User(gitId, emailFinal, nickname, profileUrl);
                 });
         log.info("user = " + user.toString());
 
@@ -70,7 +71,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
 
-    private String getEmailFromApi(OAuth2UserRequest userRequest){
+    private String getEmailFromApi(OAuth2UserRequest userRequest) {
         log.info("get email from api =================");
         RestTemplate restTemplate = new RestTemplate();
 
@@ -81,10 +82,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 "https://api.github.com/user/emails",
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
         log.info("response = " + response.getBody());
-        if(response.getBody() != null){
+        if (response.getBody() != null) {
             return response.getBody().stream()
                     .filter(emailMap -> (Boolean) emailMap.get("primary"))
                     .findFirst()
