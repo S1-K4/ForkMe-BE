@@ -20,6 +20,7 @@ import java.util.List;
  */
 @Getter
 @Builder
+@AllArgsConstructor
 public class ProjectDetailResponseDTO {
     //프로젝트 pk
     private Long projectPk;
@@ -29,6 +30,9 @@ public class ProjectDetailResponseDTO {
 
     //프로젝트 팀장 pk
     private Long userPk;
+
+    //프로젝트 팀장닉네임
+    private String nickname;
 
     //프로젝트 프로필 제목
     private String projectProfileTitle;

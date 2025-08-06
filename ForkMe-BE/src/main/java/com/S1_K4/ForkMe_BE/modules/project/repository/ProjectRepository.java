@@ -1,7 +1,11 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +31,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     WHERE p.projectPk = :projectPk
     """)
     Optional<Project> findWithProfileAndUserByProjectPk(@Param("projectPk") Long projectPk);
+
+    //프로젝트 목록 조회
+    @Query(
+            value = "SELECT p FROM Project p JOIN FETCH p.user u JOIN FETCH p.projectProfile pf WHERE p.deletedYN = 'N'",
+            countQuery = "SELECT COUNT(p) FROM Project p"
+    )
+    Page<Project> findProjectsWithUserAndProfile(Pageable pageable);
+
+    //삭제되지 않은 프로젝트만 조회
+    Optional<Project> findByProjectPkAndDeletedYN(Long projectPk, BaseTime.DeleteYN deletedYN);
 }

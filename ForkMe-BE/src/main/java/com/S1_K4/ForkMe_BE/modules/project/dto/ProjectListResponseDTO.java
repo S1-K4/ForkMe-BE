@@ -3,6 +3,7 @@ package com.S1_K4.ForkMe_BE.modules.project.dto;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ import java.util.List;
  * @description : 프로젝트 목록 조회 DTO
  */
 @Getter
+@Builder
 @AllArgsConstructor
 public class ProjectListResponseDTO {
     //프로젝트 pk
@@ -26,6 +28,9 @@ public class ProjectListResponseDTO {
 
     //프로젝트 팀장 pk
     private Long userPk;
+
+    //프로젝트 팀장닉네임
+    private String nickname;
 
     //프로젝트 프로필 제목
     private String projectProfileTitle;
