@@ -53,13 +53,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(400, "유효성 검사 실패", data));
     }
 
-    /*
-     * 예상치 못한 서버 에러
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
-        return ResponseEntity
-                .internalServerError()
-                .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다."));
-    }
+//    /*
+//     * 예상치 못한 서버 에러
+//     */
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
+//        return ResponseEntity
+//                .internalServerError()
+//                .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다."));
+//    }
 }
