@@ -20,7 +20,7 @@ import lombok.*;
 public class ProjectTechStack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="project_teck_stack_pk")
+    @Column(name="project_tech_stack_pk")
     private Long projectTechStackPk;
 
     @ManyToOne(fetch = FetchType.LAZY)
