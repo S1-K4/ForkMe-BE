@@ -41,4 +41,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     )
     Page<Project> findProjectsWithUserAndProfile(Pageable pageable);
 
+    @Query("SELECT p FROM Project p JOIN FETCH p.projectProfile WHERE p.projectPk = :projectPk AND p.deletedYN = 'N'")
+    Optional<Project> findByIdWithProfile(@Param("projectPk") Long projectPk);
+
 }

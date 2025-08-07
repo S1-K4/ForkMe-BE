@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.service;
 
 import com.S1_K4.ForkMe_BE.global.common.Yn;
-import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.Repository.ApplyRepository;
@@ -33,7 +32,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -273,5 +271,45 @@ public class ProjectServiceImpl implements ProjectService{
         projectMemberRepository.deleteByProject_ProjectPk(projectPk);                                               //프로젝트 인원
         applyTechStackRepository.deleteByApply_Project_ProjectPk(projectPk);                                        //신청서 기술 스택
         applyRepository.deleteByProject_ProjectPk(projectPk);                                                       //신청서
+    }
+
+    /*
+     * 프로젝트 수정폼 불러오는 메서드
+     * */
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk) {
+        Project project = projectRepository.findByIdWithProfile(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        ProjectProfile profile = project.getProjectProfile();
+
+        // 연관된 기술 스택 및 포지션 pk 추출
+        List<Long> techPks = projectTechStackRepository.findByProjectProfile(profile)
+                .stream()
+                .map(pt -> pt.getTechStack().getTechPk())
+                .toList();
+
+        List<Long> positionPks = projectPositionRepository.findByProjectProfile(profile)
+                .stream()
+                .map(pp -> pp.getPosition().getPositionPk())
+                .toList();
+
+        return ProjectUpdateFormDTO.builder()
+                .projectPk(projectPk)
+                .projectProfilePk(project.getProjectProfile().getProjectProfilePk())
+                .userPk(project.getUser().getUserPk())
+                .projectTitle(project.getProjectTitle())
+                .projectProfileTitle(profile.getProjectProfileTitle())
+                .projectProfileContent(profile.getProjectProfileContent())
+                .projectStartDate(project.getProjectStartDate())
+                .projectEndDate(project.getProjectEndDate())
+                .recruitmentStartDate(profile.getRecruitmentStartDate())
+                .recruitmentEndDate(profile.getRecruitmentEndDate())
+                .expectedMembers(profile.getExpectedMembers())
+                .progressType(profile.getProgressType())
+                .techPks(techPks)
+                .positionPks(positionPks)
+                .build();
     }
 }

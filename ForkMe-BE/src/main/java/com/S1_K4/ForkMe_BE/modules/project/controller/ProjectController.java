@@ -1,10 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.project.controller;
 
 import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
-import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectCreateFormDTO;
-import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectCreateRequestDTO;
-import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
-import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectListResponseDTO;
+import com.S1_K4.ForkMe_BE.modules.project.dto.*;
+import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -79,5 +77,13 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<String>> deleteProject(@PathVariable Long projectPk) {
         projectService.deleteProject(projectPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 성공"));
+    }
+
+    /*
+    * 프로젝트 수정폼 호출
+    * */
+    @GetMapping("/{projectPk}/update-form")
+    public ResponseEntity<ApiResponse<ProjectUpdateFormDTO>> getProjectUpdateForm(@PathVariable Long projectPk) {
+        return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk), "프로젝트 수정폼 호출 성공"));
     }
 }

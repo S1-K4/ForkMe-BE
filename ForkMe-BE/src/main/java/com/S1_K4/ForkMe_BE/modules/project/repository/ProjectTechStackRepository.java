@@ -1,5 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -25,4 +27,5 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
     List<TechStackResponseDTO> findTechStacksByProfilePk(@Param("profilePk") Long profilePk);
 
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+    List<ProjectTechStack> findByProjectProfile(ProjectProfile projectProfile);
 }

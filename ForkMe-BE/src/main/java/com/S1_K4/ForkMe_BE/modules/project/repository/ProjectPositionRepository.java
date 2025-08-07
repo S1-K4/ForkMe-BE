@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +26,6 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
     List<PositionResponseDTO> findPositionsByProfilePk(@Param("profilePk") Long profilePk);
 
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+
+    List<ProjectPosition> findByProjectProfile(ProjectProfile projectProfile);
 }
