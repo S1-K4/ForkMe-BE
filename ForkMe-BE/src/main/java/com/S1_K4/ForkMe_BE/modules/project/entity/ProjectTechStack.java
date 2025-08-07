@@ -20,11 +20,11 @@ import lombok.*;
 public class ProjectTechStack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="project_teck_stack_pk")
+    @Column(name="project_tech_stack_pk")
     private Long projectTechStackPk;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="tech_stack_pk", nullable = false)
+    @JoinColumn(name="tech_pk", nullable = false)
     private TechStack techStack;
 
     @ManyToOne(fetch = FetchType.LAZY)
