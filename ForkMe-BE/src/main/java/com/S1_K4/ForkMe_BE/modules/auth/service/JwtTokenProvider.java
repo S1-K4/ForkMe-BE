@@ -9,7 +9,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -50,7 +49,7 @@ public class JwtTokenProvider {
 
         // 권한
         String authorities = customUserDetails.getAuthorities().stream()
-                .map( GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
         Date now = new Date();
@@ -97,6 +96,14 @@ public class JwtTokenProvider {
     public Authentication getAuthenticationByToken(String accessToken) {
         Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(accessToken).getBody();
 
+        Long userPk = claims.get("userPk", Long.class);
+        Long gitId = Long.valueOf(claims.getSubject());
+
+        User user = User.builder()
+                .userPk(userPk)
+                .gitId(gitId)
+                .build();
+
         Object authoritiesClaim = claims.get("auth");
         Collection<? extends GrantedAuthority> authorities =
                 authoritiesClaim == null ? Collections.emptyList() : // null이면 빈 권한 목록을 반환
@@ -104,7 +111,7 @@ public class JwtTokenProvider {
                                 .map(SimpleGrantedAuthority::new)
                                 .collect(Collectors.toList());
 
-        UserDetails principal = new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
+        CustomUserDetails principal = new CustomUserDetails(user, Collections.emptyMap());
 
         return new UsernamePasswordAuthenticationToken(principal, accessToken, authorities);
     }
@@ -132,7 +139,6 @@ public class JwtTokenProvider {
         CustomUserDetails userDetails = new CustomUserDetails(user, Collections.emptyMap());
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
-
 
 
 }

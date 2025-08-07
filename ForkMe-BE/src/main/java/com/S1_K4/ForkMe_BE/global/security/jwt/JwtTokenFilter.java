@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.global.security.jwt;
 
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.auth.service.JwtTokenProvider;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
