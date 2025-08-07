@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.global.common.redis;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,17 @@ import org.springframework.stereotype.Service;
  */
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class RedisService {
 
+
+
     private final RedisTemplate<String, String> redisTemplate;
+
+    //redisTemplate 이 2개 이상으로 빈 주입 혼동 문제가 있어 생성자, 사용 템플릿 명시
+    public RedisService(@Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     //게시글 조회 key 생성
     private String getPostViewersKey(Long projectPk) {

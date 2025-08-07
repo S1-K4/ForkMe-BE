@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.global.common.redis;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,18 @@ import java.util.Map;
  */
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class RedisViewerSessionService {
+
+
     private final RedisTemplate<String, String> redisTemplate;
+
+    //redisTemplate 이 2개 이상으로 빈 주입 혼동 문제가 있어 생성자, 사용 템플릿 명시
+    public RedisViewerSessionService(@Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+
 
     //세션 정보 저장
     public void saveSessionInfo(String sessionId, Long userPk, Long projectPk){
