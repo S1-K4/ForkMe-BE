@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.s3.Entity.S3Image;
 import jakarta.persistence.*;
@@ -55,4 +56,7 @@ public class ProjectProfile extends BaseTime {
     @Builder.Default
     @OneToMany(mappedBy = "projectProfile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<S3Image> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "projectProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
 }

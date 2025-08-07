@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import lombok.AllArgsConstructor;
@@ -66,4 +67,38 @@ public class ProjectDetailResponseDTO {
 
     //예상 모집 인원
     private int expectedMembers;
+
+    //좋아요 수
+    private Long likeCount;
+    
+    //댓글 리스트
+    private List<CommentDTO> comments;
+
+    @Getter
+    public static class CommentDTO {
+        private Long commentPk;
+        private String comment;
+        private String nickname;
+        private Long userPk;
+        private Long parentPk;
+
+        @Builder
+        public CommentDTO(String comment, String nickname, Long parentPk, Long commentPk,Long userPk) {
+            this.commentPk = commentPk;
+            this.comment = comment;
+            this.nickname = nickname;
+            this.parentPk = parentPk;
+            this.userPk = userPk;
+        }
+
+        public static CommentDTO toDTO(Comment comment) {
+            return CommentDTO.builder()
+                    .comment(comment.getComment())
+                    .nickname(comment.getUser().getNickname())
+                    .userPk(comment.getUser().getUserPk())
+                    .parentPk(comment.getParent() != null ? comment.getParent().getCommentPk() : null)
+                    .commentPk(comment.getCommentPk())
+                    .build();
+        }
+    }
 }

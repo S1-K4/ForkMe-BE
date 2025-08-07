@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.like.entity;
 
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +30,6 @@ public class Likes {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="project_position_pk", nullable = false)
-    private ProjectPosition projectPosition;
+    @JoinColumn(name="project_profile_pk", nullable = false)
+    private ProjectProfile projectProfile;
 }

@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.global.common.Yn;
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
@@ -40,6 +41,4 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     )
     Page<Project> findProjectsWithUserAndProfile(Pageable pageable);
 
-    //삭제되지 않은 프로젝트만 조회
-    Optional<Project> findByProjectPkAndDeletedYN(Long projectPk, BaseTime.DeleteYN deletedYN);
 }

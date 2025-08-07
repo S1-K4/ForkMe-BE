@@ -1,8 +1,13 @@
 package com.S1_K4.ForkMe_BE.modules.project.service;
 
+import com.S1_K4.ForkMe_BE.global.common.Yn;
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
+import com.S1_K4.ForkMe_BE.modules.apply.Repository.ApplyRepository;
+import com.S1_K4.ForkMe_BE.modules.apply.Repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
@@ -28,6 +33,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -48,6 +54,9 @@ public class ProjectServiceImpl implements ProjectService{
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final LikeRepository likeRepository;
+    private final ApplyRepository applyRepository;
+    private final ApplyTechStackRepository applyTechStackRepository;
     private final S3Service s3Service;
     private final S3Repository s3Repository;
 
@@ -65,6 +74,16 @@ public class ProjectServiceImpl implements ProjectService{
 
         ProjectProfile profile = project.getProjectProfile();
 
+        //댓글 조회
+        List<ProjectDetailResponseDTO.CommentDTO> commentDTOList = project.getProjectProfile().getComments().stream()
+                        .filter(comment ->  Yn.N.equals(comment.getDeletedYN()))
+                                .map(ProjectDetailResponseDTO.CommentDTO::toDTO)
+                                        .toList();
+
+        //좋아요 수 조회
+        Long likeCount = likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk());
+        
+        //포지션, 기술스택 조회
         List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profile.getProjectProfilePk());
         List<TechStackResponseDTO> teckStacks = projectTechStackRepository.findTechStacksByProfilePk(profile.getProjectProfilePk());
 
@@ -77,13 +96,15 @@ public class ProjectServiceImpl implements ProjectService{
                 .projectProfileContent(profile.getProjectProfileContent())
                 .projectStatus(project.getProjectStatus().getDescription()) //프로젝트 상태
                 .progressType(profile.getProgressType().getDescription())   //진행방식
-                .positions(positions)   //모집 포지션
-                .techStacks(teckStacks) //기술 스택
+                .positions(positions)                                       //모집 포지션
+                .techStacks(teckStacks)                                     //기술 스택
                 .recruitmentStartDate(profile.getRecruitmentStartDate())    //모집 시작일
                 .recruitmentEndDate(profile.getRecruitmentEndDate())        //모집 마감일
                 .projectStartDate(project.getProjectStartDate())            //프로젝트 시작 일정
                 .projectEndDate(project.getProjectEndDate())                //프로젝트 마감일정
-                .expectedMembers(profile.getExpectedMembers())                //예상 모집인원
+                .expectedMembers(profile.getExpectedMembers())              //예상 모집인원
+                .comments(commentDTOList)
+                .likeCount(likeCount)
                 .build();
     }
 
@@ -219,6 +240,7 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 삭제
      * */
+    @Override
     @Transactional
     public void deleteProject(Long projectPk){
       //프로젝트 조회
@@ -230,8 +252,26 @@ public class ProjectServiceImpl implements ProjectService{
           throw new CustomException(CustomException.ErrorCode.PROJECT_ALLREDAY_DELETE);
       }
 
-      //작성자와 로그인한 사용자 일치 여부
+//      //작성자와 로그인한 사용자 일치 여부
+//        if(project.getUser().getUserPk().equals("userid")){
+//            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+//        }
 
-
+        //project, projectProfile, comment soft delete
+        project.markDeleted();
+        ProjectProfile projectProfile = project.getProjectProfile();
+        projectProfile.markDeleted();
+        for(Comment comment : projectProfile.getComments()){
+            comment.markDeleted();
+        }
+        
+        //hard Delete : 워크스페이스 관련 엔티티는 추후 삭제 추가예정(board_in_project,comment_in_project,github_timeline,s3_file,chatting_room,chatting_message,chatting_participant)
+        s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
+        likeRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());               //좋아요
+        projectTechStackRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());   //프로젝트 기술스택  
+        projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());    //프로젝트 모집분야
+        projectMemberRepository.deleteByProject_ProjectPk(projectPk);                                               //프로젝트 인원
+        applyTechStackRepository.deleteByApply_Project_ProjectPk(projectPk);                                        //신청서 기술 스택
+        applyRepository.deleteByProject_ProjectPk(projectPk);                                                       //신청서
     }
 }

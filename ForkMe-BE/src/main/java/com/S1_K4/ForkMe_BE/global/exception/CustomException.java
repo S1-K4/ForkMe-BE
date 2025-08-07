@@ -31,6 +31,7 @@ public class CustomException extends RuntimeException {
         INTERNAL_SERVER_ERROR(500, "서버 오류입니다."),
         UNAUTHORIZED_REQUEST(401, "권한이 없습니다."),
         UNAUTHORIZED(401, "인증이 필요합니다."),
+        FORBIDDEN(403, "권한이 없습니다."),
 
         //프로젝트 관련 에러코드
         PROJECT_NOT_FOUND(404,"프로젝트를 찾을 수 없습니다."),

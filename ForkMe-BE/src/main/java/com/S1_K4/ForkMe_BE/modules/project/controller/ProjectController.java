@@ -51,16 +51,6 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response,"프로젝트 목록 조회 성공"));
     }
 
-
-    /*
-     * 프로젝트 삭제(softdelete + 연관된 객체들도 삭제)
-     * */
-    @DeleteMapping("/{projectPk}")
-    public ResponseEntity<ApiResponse<String>> deleteProject(@PathVariable Long projectPk) {
-        projectService.deleteProject(projectPk);
-        return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 성공"));
-    }
-
     /*
      * 프로젝트 생성폼 조회
      * */
@@ -80,5 +70,14 @@ public class ProjectController {
         Long projectPk = projectService.createdProject(dto, images);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));
 
+    }
+
+    /*
+     * 프로젝트 삭제(softdelete + 연관된 객체들도 삭제)
+     * */
+    @DeleteMapping("/{projectPk}")
+    public ResponseEntity<ApiResponse<String>> deleteProject(@PathVariable Long projectPk) {
+        projectService.deleteProject(projectPk);
+        return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 성공"));
     }
 }

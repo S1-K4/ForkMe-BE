@@ -14,4 +14,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface S3Repository extends JpaRepository<S3Image, Long> {
 
+    void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 }

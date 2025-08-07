@@ -23,4 +23,5 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
             "WHERE p.projectProfile.projectProfilePk = :profilePk")
     List<PositionResponseDTO> findPositionsByProfilePk(@Param("profilePk") Long profilePk);
 
+    void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 }
