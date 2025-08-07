@@ -18,17 +18,17 @@ import java.util.List;
  * @description : 워크스페이스 내 게시판 컨트롤러입니다.
  */
 
-@RestController
-@RequestMapping("/api/on-project/inboard")
-public class InBoardController {
-
-    public ResponseEntity<InBoardDetailResponse> createdBoard(@AuthenticationPrincipal UserDetailSimpl userDetails,
-                                                              @RequestPart("projectPk")Long projectPk,
-                                                              @RequestPart("title") String title,
-                                                              @RequestPart("content") String content,
-                                                              @RequestPart(value= "images", required = false) List<MultipartFile> images,
-                                                              @RequestPart(value = "files", required = false) List<MultipartFile> files){
-
-
-    }
-}
+//@RestController
+//@RequestMapping("/api/on-project/inboard")
+//public class InBoardController {
+//
+//    public ResponseEntity<InBoardDetailResponse> createdBoard(@AuthenticationPrincipal UserDetailSimpl userDetails,
+//                                                              @RequestPart("projectPk")Long projectPk,
+//                                                              @RequestPart("title") String title,
+//                                                              @RequestPart("content") String content,
+//                                                              @RequestPart(value= "images", required = false) List<MultipartFile> images,
+//                                                              @RequestPart(value = "files", required = false) List<MultipartFile> files){
+//
+//
+//    }
+//}

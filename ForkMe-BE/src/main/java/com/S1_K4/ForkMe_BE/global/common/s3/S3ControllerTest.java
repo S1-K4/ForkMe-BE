@@ -14,23 +14,23 @@ import java.util.List;
  * @date : 2025-08-05
  * @description : S3 테스트 Controller입니다.
  */
-@RestController
-@RequiredArgsConstructor
-@RequestMapping("/file")
-public class S3ControllerTest {
-
-    private final S3Service s3Service;
-
-    //테스트용 컨트롤러(insert)
-    @PostMapping
-    public ResponseEntity<List<String>> uploadFile(@RequestParam("files") List<MultipartFile> multipartFiles){
-        return ResponseEntity.ok(s3Service.uploadFile(multipartFiles));
-    }
-
-    //이미지 delete
-    @DeleteMapping
-    public ResponseEntity<String> deleteImage(@RequestParam String fileName){
-        s3Service.deleteImage(fileName);
-        return ResponseEntity.ok(fileName);
-    }
-}
+//@RestController
+//@RequiredArgsConstructor
+//@RequestMapping("/file")
+//public class S3ControllerTest {
+//
+//    private final S3Service s3Service;
+//
+//    //테스트용 컨트롤러(insert)
+//    @PostMapping
+//    public ResponseEntity<List<String>> uploadFile(@RequestParam("files") List<MultipartFile> multipartFiles){
+//        return ResponseEntity.ok(s3Service.uploadFile(multipartFiles));
+//    }
+//
+//    //이미지 delete
+//    @DeleteMapping
+//    public ResponseEntity<String> deleteImage(@RequestParam String fileName){
+//        s3Service.deleteImage(fileName);
+//        return ResponseEntity.ok(fileName);
+//    }
+//}

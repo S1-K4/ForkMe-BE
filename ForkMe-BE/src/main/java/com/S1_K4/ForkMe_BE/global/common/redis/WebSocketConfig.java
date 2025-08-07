@@ -20,11 +20,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     //STOMP 메시지 브로커 구성
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        //클라이언트가 서버로부터 메시지 받는 경로
-        registry.enableSimpleBroker("/sub");
+        //클라이언트가 서버로부터 메시지 받는 경로 - 뷰어 수 & 채팅 모두 구독 가능
+        registry.enableSimpleBroker("/sub", "/topic");
 
         //클라이언트가 메시지를 보낼때 prefix
-        registry.setApplicationDestinationPrefixes("/pub");
+        //발행 경로 병합 - 뷰어 수 & 채팅 발행
+        registry.setApplicationDestinationPrefixes("/pub", "/app");
     }
 
     //클라이언트가 연결할 websocket 엔드포인트 설정
@@ -32,6 +33,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*") //CORS 허용
+                .withSockJS();
+
+        registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 }
