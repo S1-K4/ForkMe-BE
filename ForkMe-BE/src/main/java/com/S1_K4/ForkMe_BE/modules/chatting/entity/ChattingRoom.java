@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.entity;
 
-import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
-import com.S1_K4.ForkMe_BE.global.common.entity.Yn;
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import jakarta.persistence.*;

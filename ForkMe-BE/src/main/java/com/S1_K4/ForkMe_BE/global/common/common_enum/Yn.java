@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.global.common.entity;
+package com.S1_K4.ForkMe_BE.global.common.common_enum;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Yn {
-    Y("Y"), //삭제 예정
-    N("N"); //유지
+    Y("Yes 값"), //delete_yn 에서 사용 시 -> 삭제된 데이터
+    N("No 값"); //delete_yn 에서 사용 시 -> 서비스에 존재하는 데이터
     private final String code;
 }
