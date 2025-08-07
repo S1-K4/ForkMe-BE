@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.user.service;
 
+import com.S1_K4.ForkMe_BE.modules.user.dto.SidebarResponseDto;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.List;
  * @description : 유저 서비스
  */
 public interface UserService {
+
+    public SidebarResponseDto getSidebarInfo(User user);
 
     public void updateUserTechStack(User user, List<Long> techStackPkList);
 }

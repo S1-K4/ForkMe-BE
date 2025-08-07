@@ -1,14 +1,12 @@
 package com.S1_K4.ForkMe_BE.modules.user.controller;
 
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
+import com.S1_K4.ForkMe_BE.modules.user.dto.SidebarResponseDto;
 import com.S1_K4.ForkMe_BE.modules.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,7 +25,22 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/saveStack")
+    // 사이드바
+    @GetMapping("/me/sidebar")
+    public ResponseEntity<SidebarResponseDto> getSidebarInfo(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if(userDetails == null){
+            return ResponseEntity.ok(
+                    // 비로그인은 빈 객체 전달
+                    SidebarResponseDto.builder().preparingProjectList(null).workSpaceList(null).build()
+            );
+        }
+        return ResponseEntity.ok(userService.getSidebarInfo(userDetails.getUser()));
+    }
+
+
+
+    // 유저 기술 스택 저장
+    @PostMapping("/me/stacks")
     public ResponseEntity<String> saveMyTechStack(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody List<Long> techStackPkList) {
