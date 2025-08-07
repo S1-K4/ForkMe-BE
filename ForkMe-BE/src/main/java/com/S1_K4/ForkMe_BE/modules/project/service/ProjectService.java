@@ -1,9 +1,15 @@
 package com.S1_K4.ForkMe_BE.modules.project.service;
 
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectCreateFormDTO;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectCreateRequestDTO;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectListResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -22,6 +28,23 @@ public interface ProjectService {
      * */
     Page<ProjectListResponseDTO> getProjectList(Pageable pageable);
 
-
+    /*
+     * 프로젝트 삭제
+     * */
     void deleteProject(Long projectPk);
+
+    @Transactional(readOnly = true)
+    ProjectCreateFormDTO getProjectCreateFormInfo();
+
+//    /*
+//     * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
+//     * */
+//    @Transactional
+//    Long createdProject(ProjectCreateRequestDTO dto);
+
+    /*
+     * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
+     * */
+    @Transactional
+    Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images);
 }

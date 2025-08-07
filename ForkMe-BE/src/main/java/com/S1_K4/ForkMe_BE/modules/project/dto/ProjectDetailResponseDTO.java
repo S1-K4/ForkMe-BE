@@ -61,6 +61,7 @@ public class ProjectDetailResponseDTO {
     //프로젝트 시작 일정
     private LocalDate projectStartDate;
 
+    //프로젝트 종료 일정
     private LocalDate projectEndDate;
 
     //예상 모집 인원

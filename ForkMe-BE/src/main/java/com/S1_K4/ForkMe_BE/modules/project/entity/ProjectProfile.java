@@ -2,10 +2,13 @@ package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
+import com.S1_K4.ForkMe_BE.modules.s3.Entity.S3Image;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -48,4 +51,8 @@ public class ProjectProfile extends BaseTime {
 
     @Column(name="recruitment_end_date", nullable = false)
     private LocalDate recruitmentEndDate;   //모집 종료 기간
+
+    @Builder.Default
+    @OneToMany(mappedBy = "projectProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<S3Image> images = new ArrayList<>();
 }

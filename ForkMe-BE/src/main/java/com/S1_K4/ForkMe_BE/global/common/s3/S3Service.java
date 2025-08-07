@@ -57,11 +57,11 @@ public class S3Service {
 //
 //        return fileNameList;
 //    }
-        public List<String> uploadFile(List<MultipartFile> multipartFiles) {
+        public List<String> uploadFile(List<MultipartFile> multipartFiles, String dirName) {
             List<String> fileNameList = new ArrayList<>();
 
             multipartFiles.forEach(file -> {
-                String fileName = createFileName(file.getOriginalFilename(), file.getContentType());
+                String fileName = createFileName(file.getOriginalFilename(), dirName);
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(file.getSize());
                 metadata.setContentType(file.getContentType());
@@ -84,12 +84,11 @@ public class S3Service {
 //        return UUID.randomUUID().toString().concat(getFileExtension(fileName));
 //    }
 
-    public String createFileName(String fileName, String contentType) {
+    public String createFileName(String fileName,String dirName) {
         String extension = getFileExtension(fileName);
         String uuid = UUID.randomUUID().toString();
-        String folder = getFolderNameByContentType(contentType);
 
-        return folder + "/" + uuid + extension;
+        return dirName + "/" + uuid + extension;
     }
 
     //ContentType 판별

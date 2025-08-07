@@ -38,6 +38,10 @@ public class Auth extends BaseTime {
         this.user = user;
     }
 
+    public Auth() {
+
+    }
+
     public void updateAccessToken(String accessToken) {
         this.accessToken = accessToken;
     }

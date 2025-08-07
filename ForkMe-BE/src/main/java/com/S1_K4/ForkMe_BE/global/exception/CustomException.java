@@ -33,7 +33,8 @@ public class CustomException extends RuntimeException {
         UNAUTHORIZED(401, "인증이 필요합니다."),
 
         //프로젝트 관련 에러코드
-        PROJECT_NOT_FOUND(404,"프로젝트를 찾을 수 없습니다.");
+        PROJECT_NOT_FOUND(404,"프로젝트를 찾을 수 없습니다."),
+        PROJECT_ALLREDAY_DELETE(404, "이미 삭제된 프로젝트입니다.");
 
         private final int code;
         private final String message;

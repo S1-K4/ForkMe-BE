@@ -10,7 +10,7 @@ import lombok.*;
  * @packageName : com.S1_K4.ForkMe_BE.modules.project.entity
  * @fileName : ProjectMember
  * @date : 2025-08-04
- * @description : 프로젝트 참여 인원 엔티틴
+ * @description : 프로젝트 참여 인원 엔티티
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
