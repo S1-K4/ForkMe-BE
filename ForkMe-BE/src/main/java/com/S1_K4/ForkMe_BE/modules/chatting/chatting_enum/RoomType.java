@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum RoomType {
-    T("T"), //팀 채팅방
-    P("P"); // 개인 채팅방
+    T("팀 채팅방"), //TEAM
+    P("개인 채팅방"); // PRIVATE
     private final String code;
 }
