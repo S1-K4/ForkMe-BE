@@ -14,7 +14,7 @@ import java.util.List;
  */
 public interface UserService {
 
-    public SidebarResponseDto getSidebarInfo(User user);
+    public SidebarResponseDto getSidebarInfo(Long userPk);
 
     public void updateUserTechStack(User user, List<Long> techStackPkList);
 }

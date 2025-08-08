@@ -1,7 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.user.service;
 
-import com.S1_K4.ForkMe_BE.modules.project.dto.PreparingProjectDto;
-import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
+import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.dto.SidebarResponseDto;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.entity.UserTechStack;
@@ -12,7 +12,6 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,33 +28,27 @@ public class UserServiceImpl implements UserService {
 
     private final UserTechStackRepository userTechStackRepository;
     private final TechStackRepository techStackRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
-    public SidebarResponseDto getSidebarInfo(User user) {
-        // 준비중인 프로젝트
-        List<PreparingProjectDto> preparingProject = null;
-        // 워크스페이스
-        List<PreparingProjectDto> workSpace = null;
+    public SidebarResponseDto getSidebarInfo(Long userPk) {
 
-        // 테스트용 만들기
-        String[] projectNameArr = {"프로젝트 기획하자", "프로프로", "가나다라"};
-        ProjectStatus[] projectStatuses = {ProjectStatus.PLANNING, ProjectStatus.RECRUITING, ProjectStatus.RECRUITING};
-        preparingProject = new ArrayList<>();
-        workSpace = new ArrayList<>();
-        for (Long i = 0L; i <3 ; i++) {
-            PreparingProjectDto dto = new PreparingProjectDto(i, projectNameArr[i.intValue()], projectStatuses[i.intValue()] );
-            preparingProject.add(dto);
-            workSpace.add(dto);
-        }
+        // 준비중인 프로젝트 -> 모집
+        // project_status = RECRUITING
+        List<SideBarProjectDto> preparingProject = projectRepository.findRecruitingProjectsByUser(userPk);
+
+        // 워크스페이스 -> 진행중, 충원
+        // project_status = IN_PROGRESS, ADDING
+        List<SideBarProjectDto> workSpace = projectRepository.findProgressProjectsByUser(userPk);
+
+
+
 
         return SidebarResponseDto.builder()
                 .preparingProjectList(preparingProject)
                 .workSpaceList(workSpace)
                 .build();
     }
-
-
-
 
 
     //@Override

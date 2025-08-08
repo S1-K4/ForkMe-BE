@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class PreparingProjectDto {
+public class SideBarProjectDto {
     private Long projectPk;
     private String projectName;
     private ProjectStatus projectStatus;

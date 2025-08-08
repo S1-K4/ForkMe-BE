@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.user.dto;
 
-import com.S1_K4.ForkMe_BE.modules.project.dto.PreparingProjectDto;
+import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import java.util.List;
 @Getter
 public class SidebarResponseDto {
 
-    private List<PreparingProjectDto> preparingProjectList;
-    private List<PreparingProjectDto> workSpaceList;
+    private List<SideBarProjectDto> preparingProjectList;
+    private List<SideBarProjectDto> workSpaceList;
 
 }

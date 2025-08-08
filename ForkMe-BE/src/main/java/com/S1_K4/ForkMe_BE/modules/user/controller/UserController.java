@@ -34,18 +34,18 @@ public class UserController {
                     SidebarResponseDto.builder().preparingProjectList(null).workSpaceList(null).build()
             );
         }
-        return ResponseEntity.ok(userService.getSidebarInfo(userDetails.getUser()));
+        Long userPk = userDetails.getUser().getUserPk();
+        return ResponseEntity.ok(userService.getSidebarInfo(userPk));
     }
 
 
 
     // 유저 기술 스택 저장
-    @PostMapping("/me/stacks")
-    public ResponseEntity<String> saveMyTechStack(
+    @PostMapping("/me/updateStack")
+    public ResponseEntity<String> updateUserTechStack(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody List<Long> techStackPkList) {
-        System.out.println(userDetails.toString());
-        System.out.println(techStackPkList.toString());
+
         userService.updateUserTechStack(userDetails.getUser(), techStackPkList);
         return ResponseEntity.ok("Success to save tech stack.");
     }

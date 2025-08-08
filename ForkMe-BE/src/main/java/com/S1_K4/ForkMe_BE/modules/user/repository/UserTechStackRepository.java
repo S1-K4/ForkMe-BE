@@ -20,6 +20,7 @@ import java.util.List;
 
 @Repository
 public interface UserTechStackRepository extends JpaRepository<UserTechStack, Long> {
+
     void deleteAllByUser(User user);
 
     @Query(
