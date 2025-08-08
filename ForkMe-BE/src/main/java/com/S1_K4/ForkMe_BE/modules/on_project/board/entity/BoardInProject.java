@@ -28,7 +28,7 @@ public class BoardInProject extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "board_in_project_pk")
-    private Long id;
+    private Long boardInProjectPk;
 
     @Column(name = "title", length = 255, nullable = false)
     private String title;
