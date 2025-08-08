@@ -30,7 +30,7 @@ public class CommentInProject extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "comment_in_project_pk")
-    private Long id;
+    private Long commentInProjectPk;
 
     @Column(length = 255, nullable = false)
     private String comment;

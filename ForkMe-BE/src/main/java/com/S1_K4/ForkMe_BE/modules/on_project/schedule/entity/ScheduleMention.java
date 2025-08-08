@@ -24,7 +24,7 @@ public class ScheduleMention {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "schedule_mention_pk")
-    private Long id;
+    private Long scheduleMentionPk;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_pk", nullable = false)
