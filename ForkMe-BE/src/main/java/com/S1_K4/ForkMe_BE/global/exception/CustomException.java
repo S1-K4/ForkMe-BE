@@ -32,6 +32,7 @@ public class CustomException extends RuntimeException {
         UNAUTHORIZED_REQUEST(401, "권한이 없습니다."),
         UNAUTHORIZED(401, "인증이 필요합니다."),
         FORBIDDEN(403, "권한이 없습니다."),
+        USER_NOT_FOUND(404,"찾을 수 없는 유저입니다."),
 
         //프로젝트 관련 에러코드
         PROJECT_NOT_FOUND(404,"프로젝트를 찾을 수 없습니다."),

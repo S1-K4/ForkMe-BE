@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.controller;
 
 import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,8 +55,9 @@ public class ProjectController {
      * 프로젝트 생성폼 조회
      * */
     @GetMapping("/form-info")
-    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(){
-        ProjectCreateFormDTO formInfo = projectService.getProjectCreateFormInfo();
+    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(@AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk = userDetails.getUserPk();
+        ProjectCreateFormDTO formInfo = projectService.getProjectCreateFormInfo(userPk);
         return ResponseEntity.ok(ApiResponse.success(formInfo,"프로젝트 생성 폼 조회 완료"));
     }
 
@@ -64,8 +67,10 @@ public class ProjectController {
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<String>> createProject(
             @RequestPart("dto") ProjectCreateRequestDTO dto,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images){
-        Long projectPk = projectService.createdProject(dto, images);
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk = userDetails.getUserPk();
+        Long projectPk = projectService.createdProject(dto, images, userPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));
 
     }
@@ -74,8 +79,9 @@ public class ProjectController {
      * 프로젝트 삭제(softdelete + 연관된 객체들도 삭제)
      * */
     @DeleteMapping("/{projectPk}")
-    public ResponseEntity<ApiResponse<String>> deleteProject(@PathVariable Long projectPk) {
-        projectService.deleteProject(projectPk);
+    public ResponseEntity<ApiResponse<String>> deleteProject(@PathVariable Long projectPk, @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk = userDetails.getUserPk();
+        projectService.deleteProject(projectPk, userPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 성공"));
     }
 
@@ -83,8 +89,9 @@ public class ProjectController {
     * 프로젝트 수정폼 호출
     * */
     @GetMapping("/{projectPk}/update-form")
-    public ResponseEntity<ApiResponse<ProjectUpdateFormDTO>> getProjectUpdateForm(@PathVariable Long projectPk) {
-        return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk), "프로젝트 수정폼 호출 성공"));
+    public ResponseEntity<ApiResponse<ProjectUpdateFormDTO>> getProjectUpdateForm(@PathVariable Long projectPk, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userPk = userDetails.getUserPk();
+        return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk, userPk), "프로젝트 수정폼 호출 성공"));
     }
     
     /*
@@ -97,8 +104,10 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
             @PathVariable Long projectPk,
             @RequestPart ProjectUpdateFormDTO dto,
-            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages){
-        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages);
+            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk = userDetails.getUserPk();
+        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages, userPk);
         return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
 
     }

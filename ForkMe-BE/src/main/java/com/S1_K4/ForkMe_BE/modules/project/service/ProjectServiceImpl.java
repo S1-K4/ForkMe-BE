@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.Repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.Repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
@@ -25,6 +26,8 @@ import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,10 +67,8 @@ public class ProjectServiceImpl implements ProjectService{
     @Override
     @Transactional(readOnly = true)
     public ProjectDetailResponseDTO getProjectDetail(Long projectPK){
-        System.out.println("=============projectPk = "+projectPK +"=================");
 
         Optional<Project> projectOpt = projectRepository.findWithProfileAndUserByProjectPk(projectPK);
-        System.out.println("projectOpt = " + projectOpt);
         Project project = projectOpt.orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
         ProjectProfile profile = project.getProjectProfile();
@@ -114,6 +115,7 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 목록 조회
      * */
     @Override
+    @Transactional(readOnly = true)
     public Page<ProjectListResponseDTO> getProjectList(Pageable pageable) {
         Page<Project> projectPage = projectRepository.findProjectsWithUserAndProfile(pageable);
 
@@ -156,8 +158,14 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성폼
      * */
     @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
     @Override
-    public ProjectCreateFormDTO getProjectCreateFormInfo(){
+    public ProjectCreateFormDTO getProjectCreateFormInfo(Long userPk){
+
+        //user 조회
+        User user =userRepository.findById(userPk)
+                .orElseThrow(()->new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
         //1. 기술 스택 조회
         List<TechStackResponseDTO> techStacks = stackRepository.findAll().stream()
                 .map(t -> new TechStackResponseDTO(t.getTechPk(), t.getTechName()))
@@ -191,11 +199,14 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
+    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
-    public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images) {
+    public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images, Long userPk) {
 
-        User user = userRepository.findById(1L).orElseThrow(()-> new IllegalArgumentException("유저없삼"));
+        //user 조회
+        User user = userRepository.findById(userPk)
+                .orElseThrow(()->new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 
         //프로젝트 생성
         Project project = dto.toProjectEntity(user);
@@ -239,12 +250,19 @@ public class ProjectServiceImpl implements ProjectService{
         return project.getProjectPk();
     }
 
+
     /*
      * 프로젝트 삭제
      * */
+    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
-    public void deleteProject(Long projectPk){
+    public void deleteProject(Long projectPk, Long userPk){
+
+        //user 조회
+        userRepository.findById(userPk)
+                .orElseThrow(()->new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
       //프로젝트 조회
       Project project = projectRepository.findById(projectPk)
               .orElseThrow(()-> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
@@ -254,10 +272,10 @@ public class ProjectServiceImpl implements ProjectService{
           throw new CustomException(CustomException.ErrorCode.PROJECT_ALLREDAY_DELETE);
       }
 
-//      //작성자와 로그인한 사용자 일치 여부
-//        if(project.getUser().getUserPk().equals("userid")){
-//            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
-//        }
+      //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생
+        if(!project.getUser().getUserPk().equals(userPk)){
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
 
         //project, projectProfile, comment soft delete
         project.markDeleted();
@@ -277,12 +295,18 @@ public class ProjectServiceImpl implements ProjectService{
         applyRepository.deleteByProject_ProjectPk(projectPk);                                                       //신청서
     }
 
+
     /*
      * 프로젝트 수정폼 불러오는 메서드
      * */
+    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional(readOnly = true)
-    public ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk) {
+    public ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk, Long userPk) {
+        //user 조회
+        userRepository.findById(userPk)
+                .orElseThrow(()->new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
         Project project = projectRepository.findByIdWithProfile(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
@@ -314,13 +338,24 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정
      */
+    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
-    public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages) {
+    public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk) {
+
+        //user 조회
+        userRepository.findById(userPk)
+                .orElseThrow(()->new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
         //프로젝트 + 프로필 조회
         Project project = projectRepository.findByIdWithProfile(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
         ProjectProfile projectProfile = project.getProjectProfile();
+
+        //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생
+        if(!project.getUser().getUserPk().equals(userPk)){
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
 
         //프로젝트, 프로젝트 프로필 update(dirty checking) -> 프로젝트명은 프로젝트 프로필명과 동일.
         project.updateIfChanged(dto);
@@ -379,7 +414,7 @@ public class ProjectServiceImpl implements ProjectService{
                             .build())
                     .toList();
             projectTechStackRepository.saveAll(toSave);
-            currentTechPks = dto.getTechPks(); // ✅ 응답용으로 갱신
+            currentTechPks = dto.getTechPks();
         }
 
         if (positionChanged) {
@@ -391,7 +426,7 @@ public class ProjectServiceImpl implements ProjectService{
                             .build())
                     .toList();
             projectPositionRepository.saveAll(toSave);
-            currentPositionPks = dto.getPositionPks(); // ✅ 응답용으로 갱신
+            currentPositionPks = dto.getPositionPks();
         }
 
         // 4) 응답: 불필요한 재조회 제거
