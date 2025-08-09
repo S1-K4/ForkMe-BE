@@ -31,4 +31,9 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
     
     //pk기준 기술스택 조회
     List<ProjectTechStack> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+
+    @Query("select pts.techStack.techPk " +
+            "from ProjectTechStack pts " +
+            "where pts.projectProfile.projectProfilePk = :profilePk")
+    List<Long> findTechPksByProfilePk(@Param("profilePk") Long profilePk);
 }

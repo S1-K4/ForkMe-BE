@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import lombok.AllArgsConstructor;
@@ -73,6 +74,8 @@ public class ProjectDetailResponseDTO {
     
     //댓글 리스트
     private List<CommentDTO> comments;
+
+    private List<ProjectImageDTO> images;
 
     @Getter
     public static class CommentDTO {

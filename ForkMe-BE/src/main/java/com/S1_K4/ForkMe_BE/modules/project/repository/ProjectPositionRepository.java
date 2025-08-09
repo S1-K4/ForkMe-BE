@@ -31,4 +31,9 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
 
     //pk 포지션 조회용
     List<ProjectPosition> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+
+    @Query("select pp.position.positionPk " +
+            "from ProjectPosition pp " +
+            "where pp.projectProfile.projectProfilePk = :profilePk")
+    List<Long> findPositionPksByProfilePk(@Param("profilePk") Long profilePk);
 }

@@ -88,4 +88,8 @@ public class S3Service {
         amazonS3.deleteObject(new DeleteObjectRequest(bucket, "images/"+fileName));
 //        System.out.println(bucket);
     }
+    public void deleteImageByUrl(String url) {
+        String key = url.substring(url.indexOf("images/"));
+        amazonS3.deleteObject(bucket, key);
+    }
 }

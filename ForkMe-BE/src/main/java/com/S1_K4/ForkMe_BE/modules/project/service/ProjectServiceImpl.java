@@ -13,6 +13,7 @@ import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
 import com.S1_K4.ForkMe_BE.modules.s3.Entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.Repository.S3Repository;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
@@ -84,6 +85,8 @@ public class ProjectServiceImpl implements ProjectService{
         List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profile.getProjectProfilePk());
         List<TechStackResponseDTO> teckStacks = projectTechStackRepository.findTechStacksByProfilePk(profile.getProjectProfilePk());
 
+        List<ProjectImageDTO> images = s3Repository.findAllImagesByProfilePk(profile.getProjectProfilePk());
+
         return ProjectDetailResponseDTO.builder()
                 .projectPk(project.getProjectPk())
                 .projectProfilePk(profile.getProjectProfilePk())
@@ -102,6 +105,7 @@ public class ProjectServiceImpl implements ProjectService{
                 .expectedMembers(profile.getExpectedMembers())              //예상 모집인원
                 .comments(commentDTOList)
                 .likeCount(likeCount)
+                .images(images)
                 .build();
     }
 
@@ -283,17 +287,11 @@ public class ProjectServiceImpl implements ProjectService{
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
         ProjectProfile profile = project.getProjectProfile();
+        Long profilePk = profile.getProjectProfilePk();
 
-        // 연관된 기술 스택 및 포지션 pk 추출
-        List<Long> techPks = projectTechStackRepository.findByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk())
-                .stream()
-                .map(pt -> pt.getTechStack().getTechPk())
-                .toList();
-
-        List<Long> positionPks = projectPositionRepository.findByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk())
-                .stream()
-                .map(pp -> pp.getPosition().getPositionPk())
-                .toList();
+        // 연관된 기술 스택 및 포지션 pk 저장
+        List<Long> techPks = projectTechStackRepository.findTechPksByProfilePk(profilePk);
+        List<Long> positionPks = projectPositionRepository.findPositionPksByProfilePk(profilePk);
 
         return ProjectUpdateFormDTO.builder()
                 .projectPk(projectPk)
@@ -318,70 +316,105 @@ public class ProjectServiceImpl implements ProjectService{
      */
     @Override
     @Transactional
-    public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto) {
-        //1. 프로젝트 + 프로필 조회
+    public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages) {
+        //프로젝트 + 프로필 조회
         Project project = projectRepository.findByIdWithProfile(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
         ProjectProfile projectProfile = project.getProjectProfile();
 
-        //2. 프로젝트, 프로젝트 프로필 update(dirty checking) -> 프로젝트명은 프로젝트 프로필명과 동일.
+        //프로젝트, 프로젝트 프로필 update(dirty checking) -> 프로젝트명은 프로젝트 프로필명과 동일.
         project.updateIfChanged(dto);
         projectProfile.updateIfChanged(dto);
 
-        /*. 기술스택 변경 감지 + 변경된부분이 있으면 삭제 후 재삽입
+        /*
+        * 이미지 수정 로직
+        * */
+        //현재 DB에 저장된 이미지를 List형태로 existingImages에 저장
+        List<S3Image> existingImages = s3Repository.findByProjectProfile(projectProfile);
+
+        //DTO에서 넘어온 유지할 이미지 PK 목록을 SET형식으로 저장
+        Set<Long> remainImageIds = dto.getImages() == null ?
+                Collections.emptySet() :
+                dto.getImages().stream()
+                        .map(ProjectImageDTO::getS3ImagePk)
+                        .collect(Collectors.toSet());
+
+        //삭제 대상 이미지 목록
+        List<S3Image> imagesToDelete = existingImages.stream()
+                .filter(img -> !remainImageIds.contains(img.getS3ImagePk()))
+                .toList();
+
+        //Hard Delete : S3 -> DB 삭제
+        for (S3Image image : imagesToDelete) {
+            //s3에서 삭제
+            s3Service.deleteImageByUrl(image.getUrl());
+
+            //db에서 삭제
+            s3Repository.delete(image);
+        }
+
+        //새 이미지 업로드 및 저장
+        if (newImages != null && !newImages.isEmpty()) {
+            List<String> uploadedUrls = s3Service.uploadFile(newImages, "images");
+            for (String url : uploadedUrls) {
+                s3Repository.save(S3Image.builder().url(url).projectProfile(projectProfile).build());
+            }
+        }
+
+        /*기술스택 변경 감지 + 변경된부분이 있으면 삭제 후 재삽입
         */
         //현재 저장된 기술스택들을 DB에서 조회
-        List<ProjectTechStack> currentStacks = projectTechStackRepository
-                .findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
+        List<Long> currentTechPks = projectTechStackRepository.findTechPksByProfilePk(projectProfile.getProjectProfilePk());
+        List<Long> currentPositionPks = projectPositionRepository.findPositionPksByProfilePk(projectProfile.getProjectProfilePk());
 
-        //위에서 가져온 리스트에서 각 기술스택의 pk값만 뽑아서 Set<Long>으로 변환
-        //set : 중복 제거 / 순서 무시 / 비교 연산 쉬움
-        Set<Long> currentTechPks = currentStacks.stream()
-                .map(ts -> ts.getTechStack().getTechPk())
-                .collect(Collectors.toSet());
+        boolean techChanged = !new HashSet<>(dto.getTechPks()).equals(new HashSet<>(currentTechPks));
+        boolean positionChanged = !new HashSet<>(dto.getPositionPks()).equals(new HashSet<>(currentPositionPks));
 
-        //사용자가 수정폼에서 보내온 기술스택 pk리스트(dto.getTeckPks)와 비교해서
-        //현재 db에 저장된 기술스택 pk리스트(currentTechPks)를 비교함 -> 다르면 true(기술스택이 변경된 경우 if문 실행)
-        if (!new HashSet<>(dto.getTechPks()).equals(currentTechPks)) {
-
-            //기존에 저장된 기술스택 전부 삭제
+        if (techChanged) {
             projectTechStackRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
-
-            //사용자가 보낸 기술스택 pk리스트(dto.getTechPks())를 기반으로 새로 저장할 projectTechStack 객체 리스트 생성
-            List<ProjectTechStack> newStacks = dto.getTechPks().stream()
+            List<ProjectTechStack> toSave = dto.getTechPks().stream()
                     .map(pk -> ProjectTechStack.builder()
                             .projectProfile(projectProfile)
                             .techStack(stackRepository.getReferenceById(pk))
                             .build())
                     .toList();
-
-            //위에서 만든 projectTechStack 객체들을 한번에 저장
-            projectTechStackRepository.saveAll(newStacks);
+            projectTechStackRepository.saveAll(toSave);
+            currentTechPks = dto.getTechPks(); // ✅ 응답용으로 갱신
         }
 
-        // 4. 포지션 변경 감지 + 삭제 후 재삽입
-        List<ProjectPosition> currentPositions = projectPositionRepository
-                .findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
-        Set<Long> currentPositionPks = currentPositions.stream()
-                .map(p -> p.getPosition().getPositionPk())
-                .collect(Collectors.toSet());
-
-        if (!new HashSet<>(dto.getPositionPks()).equals(currentPositionPks)) {
+        if (positionChanged) {
             projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
-
-            List<ProjectPosition> newPositions = dto.getPositionPks().stream()
+            List<ProjectPosition> toSave = dto.getPositionPks().stream()
                     .map(pk -> ProjectPosition.builder()
                             .projectProfile(projectProfile)
                             .position(positionRepository.getReferenceById(pk))
                             .build())
                     .toList();
-
-            projectPositionRepository.saveAll(newPositions);
+            projectPositionRepository.saveAll(toSave);
+            currentPositionPks = dto.getPositionPks(); // ✅ 응답용으로 갱신
         }
 
-        //controller 반환용 기술스택, 포지션 재조회
-        List<ProjectTechStack> techStacks = projectTechStackRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
-        List<ProjectPosition>positions = projectPositionRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
-        return ProjectResponseDTO.fromEntity(project,techStacks,positions);
+        // 4) 응답: 불필요한 재조회 제거
+        //    - fromEntity가 엔티티 리스트를 요구한다면 오버로드를 만들어 PK 리스트/개수만으로 만들거나,
+        //      최소한 한 번만 조회하도록 변경.
+        List<ProjectTechStack> techStacks =
+                techChanged ? projectTechStackRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk())
+                        : currentTechPks.stream()
+                        .map(pk -> ProjectTechStack.builder()
+                                .projectProfile(projectProfile)
+                                .techStack(stackRepository.getReferenceById(pk))
+                                .build())
+                        .toList();
+
+        List<ProjectPosition> positions =
+                positionChanged ? projectPositionRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk())
+                        : currentPositionPks.stream()
+                        .map(pk -> ProjectPosition.builder()
+                                .projectProfile(projectProfile)
+                                .position(positionRepository.getReferenceById(pk))
+                                .build())
+                        .toList();
+
+        return ProjectResponseDTO.fromEntity(project, techStacks, positions);
     }
 }

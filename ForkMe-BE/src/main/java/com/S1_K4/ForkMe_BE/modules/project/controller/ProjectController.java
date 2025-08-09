@@ -90,11 +90,15 @@ public class ProjectController {
     /*
      * 프로젝트 수정
      */
-    @PostMapping("/{projectPk}")
+    @PutMapping(
+            value ="/{projectPk}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
+    )
     public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
             @PathVariable Long projectPk,
-            @RequestBody ProjectUpdateFormDTO dto){
-        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto);
+            @RequestPart ProjectUpdateFormDTO dto,
+            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages){
+        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages);
         return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
 
     }

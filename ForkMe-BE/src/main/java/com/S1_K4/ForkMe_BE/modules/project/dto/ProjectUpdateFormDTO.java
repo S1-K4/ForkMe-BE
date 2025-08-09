@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,4 +41,6 @@ public class ProjectUpdateFormDTO {
 
     private List<Long> techPks;            // 선택한 기술스택 ID들
     private List<Long> positionPks;        // 선택한 모집분야 ID들
+
+    private List<ProjectImageDTO> images;
 }

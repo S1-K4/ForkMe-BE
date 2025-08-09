@@ -53,5 +53,5 @@ public interface ProjectService {
      * 프로젝트 수정
      */
     @Transactional
-    ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto);
+    ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages);
 }
