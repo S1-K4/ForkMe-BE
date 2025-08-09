@@ -1,12 +1,18 @@
 package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author : 선순주
@@ -47,6 +53,19 @@ public class Project extends BaseTime {
     
     @Column(name="project_end_date", nullable = false)
     private LocalDate projectEndDate;
-    
-    
+
+    //프로젝트 수정시 사용하는 메서드
+    public void updateIfChanged(ProjectUpdateFormDTO dto) {
+        if (!Objects.equals(this.projectTitle, dto.getProjectTitle())) {
+            this.projectTitle = dto.getProjectProfileTitle();
+        }
+        if (!Objects.equals(this.projectStartDate, dto.getProjectStartDate())) {
+            this.projectStartDate = dto.getProjectStartDate();
+        }
+        if (!Objects.equals(this.projectEndDate, dto.getProjectEndDate())) {
+            this.projectEndDate = dto.getProjectEndDate();
+        }
+    }
+
+
 }

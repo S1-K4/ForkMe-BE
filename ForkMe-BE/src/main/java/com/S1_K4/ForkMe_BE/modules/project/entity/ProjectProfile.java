@@ -2,14 +2,15 @@ package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.s3.Entity.S3Image;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author : 선순주
@@ -59,4 +60,31 @@ public class ProjectProfile extends BaseTime {
 
     @OneToMany(mappedBy = "projectProfile", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    //프로젝트 수정시 사용하는 메서드
+    public void updateIfChanged(ProjectUpdateFormDTO dto) {
+        if (!Objects.equals(this.projectProfileTitle, dto.getProjectProfileTitle())) {
+            this.projectProfileTitle = dto.getProjectProfileTitle();
+        }
+
+        if (!Objects.equals(this.projectProfileContent, dto.getProjectProfileContent())) {
+            this.projectProfileContent = dto.getProjectProfileContent();
+        }
+
+        if (!Objects.equals(this.progressType, dto.getProgressType())) {
+            this.progressType = dto.getProgressType();
+        }
+
+        if (this.expectedMembers != dto.getExpectedMembers()) {
+            this.expectedMembers = dto.getExpectedMembers();
+        }
+
+        if (!Objects.equals(this.recruitmentStartDate, dto.getRecruitmentStartDate())) {
+            this.recruitmentStartDate = dto.getRecruitmentStartDate();
+        }
+
+        if (!Objects.equals(this.recruitmentEndDate, dto.getRecruitmentEndDate())) {
+            this.recruitmentEndDate = dto.getRecruitmentEndDate();
+        }
+    }
 }

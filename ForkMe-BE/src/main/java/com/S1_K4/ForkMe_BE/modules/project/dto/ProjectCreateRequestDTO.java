@@ -60,7 +60,7 @@ public class ProjectCreateRequestDTO {
     public Project toProjectEntity(User user) {
         return Project.builder()
                 .user(user)
-                .projectTitle(this.projectTitle)
+                .projectTitle(this.projectProfileTitle)
                 .projectStartDate(this.projectStartDate)
                 .projectEndDate(this.projectEndDate)
                 .projectStatus(ProjectStatus.PLANNING)

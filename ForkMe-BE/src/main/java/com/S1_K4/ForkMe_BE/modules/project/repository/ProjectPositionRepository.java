@@ -3,6 +3,7 @@ package com.S1_K4.ForkMe_BE.modules.project.repository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,7 +26,9 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
             "WHERE p.projectProfile.projectProfilePk = :profilePk")
     List<PositionResponseDTO> findPositionsByProfilePk(@Param("profilePk") Long profilePk);
 
+    //포지션 삭제
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
-    List<ProjectPosition> findByProjectProfile(ProjectProfile projectProfile);
+    //pk 포지션 조회용
+    List<ProjectPosition> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 }

@@ -48,4 +48,10 @@ public interface ProjectService {
      * */
     @Transactional(readOnly = true)
     ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk);
+
+    /*
+     * 프로젝트 수정
+     */
+    @Transactional
+    ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto);
 }

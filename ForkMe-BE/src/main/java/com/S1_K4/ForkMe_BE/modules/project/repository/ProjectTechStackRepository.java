@@ -26,6 +26,9 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
             "WHERE t.projectProfile.projectProfilePk = :profilePk")
     List<TechStackResponseDTO> findTechStacksByProfilePk(@Param("profilePk") Long profilePk);
 
+    //기술스택삭제
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
-    List<ProjectTechStack> findByProjectProfile(ProjectProfile projectProfile);
+    
+    //pk기준 기술스택 조회
+    List<ProjectTechStack> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 }

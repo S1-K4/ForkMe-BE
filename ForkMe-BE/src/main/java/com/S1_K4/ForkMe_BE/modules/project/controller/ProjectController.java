@@ -86,4 +86,16 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<ProjectUpdateFormDTO>> getProjectUpdateForm(@PathVariable Long projectPk) {
         return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk), "프로젝트 수정폼 호출 성공"));
     }
+    
+    /*
+     * 프로젝트 수정
+     */
+    @PostMapping("/{projectPk}")
+    public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
+            @PathVariable Long projectPk,
+            @RequestBody ProjectUpdateFormDTO dto){
+        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto);
+        return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
+
+    }
 }
