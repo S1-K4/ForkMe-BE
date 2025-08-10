@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>GitHub Webhook Tester</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 24px auto; }
+        label { font-weight: 600; display: block; margin-top: 12px; }
+        textarea, input { width: 100%; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        button { margin-top: 16px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .small { font-size: 12px; color: #555; }
+        .out { white-space: pre-wrap; background: #f6f8fa; padding: 12px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+<h1>GitHub Webhook Tester</h1>
+
+<label>Webhook URL (예: https://your.domain/webhooks/github)</label>
+<input id="url" placeholder="https://your.domain/webhooks/github" />
+
+<div class="row">
+    <div>
+        <label>Secret (테스트용)</label>
+        <input id="secret" class="mono" placeholder="로컬_테스트용_시크릿" />
+    </div>
+    <div>
+        <label>X-GitHub-Event</label>
+        <input id="event" value="push" />
+    </div>
+</div>
+
+<label>Payload JSON</label>
+<textarea id="payload" rows="10">{
+  "zen": "Approachable is better than simple.",
+  "hook_id": 123456789,
+  "repository": { "full_name": "S1-K4/ForkMe-BE" }
+}</textarea>
+
+<button id="send">Send Signed Request</button>
+
+<p class="small">서명은 <span class="mono">X-Hub-Signature-256</span> 헤더로 전송됩니다. 브라우저에서 secret을 쓰므로 “로컬 테스트” 용도로만 사용하세요.</p>
+
+<h3>Request Headers (preview)</h3>
+<div id="hdr" class="out"></div>
+
+<h3>Response</h3>
+<div id="res" class="out"></div>
+
+<script>
+    async function hmacSHA256Hex(keyUtf8, dataBytes) {
+      const enc = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(keyUtf8),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      const sig = await crypto.subtle.sign("HMAC", key, dataBytes);
+      const b = new Uint8Array(sig);
+      return [...b].map(v => v.toString(16).padStart(2, "0")).join("");
+    }
+    function uuidv4() {
+      // 간단한 delivery ID 생성(실제 GitHub는 UUID 사용)
+      return crypto.randomUUID ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+                return v.toString(16);
+              });
+    }
+
+    document.getElementById("send").addEventListener("click", async () => {
+      const url = document.getElementById("url").value.trim();
+      const secret = document.getElementById("secret").value;
+      const event = document.getElementById("event").value || "push";
+      const payloadText = document.getElementById("payload").value;
+
+      if (!url || !secret) {
+        alert("URL과 Secret을 입력하세요.");
+        return;
+      }
+
+      const enc = new TextEncoder();
+      const bodyBytes = enc.encode(payloadText);
+      const hex = await hmacSHA256Hex(secret, bodyBytes);
+      const signature = "sha256=" + hex;
+      const delivery = uuidv4();
+
+      const headers = {
+        "Content-Type": "application/json",
+        "X-GitHub-Event": event,
+        "X-GitHub-Delivery": delivery,
+        "X-Hub-Signature-256": signature,
+        "User-Agent": "GitHub-Hookshot/test"
+      };
+
+      document.getElementById("hdr").textContent =
+        Object.entries(headers).map(([k,v]) => k + ": " + v).join("\n");
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers,
+          body: payloadText
+        });
+        const text = await res.text();
+        document.getElementById("res").textContent =
+          `HTTP ${res.status}\n\n` + text;
+      } catch (e) {
+        document.getElementById("res").textContent = "Request failed: " + e;
+      }
+    });
+</script>
+</body>
+</html>
