@@ -22,12 +22,13 @@ import java.util.List;
 @Repository
 public interface BoardImageRepository extends JpaRepository<S3Image, Long> {
 
+
+
     @Modifying
     @Transactional
     @Query("DELETE FROM S3Image b WHERE b.url IN :urls")
     void deleteByUrls(@Param("urls") List<String> urls);
 
-    List<S3Image> findByBoardInProjectAndDeletedYn(BoardInProject board, String deletedYn);
 
     List<S3Image> findByBoardInProject(BoardInProject board);
 

@@ -57,7 +57,7 @@
         <input type="number" id="projectInput" placeholder="예: 1" />
         <button onclick="loadProjectBoards()">불러오기</button>
     </div>
-    <a id="createBtn" href="/board-create.html" class="create-button">+ 새 글 작성</a>
+    <a id="createBtn" href="/boardIn/board-create.html" class="create-button">+ 새 글 작성</a>
 </div>
 
 <table id="boardTable">
@@ -101,10 +101,10 @@
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${index + 1}</td>
-              <td><a href="/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">${board.title}</a></td>
+              <td><a href="/boardIn/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">${board.title}</a></td>
               <td>${board.content}</td>
               <td>${new Date(board.createdAt).toLocaleString()}</td>
-              <td><a href="/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">상세 보기</a></td>
+              <td><a href="/boardIn/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">상세 보기</a></td>
             `;
             tbody.appendChild(tr);
           });

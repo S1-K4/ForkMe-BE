@@ -28,7 +28,7 @@ public class CommentResponse {
         return CommentResponse.builder()
                 .commentInProjectPk(comment.getCommentInProjectPk())
                 .comment(comment.getComment())
-                .name(comment.getUser().getName())  // 필요에 따라 nickname 등으로 변경 가능
+                .name(comment.getUser().getNickname())  // 필요에 따라 nickname 등으로 변경 가능
                 .createdAt(comment.getCreatedAt())
                 .build();
     }

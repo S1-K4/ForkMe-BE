@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.service;
 
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
@@ -8,6 +9,8 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileReposito
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardImageRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
@@ -45,6 +48,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final BoardFileRepository boardFileRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectProfileRepository projectProfileRepository;
 
     // 게시판 생성
     @Transactional
@@ -55,29 +59,25 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다. projectPk=" + projectPk));
 
+        // ❗ projectProfile이 null인지 먼저 확인
+        ProjectProfile projectProfile = project.getProjectProfile();
+
+
         String pureContent = removeImageMarkdown(request.getContent());
 
-        BoardInProject board = BoardInProject.builder()
-                .user(user)
-                .project(project)
-                .title(request.getTitle())
-                .content(pureContent)
-                .build();
-
+        BoardInProject board = BoardInProject.create(request.getTitle(), pureContent, project, user);
         BoardInProject savedBoard = boardInProjectRepository.save(board);
+        System.out.println("projectProfile : "+projectProfile);
 
-
-        System.out.println("request : "+ request.getImageUrls());
-        // 이미지 URL 저장
+        // 이미지 URL 저장 (BoardInProject 관련 이미지)
         if (request.getImageUrls() != null) {
-
             for (String url : request.getImageUrls()) {
-                log.info("이미지 URL 저장: {}", url);
-                S3Image boardImage = S3Image.create(url,savedBoard);
-                boardImageRepository.save(boardImage);
+                S3Image image = projectProfile != null
+                        ? S3Image.create(url, projectProfile, board)
+                        : S3Image.create(url, null, board);
+                boardImageRepository.save(image);
             }
         } else {
-            System.out.println("request url 없음");
             log.info("이미지 URL 리스트가 비어있음");
         }
 
@@ -92,6 +92,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         return savedBoard;
     }
 
+
     private String removeImageMarkdown(String markdown) {
         if (markdown == null) return null;
         return markdown.replaceAll("!\\[[^\\]]*\\]\\([^\\)]*\\)", "");
@@ -99,7 +100,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     public List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk) {
-        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYN(projectPk, BaseTime.DeleteYN.N);
+        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYN(projectPk, Yn.N);
 
         return boards.stream()
                 .map(InBoardSimpleResponse::from)
@@ -113,13 +114,13 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다. ID=" + boardInProjectPk));
 
-        List<S3Image> boardImages = boardImageRepository.findByBoardInProjectAndDeletedYn(board, "N");
+        List<S3Image> boardImages = boardImageRepository.findByBoardInProject(board);
         List<String> imageUrls = boardImages.stream()
                 .map(S3Image::getUrl)
                 .collect(Collectors.toList());
 
         // 첨부 파일 가져오기
-        List<S3File> boardFiles = boardFileRepository.findByBoardInProjectAndDeletedYn(board, "N");
+        List<S3File> boardFiles = boardFileRepository.findByBoardInProject(board);
         List<FileInfoResponse> fileInfos = boardFiles.stream()
                 .map(file -> new FileInfoResponse(file.getUrl(), file.getOriginalFileName()))
                 .collect(Collectors.toList());
@@ -128,7 +129,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
                 .boardInProjectPk(board.getBoardInProjectPk())
                 .projectPk(board.getProject().getProjectPk())
                 .userPk(board.getUser().getUserPk())
-                .userNickname(board.getUser().getName())
+                .userNickname(board.getUser().getNickname())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .createdAt(board.getCreatedAt())
@@ -152,6 +153,11 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         User user = userRepository.findById(request.getUserPk())
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+
+        ProjectProfile projectProfile = project.getProjectProfile();
+        if (projectProfile == null) {
+            throw new IllegalStateException("해당 프로젝트에 연결된 ProjectProfile이 없습니다. projectPk=" + projectPk);
+        }
 
         board.setTitle(request.getTitle());
         board.setContent(request.getContent());
@@ -194,31 +200,25 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
                 .map(FileInfoResponse::getFileUrl)
                 .collect(Collectors.toList());
 
-        List<S3Image> newS3Images = new ArrayList<>();
-        for (String url : uploadedImageUrls) {
-            S3Image s3Image = S3Image.builder()
-                    .url(url)
-                    .boardInProject(board)
-                    .project(project)
-                    .build();
-            newS3Images.add(s3Image);
-        }
+        List<S3Image> newS3Images = uploadedImages.stream()
+                .map(fileInfo -> S3Image.create(fileInfo.getFileUrl(), projectProfile, board))
+                .collect(Collectors.toList());
         boardImageRepository.saveAll(newS3Images);
 
         // 새 파일 업로드
-        List<FileInfoResponse> uploadedFileInfos = List.of();
+        List<FileInfoResponse> uploadedFiles = List.of();
         if (newFiles != null && !newFiles.isEmpty()) {
-            uploadedFileInfos = s3ServiceIn.uploadFile(newFiles, "downloads/" + projectPk);
+            uploadedFiles = s3Service.uploadFileIn(newFiles, "downloads/" + projectPk);
         }
 
         // 업로드된 파일 URL만 추출
-        List<String> uploadedFileUrls = uploadedFileInfos.stream()
+        List<String> uploadedFileUrls = uploadedFiles.stream()
                 .map(FileInfoResponse::getFileUrl)
                 .collect(Collectors.toList());
 
         // 새로 업로드된 S3File 엔티티 저장 (파일)
         List<S3File> newS3Files = new ArrayList<>();
-        for (FileInfoResponse fileInfo : uploadedFileInfos) {
+        for (FileInfoResponse fileInfo : uploadedFiles) {
             S3File s3File = S3File.builder()
                     .url(fileInfo.getFileUrl())
                     .originalFileName(fileInfo.getOriginalFileName())  // 추가
@@ -251,7 +251,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         boardFileRepository.deleteAll(files);
 
         // 게시글 소프트 삭제
-        board.setDeletedYN(BaseTime.DeleteYN.Y);  // 또는 Enum 타입이면 맞게 설정
+        board.markDeleted();
         boardInProjectRepository.save(board);
     }
 

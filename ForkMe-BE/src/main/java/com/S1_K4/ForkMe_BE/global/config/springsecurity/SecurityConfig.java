@@ -54,6 +54,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH,  "/api/projects/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/**").authenticated()
 
+                        //boardInPorject (추후 인증 변경)
+                        .requestMatchers(
+                                "/api/on-project/**","/api/comments/**","boardIn/**"
+                        ).permitAll()
+
                         //나머지 인증x Get매핑
                         .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
 

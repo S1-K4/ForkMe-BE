@@ -29,7 +29,7 @@ public class S3Image {
     private String url;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_profile_pk", nullable = false)
+    @JoinColumn(name = "project_profile_pk", nullable = true)
     private ProjectProfile projectProfile;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,11 +37,11 @@ public class S3Image {
     private BoardInProject boardInProject;
 
     // 정적 팩토리 메서드 추가
-    public static S3Image create(String url, BoardInProject boardInProject) {
+    public static S3Image create(String url, ProjectProfile projectProfile, BoardInProject boardInProject) {
         return S3Image.builder()
                 .url(url)
+                .projectProfile(projectProfile)
                 .boardInProject(boardInProject)
-                .projectProfile(boardInProject.getProject().getProjectProfile()) // 이게 가능하다면
                 .build();
     }
 

@@ -1,11 +1,9 @@
 package com.S1_K4.ForkMe_BE.global.common.s3;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.FileInfoResponse;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -65,7 +63,7 @@ public class S3Service {
         List<FileInfoResponse> fileInfos = new ArrayList<>();
 
         for (MultipartFile file : multipartFiles) {
-            String fileName = dirName + "/" + createFileName(file.getOriginalFilename(), file.getContentType());
+            String fileName = dirName + "/" + createFileName(file.getOriginalFilename(), dirName);
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(file.getSize());
             metadata.setContentType(file.getContentType());
@@ -91,10 +89,9 @@ public class S3Service {
 //        return UUID.randomUUID().toString().concat(getFileExtension(fileName));
 //    }
 
-    public String createFileName(String fileName, String contentType) {
+    public String createFileName(String fileName, String dirName) {
         String extension = getFileExtension(fileName);
         String uuid = UUID.randomUUID().toString();
-        String folder = getFolderNameByContentType(contentType);
 
         return dirName + "/" + uuid + extension;
     }
