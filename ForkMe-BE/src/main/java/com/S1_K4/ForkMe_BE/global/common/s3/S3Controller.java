@@ -22,10 +22,10 @@ public class S3Controller {
     private final S3Service s3Service;
 
     //테스트용 컨트롤러(insert)
-    @PostMapping
-    public ResponseEntity<List<String>> uploadFile(@RequestParam("files") List<MultipartFile> multipartFiles){
-        return ResponseEntity.ok(s3Service.uploadFile(multipartFiles));
-    }
+//    @PostMapping
+//    public ResponseEntity<List<String>> uploadFile(@RequestParam("files") List<MultipartFile> multipartFiles){
+//        return ResponseEntity.ok(s3Service.uploadFile(multipartFiles));
+//    }
 
     //이미지 delete
     @DeleteMapping

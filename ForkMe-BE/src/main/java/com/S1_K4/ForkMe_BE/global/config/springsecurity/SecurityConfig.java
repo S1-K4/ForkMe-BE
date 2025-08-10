@@ -6,6 +6,8 @@ import com.S1_K4.ForkMe_BE.modules.auth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
@@ -34,8 +37,26 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login/*",  "/index.html").permitAll()
-                        .requestMatchers("/api/auth/reissue", "/api/auth/logout").permitAll()
+                        // ====== Public ======
+                        .requestMatchers(
+                                "/", "/index.html","/login/**","/api/auth/**"
+                        ).permitAll()
+
+                        //인증 필요한 GET 매핑
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/projects/form-info",
+                                "/api/projects/*/update-form"
+                        ).authenticated()
+
+                        //인증 필요
+                        .requestMatchers(HttpMethod.POST,   "/api/projects/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT,    "/api/projects/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH,  "/api/projects/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/projects/**").authenticated()
+
+                        //나머지 인증x Get매핑
+                        .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
