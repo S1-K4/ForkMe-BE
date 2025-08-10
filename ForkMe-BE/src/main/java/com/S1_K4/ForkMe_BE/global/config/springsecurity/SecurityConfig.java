@@ -31,7 +31,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/github/webhooks"))
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
@@ -55,7 +55,8 @@ public class SecurityConfig {
 
                         //boardInPorject (추후 인증 변경)
                         .requestMatchers(
-                                "/api/on-project/**","/api/comments/**","boardIn/**"
+                                "/api/on-project/**","/api/comments/**","/boardIn/**","/api/schedules/**",
+                                "/api/schedules"
                         ).permitAll()
 
                         //나머지 인증x Get매핑

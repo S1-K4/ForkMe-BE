@@ -1,3 +1,4 @@
+
 package com.S1_K4.ForkMe_BE.modules.auth;
 
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
@@ -25,6 +26,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import java.io.IOException;
 import java.util.Map;
 
+
 /**
  * @author : 김종국
  * @packageName : com.S1_K4.ForkMe_BE.modules.auth
@@ -33,11 +35,12 @@ import java.util.Map;
  * @description : 소셜 로그인 성공 시, JWT를 생성하고 클라이언트에게 전달하는 핸들러
  */
 
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-
+/*
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthRepository authRepository;
 
@@ -125,5 +128,5 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }
+    }*/
 }

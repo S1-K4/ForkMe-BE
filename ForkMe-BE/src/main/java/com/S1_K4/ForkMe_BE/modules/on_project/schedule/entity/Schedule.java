@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : 김송이
@@ -47,4 +49,26 @@ public class Schedule {
 
     @Column(name = "create_at", nullable = false)
     private LocalDateTime createdAt;
+
+
+    @Builder.Default // 반드시 추가!
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ScheduleMention> scheduleMentions = new ArrayList<>();
+
+    public static Schedule create(String title, LocalDateTime start, LocalDateTime end,
+                                          Project project, User user) {
+        return Schedule.builder()
+                .title(title)
+                .startDate(start)
+                .endDate(end)
+                .createdAt(LocalDateTime.now())
+                .project(project)
+                .user(user)
+                .build();
+    }
+
+    public void addScheduleMention(ScheduleMention mention) {
+        this.scheduleMentions.add(mention);
+        mention.setSchedule(this); // 양방향 연결
+    }
 }
