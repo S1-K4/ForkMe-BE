@@ -52,9 +52,9 @@ public class GithubWebhookClient {
                 "name","web","active",true, "events", events,
                 "config", Map.of(
                         "url", callbackUrl,
-                        "contentType", "json",
+                        "content_type", "json",
                         "secret", useSecret,
-                        "insecure_ssl", (insecureSsl ? "1" : (allowInsecureSslDefault ? "1" : "0"))
+                        "insecure_ssl", insecureSsl ? "1" : "0"
                 )
         );
 
@@ -76,9 +76,9 @@ public class GithubWebhookClient {
                 "name","web","active",true, "events", events,
                 "config", Map.of(
                         "url", callbackUrl,
-                        "contentType", "json",
+                        "content_type", "json",
                         "secret", useSecret,
-                        "insecure_ssl", (insecureSsl ? "1" : (allowInsecureSslDefault ? "1" : "0"))
+                        "insecure_ssl", insecureSsl ? "1" : "0"
                 )
         );
 

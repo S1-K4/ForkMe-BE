@@ -10,15 +10,18 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author : 김종국
@@ -39,6 +42,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
+
+        String regId = userRequest.getClientRegistration().getRegistrationId();
+        if ("github-hooks".equals(regId)) {
+            // 웹훅 step-up: 토큰만 필요 → DB 저장/이메일 조회 생략
+            return new DefaultOAuth2User(
+                    Set.of(new SimpleGrantedAuthority("ROLE_USER")),
+                    attributes,
+                    "id"  // GitHub userinfo의 식별 키
+            );
+        }
 
         // git에서 받은 사용자 정보 추출
         Long gitId = ((Number) attributes.get("id")).longValue();
