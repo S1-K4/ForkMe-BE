@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.service.BoardInProjectService;
+import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,8 +31,6 @@ import java.util.stream.Collectors;
 public class BoardInProjectController {
 
     private final BoardInProjectService boardInProjectService;
-    private final UserService userService;
-    private final ProjectService projectService;
     private final S3Service s3Service;
 
 
@@ -55,14 +54,14 @@ public class BoardInProjectController {
 
         // S3에 이미지 업로드
         List<String> uploadedImageUrls = (images != null && !images.isEmpty())
-                ? s3Service.uploadFile(images, "images").stream()
+                ? s3Service.uploadFileIn(images, "images").stream()
                 .map(FileInfoResponse::getFileUrl)
                 .collect(Collectors.toList())
                 : List.of();
 
-        //S3에 파일업로드 ( 이미지명 저장 버전)
+        //S3에 파일업로드
         List<FileInfoResponse> uploadedFileInfos = (files != null && !files.isEmpty())
-                ? s3Service.uploadFile(files, "downloads/" + projectPk)
+                ? s3Service.uploadFileIn(files, "downloads/" + projectPk)
                 : List.of();
 
         // 기존 + 새로 업로드한 이미지 URL 합치기

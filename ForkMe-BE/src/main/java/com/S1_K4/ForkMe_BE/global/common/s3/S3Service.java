@@ -1,9 +1,11 @@
 package com.S1_K4.ForkMe_BE.global.common.s3;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.FileInfoResponse;
-import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -36,35 +38,11 @@ public class S3Service {
 
     private final AmazonS3 amazonS3;
 
-//    public List<String> uploadFile(List<MultipartFile> multipartFiles){
-//        List<String> fileNameList = new ArrayList<>();
-//
-//        // forEach 구문을 통해 multipartFiles 리스트로 넘어온 파일들을 순차적으로 fileNameList 에 추가
-//        multipartFiles.forEach(file -> {
-//            String fileName = createFileName(file.getOriginalFilename());
-//            ObjectMetadata objectMetadata = new ObjectMetadata();
-//            objectMetadata.setContentLength(file.getSize());
-//            objectMetadata.setContentType(file.getContentType());
-//
-//            try(InputStream inputStream = file.getInputStream()){
-//                amazonS3.putObject(new PutObjectRequest(bucket, fileName, inputStream, objectMetadata)
-//                        .withCannedAcl(CannedAccessControlList.PublicRead));
-//            } catch (IOException e){
-//                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.");
-//            }
-//
-//            String fileUrl = amazonS3.getUrl(bucket,fileName).toString();
-//            fileNameList.add(fileUrl);
-//
-//        });
-//
-//        return fileNameList;
-//    }
-        public List<String> uploadFile(List<MultipartFile> multipartFiles) {
+        public List<String> uploadFile(List<MultipartFile> multipartFiles, String dirName) {
             List<String> fileNameList = new ArrayList<>();
 
             multipartFiles.forEach(file -> {
-                String fileName = createFileName(file.getOriginalFilename(), file.getContentType());
+                String fileName = createFileName(file.getOriginalFilename(), dirName);
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(file.getSize());
                 metadata.setContentType(file.getContentType());
@@ -82,6 +60,7 @@ public class S3Service {
             return fileNameList;
         }
 
+        // 워크스페이스 내 파일 저장
     public List<FileInfoResponse> uploadFileIn(List<MultipartFile> multipartFiles, String dirName) {
         List<FileInfoResponse> fileInfos = new ArrayList<>();
 
@@ -117,7 +96,7 @@ public class S3Service {
         String uuid = UUID.randomUUID().toString();
         String folder = getFolderNameByContentType(contentType);
 
-        return folder + "/" + uuid + extension;
+        return dirName + "/" + uuid + extension;
     }
 
     //ContentType 판별
@@ -180,5 +159,9 @@ public class S3Service {
         URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
 
         return url.toString();
+    }
+    public void deleteImageByUrl(String url) {
+        String key = url.substring(url.indexOf("images/"));
+        amazonS3.deleteObject(bucket, key);
     }
 }

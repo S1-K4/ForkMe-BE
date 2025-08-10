@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.s3.entity;
+package com.S1_K4.ForkMe_BE.modules.s3.Entity;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
@@ -35,14 +35,4 @@ public class S3Image {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_in_project_pk")
     private BoardInProject boardInProject;
-
-    // 정적 팩토리 메서드 추가
-    public static S3Image create(String url, BoardInProject boardInProject) {
-        return S3Image.builder()
-                .url(url)
-                .boardInProject(boardInProject)
-                .projectProfile(boardInProject.getProject().getProjectProfile()) // 이게 가능하다면
-                .build();
-    }
-
 }

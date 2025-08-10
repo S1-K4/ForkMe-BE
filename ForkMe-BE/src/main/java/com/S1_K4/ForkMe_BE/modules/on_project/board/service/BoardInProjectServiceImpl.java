@@ -8,6 +8,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileReposito
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardImageRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
@@ -38,8 +39,6 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
     private static final int DEFAULT_IMAGE_SLOT_COUNT = 5;
 
-    private final UserService userService;
-    private final ProjectService projectService;
     private final BoardInProjectRepository boardInProjectRepository;
     private final S3Service s3Service;
     private final BoardImageRepository boardImageRepository;
