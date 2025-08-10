@@ -13,7 +13,7 @@ import java.util.List;
  * @packageName : com.S1_K4.ForkMe_BE.reference.position.repository
  * @fileName : PositionRepsitory
  * @date : 2025-08-07
- * @description : 모집분야 Repository
+ * @description : 모집분야 repository
  */
 @Repository
 public interface PositionRepsitory extends JpaRepository<Position, Long> {

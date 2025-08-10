@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
  * @packageName : com.S1_K4.ForkMe_BE.modules.like.repository
  * @fileName : LikeRepository
  * @date : 2025-08-07
- * @description : 좋아요 Repository
+ * @description : 좋아요 repository
  */
 @Repository
 public interface LikeRepository extends JpaRepository<Likes, Long> {
