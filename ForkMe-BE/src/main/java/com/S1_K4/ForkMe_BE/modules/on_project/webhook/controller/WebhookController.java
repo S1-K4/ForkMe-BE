@@ -1,3 +1,4 @@
+
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook.controller;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
@@ -23,6 +24,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
 
+
 /*
  * @author : 김관중
  * @packageName : com.S1_K4.ForkMe_BE.modules.on_project.webhook.controller
@@ -31,12 +33,13 @@ import java.util.List;
  * @description : 깃허브 웹훅 컨트롤러입니다.
  */
 
+
 @RestController
 @RequestMapping("/api/github")
 @RequiredArgsConstructor
 public class WebhookController {
 
-    @Value("${github.webhook.secret}")
+/*    @Value("${github.webhook.secret}")
     private String secret;
 
     private final WebhookService webhookService;
@@ -115,6 +118,7 @@ public class WebhookController {
         StringBuilder sb = new StringBuilder(raw.length*2);
         for (byte b : raw) sb.append(String.format("%02x", b));
         return sb.toString();
-    }
+    }*/
 
 }
+

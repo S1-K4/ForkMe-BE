@@ -1,4 +1,5 @@
 
+
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook.client;
 
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 
+
 /**
  * @author : 김관중
  * @packageName : com.S1_K4.ForkMe_BE.modules.on_project.webhook.client
@@ -21,10 +23,11 @@ import java.util.Map;
  */
 
 
+
 @Component
 @RequiredArgsConstructor
 public class GithubWebhookClient {
-
+/*
     @Value("${github.api.base}")
     private String apiBase;
     @Value("${github.webhook.callback-url}")
@@ -92,6 +95,7 @@ public class GithubWebhookClient {
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
                 .block();
-    }
+    }*/
 }
+
 
