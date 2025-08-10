@@ -16,7 +16,7 @@ import java.util.List;
  * @packageName : com.S1_K4.ForkMe_BE.modules.on_project.comment.entity
  * @fileName : Comment
  * @date : 2025-08-07
- * @description : comment Entity
+ * @description : comment entity
  */
 
 @Entity

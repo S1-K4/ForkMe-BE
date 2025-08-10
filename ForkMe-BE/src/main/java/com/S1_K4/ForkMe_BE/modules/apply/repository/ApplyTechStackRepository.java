@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.apply.Repository;
+package com.S1_K4.ForkMe_BE.modules.apply.repository;
 
 import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import org.springframework.data.jpa.repository.JpaRepository;

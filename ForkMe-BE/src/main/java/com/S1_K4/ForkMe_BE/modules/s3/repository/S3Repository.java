@@ -1,7 +1,7 @@
-package com.S1_K4.ForkMe_BE.modules.s3.Repository;
+package com.S1_K4.ForkMe_BE.modules.s3.repository;
 
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
-import com.S1_K4.ForkMe_BE.modules.s3.Entity.S3Image;
+import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * @author : 선순주
- * @packageName : com.S1_K4.ForkMe_BE.modules.s3.Repository
+ * @packageName : com.S1_K4.ForkMe_BE.modules.s3.repository
  * @fileName : S3Repository
  * @date : 2025-08-07
  * @description : S3 레포지토리
