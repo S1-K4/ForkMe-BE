@@ -7,7 +7,7 @@ import lombok.*;
 
 /**
  * @author : 선순주
- * @packageName : com.S1_K4.ForkMe_BE.modules.s3.Entity
+ * @packageName : com.S1_K4.ForkMe_BE.modules.s3.entity
  * @fileName : S3Image
  * @date : 2025-08-07
  * @description : S3Image 엔티티

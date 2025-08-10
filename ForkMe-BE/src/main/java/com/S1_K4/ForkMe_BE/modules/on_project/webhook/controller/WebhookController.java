@@ -1,22 +1,28 @@
 /*
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook.controller;
 
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.dto.PendingHookRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.service.WebhookService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.List;
 
 */
 /**
@@ -28,7 +34,7 @@ import java.security.MessageDigest;
  *//*
 
 @RestController
-@RequestMapping("/api/github/webhooks")
+@RequestMapping("/api/github")
 @RequiredArgsConstructor
 public class WebhookController {
 
@@ -38,7 +44,40 @@ public class WebhookController {
     private final WebhookService webhookService;
     private final ObjectMapper om = new ObjectMapper();
 
-    @PostMapping
+    @GetMapping("/hooks/authorize")
+    public RedirectView authorize(
+            HttpSession session,
+            @RequestParam String mode,                // "repo" | "org"
+            @RequestParam String owner,
+            @RequestParam(required = false) String repo,
+            @RequestParam(required = false, defaultValue = "push") String events,
+            @RequestParam(required = false, defaultValue = "false") boolean insecureSsl,
+            @RequestParam(required = false) String overrideSecret
+    ) {
+        if (!"repo".equals(mode) && !"org".equals(mode)) {
+            throw new IllegalArgumentException("mode must be 'repo' or 'org'");
+        }
+        if ("repo".equals(mode) && !StringUtils.hasText(repo)) {
+            throw new IllegalArgumentException("repo is required when mode=repo");
+        }
+
+        List<String> eventList = "*".equals(events)
+                ? List.of("*")
+                : Arrays.stream(events.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+
+        session.setAttribute(
+                GithubHookSessionKeys.PENDING_HOOK,
+                new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret)
+        );
+
+        // 등록한 registrationId와 정확히 일치해야 함
+        return new RedirectView("/oauth2/authorization/github-hooks?prompt=consent");
+    }
+
+    @PostMapping("/webhooks")
     public ResponseEntity<?> receive(
             @RequestParam(required = false) Long projectPk,
             @RequestHeader(value="X-Hub-Signature-256", required = false)String sig256,

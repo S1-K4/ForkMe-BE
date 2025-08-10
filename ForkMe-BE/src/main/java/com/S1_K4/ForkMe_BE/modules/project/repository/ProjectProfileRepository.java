@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
  * @packageName : com.S1_K4.ForkMe_BE.modules.project.repository
  * @fileName : ProjectProfileRepository
  * @date : 2025-08-07
- * @description : 프로젝트 프로필 Repository
+ * @description : 프로젝트 프로필 repository
  */
 @Repository
 public interface ProjectProfileRepository extends JpaRepository<ProjectProfile, Long> {

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>GitHub Webhook 연결 결과</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.6; padding: 24px; max-width: 720px; margin: 0 auto; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:18px; }
+    .ok { color:#0a7; }
+    .bad { color:#c00; }
+    .row { display:flex; gap:8px; align-items:center; }
+    code { background:#fafafa; border:1px solid #eee; padding:2px 6px; border-radius:6px; }
+    a.btn { display:inline-block; padding:10px 14px; border-radius:10px; border:1px solid #222; text-decoration:none; }
+    .mt { margin-top: 14px;}
+  </style>
+</head>
+<body>
+<h1>결과</h1>
+<div id="panel" class="card"></div>
+<div class="mt">
+  <a class="btn" href="/hook-test.html">← 테스트로 돌아가기</a>
+</div>
+<script>
+  const p = new URLSearchParams(location.search);
+  const ok = p.get('ok');
+  const hookId = p.get('hookId');
+  const error = p.get('error');
+
+  const panel = document.getElementById('panel');
+
+  if (ok === '1') {
+    panel.innerHTML = `
+      <div class="ok"><strong>웹훅 생성 성공!</strong></div>
+      <div class="row">hookId: <code>${hookId || '-'}</code></div>
+      <div>이제 GitHub가 ping → push 등 이벤트를 <code>/api/github/webhook</code>으로 보냅니다.</div>
+    `;
+  } else {
+    panel.innerHTML = `
+      <div class="bad"><strong>웹훅 생성 실패</strong></div>
+      <div>사유: <code>${(error || '알 수 없음')}</code></div>
+      <div class="mt">설정(스코프, 권한, 콜백 URL, 서버 로그)을 확인하세요.</div>
+    `;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <title>GitHub Webhook 연결 테스트</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.5; padding: 24px; max-width: 880px; margin: 0 auto; }
+        h1 { font-size: 24px; margin-bottom: 12px; }
+        fieldset { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        legend { padding: 0 6px; color: #444; }
+        .row { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: center; margin: 8px 0; }
+        input[type="text"] , input[type="number"] { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .help { color:#666; font-size: 12px; }
+        .events { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+        label.chk { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:8px; padding:6px 8px; background:#fafafa; }
+        .actions { display:flex; gap:8px; margin-top: 12px; }
+        button { padding:10px 14px; border-radius:10px; border:1px solid #222; background:#111; color:#fff; cursor:pointer; }
+        button.secondary { background:#fff; color:#111; }
+        .urlbox { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#fafafa; border:1px dashed #ccc; padding:10px; border-radius:8px; margin-top:8px; overflow:auto; }
+        .hidden { display:none; }
+    </style>
+</head>
+<body>
+<h1>GitHub Webhook 연결 테스트</h1>
+<p class="help">버튼 한 번으로 OAuth 권한 동의 → 웹훅 생성까지 확인합니다.</p>
+
+<form id="hookForm" onsubmit="return false;">
+    <fieldset>
+        <legend>대상 선택</legend>
+        <div class="row">
+            <div>모드</div>
+            <div>
+                <label><input type="radio" name="mode" value="repo" checked /> Repo</label>
+                &nbsp;&nbsp;
+                <label><input type="radio" name="mode" value="org" /> Organization</label>
+            </div>
+        </div>
+        <div class="row">
+            <div>Owner</div>
+            <div><input type="text" id="owner" placeholder="예) S1-K4" required /></div>
+        </div>
+        <div class="row" id="repoRow">
+            <div>Repository</div>
+            <div><input type="text" id="repo" placeholder="예) ForkMe-BE" /></div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>이벤트 선택</legend>
+        <div class="row">
+            <div>전체 이벤트</div>
+            <div>
+                <label class="chk"><input type="checkbox" id="allEvents" /> <span>* (가능하면 주요 이벤트 직접 선택 권장)</span></label>
+            </div>
+        </div>
+        <div id="eventsBox">
+            <div class="events">
+                <label class="chk"><input type="checkbox" name="ev" value="push" checked> push</label>
+                <label class="chk"><input type="checkbox" name="ev" value="pull_request" checked> pull_request</label>
+                <label class="chk"><input type="checkbox" name="ev" value="issues" checked> issues</label>
+                <label class="chk"><input type="checkbox" name="ev" value="issue_comment" checked> issue_comment</label>
+                <label class="chk"><input type="checkbox" name="ev" value="release"> release</label>
+                <label class="chk"><input type="checkbox" name="ev" value="create"> create</label>
+                <label class="chk"><input type="checkbox" name="ev" value="delete"> delete</label>
+                <label class="chk"><input type="checkbox" name="ev" value="check_suite"> check_suite</label>
+                <label class="chk"><input type="checkbox" name="ev" value="workflow_run"> workflow_run</label>
+            </div>
+            <div class="help">체크된 이벤트만 구독합니다. (체크가 없으면 기본값은 push)</div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>고급 설정</legend>
+        <div class="row">
+            <div>insecure SSL</div>
+            <div>
+                <label class="chk"><input type="checkbox" id="insecureSsl"> 로컬/사설망 테스트(임시)</label>
+                <div class="help">운영에서는 끄세요.</div>
+            </div>
+        </div>
+        <div class="row">
+            <div>Secret 재정의</div>
+            <div>
+                <input type="text" id="overrideSecret" placeholder="비워두면 서버 기본 secret 사용" />
+                <div class="help">application.properties의 github.webhook.secret를 덮어쓸 때만 입력</div>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="actions">
+        <button id="connectBtn">웹훅 연결 요청</button>
+        <button class="secondary" id="previewBtn" type="button">요청 URL 미리보기</button>
+    </div>
+    <div id="urlPreview" class="urlbox hidden"></div>
+</form>
+
+<script>
+    const $ = (sel) => document.querySelector(sel);
+
+    // 모드 전환 시 repo 입력 보이기/숨기기
+    document.querySelectorAll('input[name="mode"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        $('#repoRow').classList.toggle('hidden', mode === 'org');
+      });
+    });
+
+    // 전체 이벤트 토글 시 세부 체크박스 비활성화
+    $('#allEvents').addEventListener('change', (e) => {
+      const disabled = e.target.checked;
+      document.querySelectorAll('input[name="ev"]').forEach(cb => {
+        cb.disabled = disabled;
+      });
+    });
+
+    function buildAuthorizeUrl() {
+      const base = '/api/github/hooks/authorize';
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const owner = $('#owner').value.trim();
+      const repo  = $('#repo').value.trim();
+      const insecureSsl = $('#insecureSsl').checked;
+      const overrideSecret = $('#overrideSecret').value.trim();
+
+      if (!owner) { alert('Owner를 입력하세요.'); return null; }
+      if (mode === 'repo' && !repo) { alert('Repository를 입력하세요.'); return null; }
+
+      let eventsParam;
+      if ($('#allEvents').checked) {
+        eventsParam = '*';
+      } else {
+        const evs = Array.from(document.querySelectorAll('input[name="ev"]:checked')).map(x => x.value);
+        eventsParam = evs.length ? evs.join(',') : 'push';
+      }
+
+      const q = new URLSearchParams();
+      q.set('mode', mode);
+      q.set('owner', owner);
+      if (mode === 'repo') q.set('repo', repo);
+      q.set('events', eventsParam);
+      if (insecureSsl) q.set('insecureSsl', 'true');
+      if (overrideSecret) q.set('overrideSecret', overrideSecret);
+
+      return `${base}?${q.toString()}`;
+    }
+
+    $('#previewBtn').addEventListener('click', () => {
+      const url = buildAuthorizeUrl();
+      if (!url) return;
+      const box = $('#urlPreview');
+      box.textContent = url;
+      box.classList.remove('hidden');
+    });
+
+    $('#connectBtn').addEventListener('click', () => {
+      const url = buildAuthorizeUrl();
+      if (!url) return;
+      // Step-up OAuth2 흐름 시작
+      window.location.href = url;
+    });
+</script>
+</body>
+</html>
