@@ -1,4 +1,4 @@
-/*
+
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook.client;
 
 import lombok.RequiredArgsConstructor;
@@ -11,14 +11,14 @@ import org.springframework.http.HttpHeaders;
 import java.util.List;
 import java.util.Map;
 
-*/
+
 /**
  * @author : 김관중
  * @packageName : com.S1_K4.ForkMe_BE.modules.on_project.webhook.client
  * @fileName : GithubWebhookClient
  * @date : 2025-08-10
  * @description : 웹훅 호출 클라이언트 입니다
- *//*
+ */
 
 
 @Component
@@ -94,4 +94,4 @@ public class GithubWebhookClient {
                 .block();
     }
 }
-*/
+
