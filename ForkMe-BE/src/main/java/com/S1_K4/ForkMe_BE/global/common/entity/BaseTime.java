@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.global.common.entity;
 
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import jakarta.persistence.*;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
@@ -36,16 +37,11 @@ public abstract class BaseTime {
     //삭제 처리될 때마다 기록
     @Column(name = "deleted_yn",columnDefinition = "CHAR(1) NOT NULL DEFAULT 'N'")
     @Enumerated(EnumType.STRING)
-    private DeleteYN deletedYN = DeleteYN.N;
-
-    //deletedYN Enum타입
-    public enum DeleteYN {
-        Y, N
-    }
+    private Yn deletedYN = Yn.N;
 
 
     //삭제 처리 메서드
     public void markDeleted() {
-        this.deletedYN = DeleteYN.Y;
+        this.deletedYN = Yn.Y;
     }
 }

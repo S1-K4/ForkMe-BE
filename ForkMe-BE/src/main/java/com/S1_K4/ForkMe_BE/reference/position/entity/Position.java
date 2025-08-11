@@ -1,10 +1,7 @@
 package com.S1_K4.ForkMe_BE.reference.position.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author : 선순주
@@ -18,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name="position")
 @Builder
+@Getter
 public class Position {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

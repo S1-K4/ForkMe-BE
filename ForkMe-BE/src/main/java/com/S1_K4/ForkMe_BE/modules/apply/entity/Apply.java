@@ -20,7 +20,7 @@ import lombok.*;
 @Getter
 @Builder
 @AllArgsConstructor
-@Table(name="project_tech_stack")
+@Table(name="apply")
 public class Apply extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

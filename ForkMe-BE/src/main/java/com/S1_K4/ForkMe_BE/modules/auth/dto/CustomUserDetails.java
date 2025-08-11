@@ -30,6 +30,8 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return user;
     }
 
+    public Long getUserPk() {return user.getUserPk();}
+
     @Override
     public String getUsername() {
         return String.valueOf(user.getGitId());

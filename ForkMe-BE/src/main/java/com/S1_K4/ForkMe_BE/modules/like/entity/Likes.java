@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.like.entity;
 
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,7 +9,7 @@ import lombok.*;
 /**
  * @author : 선순주
  * @packageName : com.S1_K4.ForkMe_BE.modules.like.entity
- * @fileName : Like
+ * @fileName : Likes
  * @date : 2025-08-04
  * @description : 좋아요 엔티티
  */
@@ -17,8 +18,8 @@ import lombok.*;
 @Getter
 @Builder
 @AllArgsConstructor
-@Table(name="like")
-public class Like {
+@Table(name="likes")
+public class Likes {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="like_pk")
@@ -29,6 +30,6 @@ public class Like {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="project_position_pk", nullable = false)
-    private ProjectPosition projectPosition;
+    @JoinColumn(name="project_profile_pk", nullable = false)
+    private ProjectProfile projectProfile;
 }
