@@ -17,10 +17,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LikeRepository extends JpaRepository<Likes, Long> {
 
+    // 좋아요 개수 count
     Long countByProjectProfile(ProjectProfile profile);
 
+    // 특정 프로필의 좋아요 전체 삭제 (대량 삭제는 별도 버전 아래 참고)
     Long countByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
+    // 특정 유저가 특정 프로필을 좋아요 했는지 여부
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
     //특정 profile의 좋아요 여부를 체크하는 쿼리

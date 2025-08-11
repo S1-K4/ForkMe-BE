@@ -1,14 +1,13 @@
 package com.S1_K4.ForkMe_BE.modules.like.controller;
 
 import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.like.dto.LikeDTO;
 import com.S1_K4.ForkMe_BE.modules.like.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author : 선순주
@@ -24,11 +23,24 @@ public class LikeController {
     private final LikeService likeService;
 
     /**
+     * 좋아요 여부 조회
+     * */
+    @GetMapping("{profilePk}/me")
+    public ResponseEntity<ApiResponse<Boolean>> checkLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
+        Long userPk = userDetails.getUserPk();
+        boolean hasLiked = likeService.hasUserLikeProfile(userPk, profilePk);
+        return ResponseEntity.ok(ApiResponse.success(hasLiked,"좋아요 여부 조회 완료"));
+
+    }
+    
+
+    /**
      * profile에 좋아요 추가
      * */
     @PostMapping("/{profilePk}")
-    public ResponseEntity<ApiResponse<LikeDTO>> createLike(@PathVariable Long profilePk){
-        Long userPk = 3L;
+    public ResponseEntity<ApiResponse<LikeDTO>> createLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
+        Long userPk = userDetails.getUserPk();
         return ResponseEntity.ok(ApiResponse.success(likeService.createLike(userPk, profilePk), "좋아요 추가 성공"));
     }
+
  }

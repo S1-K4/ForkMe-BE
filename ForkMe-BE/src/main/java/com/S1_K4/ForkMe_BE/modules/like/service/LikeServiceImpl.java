@@ -47,6 +47,10 @@ public class LikeServiceImpl implements LikeService{
         ProjectProfile profile = projectProfileRepository.findById(profilePk)
                 .orElseThrow(()->new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
+        if(likeRepository.existsByUserAndProjectProfile(userPk, profilePk)){
+            throw new CustomException(CustomException.ErrorCode.BAD_REQUEST);
+        }
+
         Likes like = Likes.builder()
                 .user(user)
                 .projectProfile(profile)
