@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Toast UI Editor 저장</title>
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input, textarea { width: 300px; padding: 8px; font-size: 14px; }
+    #editor { margin-top: 20px; height: 500px; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+<h2>글 작성</h2>
+
+<form id="postForm" enctype="multipart/form-data">
+  <div class="form-group">
+    <label for="title">제목</label>
+    <input type="text" id="title" name="title" required />
+  </div>
+
+  <div class="form-group">
+    <label for="projectPk">Project PK</label>
+    <input type="text" id="projectPk" name="projectPk" required />
+  </div>
+
+  <div class="form-group">
+    <label for="userPk">User PK</label>
+    <input type="text" id="userPk" name="userPk" required />
+  </div>
+
+  <div class="form-group">
+    <label for="images">이미지 첨부</label>
+    <input type="file" id="images" name="images" accept="image/*" multiple />
+  </div>
+
+  <div class="form-group">
+    <label for="files">파일 첨부</label>
+    <input type="file" id="files" name="files" multiple />
+  </div>
+
+  <textarea id="content" name="content" hidden></textarea>
+
+  <button type="submit">제출</button>
+</form>
+
+<div id="editor"></div>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script>
+  const editor = new toastui.Editor({
+    el: document.querySelector('#editor'),
+    height: '500px',
+    initialEditType: 'markdown',
+    previewStyle: 'tab',
+    hideModeSwitch: true,
+    toolbarItems: [
+      ['heading', 'bold', 'italic', 'strike'],
+      ['hr', 'quote'],
+      ['ul', 'ol', 'task', 'indent', 'outdent'],
+      ['table', 'link'],
+      ['code', 'codeblock'],
+      ['scrollSync']
+    ],
+    hooks: {
+      addImageBlobHook: () => {
+        alert('에디터에서 이미지 업로드는 비활성화되어 있습니다.');
+        return false;
+      }
+    }
+  });
+
+  document.getElementById('postForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const title = document.getElementById('title').value.trim();
+    const projectPk = document.getElementById('projectPk').value.trim();
+    const userPk = document.getElementById('userPk').value.trim();
+    const content = editor.getMarkdown();
+
+    if (!title || !projectPk || !userPk || !content) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    // 생성할 JSON 요청 객체
+    const requestDto = {
+      title: title,
+      projectPk: projectPk,
+      userPk: userPk,
+      content: content,
+      imageUrls: [],
+      fileUrls: []
+    };
+
+    const formData = new FormData();
+    formData.append("request", new Blob([JSON.stringify(requestDto)], { type: "application/json" }));
+
+    const images = document.getElementById('images').files;
+    for (let i = 0; i < images.length; i++) {
+      formData.append("images", images[i]);
+    }
+
+    const files = document.getElementById('files').files;
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
+
+    // AJAX 전송
+    fetch(`/api/on-project/${projectPk}/boards/create`, {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('서버 응답 실패');
+        return response.json();
+      })
+      .then(data => {
+        alert('저장 성공!');
+        console.log(data);
+      })
+      .catch(error => {
+        console.error(error);
+        alert('전송 중 오류 발생');
+      });
+  });
+</script>
+</body>
+</html>

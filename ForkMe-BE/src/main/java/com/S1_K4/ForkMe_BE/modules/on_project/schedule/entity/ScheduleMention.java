@@ -34,4 +34,11 @@ public class ScheduleMention {
     @JoinColumn(name = "user_pk", nullable = false)
     private User user;
 
+    public static ScheduleMention createMention(Schedule schedule, User user) {
+        return ScheduleMention.builder()
+                .schedule(schedule)
+                .user(user)
+                .build();
+    }
+
 }
