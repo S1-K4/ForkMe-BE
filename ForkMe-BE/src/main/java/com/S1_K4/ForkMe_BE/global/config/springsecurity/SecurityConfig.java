@@ -56,11 +56,12 @@ public class SecurityConfig {
 
                                 //나머지 인증x Get매핑
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/comments/**").permitAll()
+                                .requestMatchers("/api/comments/**").permitAll()
 
-                                .requestMatchers("/api/github/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                                 .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/github/hooks/authorize").permitAll()
 
                         //  .anyRequest().authenticated()
                 )
@@ -72,7 +73,6 @@ public class SecurityConfig {
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("{\"success\":false,\"code\":401,\"message\":\"인증이 필요한 요청입니다.\"}");
                         })
-
                         // 인증은 되었지만 권한이 없을 때 (403)
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);

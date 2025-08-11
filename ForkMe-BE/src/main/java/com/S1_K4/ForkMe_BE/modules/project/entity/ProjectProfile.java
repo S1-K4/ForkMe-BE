@@ -1,7 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
-import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
@@ -10,7 +10,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author : 선순주

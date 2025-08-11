@@ -55,7 +55,7 @@ public class ProjectController {
      * 프로젝트 생성폼 조회
      * */
     @GetMapping("/form-info")
-    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(@AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(@AuthenticationPrincipal .getUserPk(); userDetails){
         Long userPk = userDetails.getUserPk();
         ProjectCreateFormDTO formInfo = projectService.getProjectCreateFormInfo(userPk);
         return ResponseEntity.ok(ApiResponse.success(formInfo,"프로젝트 생성 폼 조회 완료"));

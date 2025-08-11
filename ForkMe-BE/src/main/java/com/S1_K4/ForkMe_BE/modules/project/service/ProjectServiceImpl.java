@@ -6,7 +6,7 @@ import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
-import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
@@ -42,6 +42,7 @@ import java.util.stream.IntStream;
  * @date : 2025-08-05
  * @description : ProjectServiceImpl
  */
+
 @Service
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService{
