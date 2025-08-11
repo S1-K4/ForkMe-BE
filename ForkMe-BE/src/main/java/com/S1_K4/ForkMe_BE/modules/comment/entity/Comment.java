@@ -1,10 +1,11 @@
-package com.S1_K4.ForkMe_BE.modules.on_project.comment.entity;
+package com.S1_K4.ForkMe_BE.modules.comment.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -42,10 +43,19 @@ public class Comment extends BaseTime {
     @JoinColumn(name = "parent_pk")
     private Comment parent;
 
+    private String comment;
+
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
-    private String comment;
+    @Builder Comment(User user, ProjectProfile projectProfile, Comment parent, String comment){
+        this.user = user;
+        this.projectProfile = projectProfile;
+        this.parent = parent;
+        this.comment = comment;
+    }
+
+
 
     public void updateComment(String comment) {
         this.comment = comment;
