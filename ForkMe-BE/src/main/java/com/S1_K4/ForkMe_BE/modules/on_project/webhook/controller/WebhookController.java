@@ -39,7 +39,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebhookController {
 
-    @Value("${github.webhook.secret}")
+/*    @Value("${github.webhook.secret}")
     private String secret;
 
     private final WebhookService webhookService;
@@ -118,7 +118,7 @@ public class WebhookController {
         StringBuilder sb = new StringBuilder(raw.length*2);
         for (byte b : raw) sb.append(String.format("%02x", b));
         return sb.toString();
-    }
+    }*/
 
 }
 
