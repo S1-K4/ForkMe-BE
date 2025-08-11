@@ -40,7 +40,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-/*
+
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthRepository authRepository;
 
@@ -131,5 +131,5 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }*/
+    }
 }
