@@ -20,7 +20,6 @@ import java.util.List;
 @Builder
 public class InBoardCreateRequest {
 
-    private Long userPk;
     private Long projectPk;
     private String title;
     private String content;

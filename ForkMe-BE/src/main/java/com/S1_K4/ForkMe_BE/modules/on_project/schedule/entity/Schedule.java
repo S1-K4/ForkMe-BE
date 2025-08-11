@@ -71,4 +71,10 @@ public class Schedule {
         this.scheduleMentions.add(mention);
         mention.setSchedule(this); // 양방향 연결
     }
+
+
+    public void removeScheduleMention(ScheduleMention mention) {
+        scheduleMentions.remove(mention);
+        mention.setSchedule(null);
+    }
 }

@@ -16,7 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +54,7 @@ public class ScheduleServiceImpl implements ScheduleService{
                     .title(schedule.getTitle())
                     .start(schedule.getStartDate())
                     .end(schedule.getEndDate())
+                    .userPk(schedule.getUser().getUserPk())
                     .scheduleMentionPk(mentionedUserIds)
                     .build();
         }).collect(Collectors.toList());
@@ -96,8 +101,80 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .title(savedSchedule.getTitle())
                 .start(savedSchedule.getStartDate())
                 .end(savedSchedule.getEndDate())
+                .userPk(savedSchedule.getUser().getUserPk())
                 .scheduleMentionPk(scheduleMentionPks)
                 .build();
+    }
+
+    @Transactional
+    public ScheduleResponse updateSchedule(Long scheduleId, ScheduleCreateRequest dto) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다. ID: " + scheduleId));
+
+        schedule.setTitle(dto.getTitle());
+        schedule.setStartDate(dto.getStart());
+        schedule.setEndDate(dto.getEnd());
+
+        List<Long> newMentionUserIds = Optional.ofNullable(dto.getScheduleMentionPk()).orElse(Collections.emptyList());
+
+        // 현재 멘션된 사용자 ID 목록
+        List<ScheduleMention> existingMentions = new ArrayList<>(schedule.getScheduleMentions());
+        List<Long> existingMentionUserIds = existingMentions.stream()
+                .map(m -> m.getUser().getUserPk())
+                .collect(Collectors.toList());
+
+        // 추가할 멘션 ID
+        List<Long> toAdd = newMentionUserIds.stream()
+                .filter(id -> !existingMentionUserIds.contains(id))
+                .collect(Collectors.toList());
+
+        // 삭제할 멘션 ID
+        List<Long> toRemove = existingMentionUserIds.stream()
+                .filter(id -> !newMentionUserIds.contains(id))
+                .collect(Collectors.toList());
+
+        // 멘션 삭제 (양방향 관계 정리)
+        toRemove.forEach(userId -> {
+            existingMentions.stream()
+                    .filter(m -> m.getUser().getUserPk().equals(userId))
+                    .findFirst()
+                    .ifPresent(mention -> {
+                        schedule.removeScheduleMention(mention);  // 양방향 편의 메서드 호출
+                    });
+        });
+
+        // 멘션 추가
+        toAdd.forEach(userId -> {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("멘션 대상 사용자를 찾을 수 없습니다. ID: " + userId));
+            ScheduleMention mention = ScheduleMention.createMention(schedule, user);
+            schedule.addScheduleMention(mention);
+        });
+
+        Schedule saved = scheduleRepository.save(schedule);
+
+        List<Long> mentionUserIds = saved.getScheduleMentions().stream()
+                .map(m -> m.getUser().getUserPk())
+                .collect(Collectors.toList());
+
+        return ScheduleResponse.builder()
+                .id(saved.getSchedulePk())
+                .title(saved.getTitle())
+                .start(saved.getStartDate())
+                .end(saved.getEndDate())
+                .userPk(saved.getUser().getUserPk())
+                .scheduleMentionPk(mentionUserIds)
+                .build();
+    }
+
+
+    @Transactional
+    public void deleteSchedule(Long schedulePk) {
+        Schedule schedule = scheduleRepository.findById(schedulePk)
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
+
+
+        scheduleRepository.deleteById(schedulePk);
     }
 
 }

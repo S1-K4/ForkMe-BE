@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.controller;
 
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.service.BoardInProjectService;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,16 +40,19 @@ public class BoardInProjectController {
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<InBoardDetailResponse> createBoard(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectPk,
             @RequestPart("request") InBoardCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
 
+        Long userPk = userDetails.getUserPk();
+
         System.out.println("=== InBoardCreateRequest 확인 ===");
         System.out.println("title: " + request.getTitle());
         System.out.println("projectPk: " + request.getProjectPk());
-        System.out.println("userPk: " + request.getUserPk());
+        System.out.println("userPk: " + userPk);
         System.out.println("content: " + request.getContent());
         System.out.println("imageUrls: " + request.getImageUrls());
         System.out.println("fileUrls: " + request.getFileUrls());
@@ -78,7 +83,7 @@ public class BoardInProjectController {
         request.setImageUrls(allImageUrls);
         request.setFileInfos(allFileInfos);
 
-        BoardInProject savedBoard = boardInProjectService.createBoard(projectPk, request.getUserPk(), request);
+        BoardInProject savedBoard = boardInProjectService.createBoard(projectPk, userPk, request);
 
         InBoardDetailResponse response = InBoardDetailResponse.from(savedBoard, allImageUrls, allFileInfos);
         return ResponseEntity.ok(response);
@@ -105,11 +110,23 @@ public class BoardInProjectController {
     public ResponseEntity<?> updateBoard(
             @PathVariable Long projectPk,
             @PathVariable Long boardInProjectPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestPart("request") InBoardUpdateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        boardInProjectService.updateBoard(projectPk, boardInProjectPk, request, images, files);
+        Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
+
+        // 2. 게시글 작성자 userPk 가져오기 (서비스에서)
+        Long authorUserPk = boardInProjectService.getAuthorUserPk(boardInProjectPk);
+
+        // 3. 권한 체크
+        if (!loggedInUserPk.equals(authorUserPk)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("권한이 없습니다.");
+        }
+
+
+        boardInProjectService.updateBoard(projectPk, boardInProjectPk, request, images, files, loggedInUserPk);
         return ResponseEntity.ok("게시글이 수정되었습니다.");
     }
 
@@ -125,6 +142,7 @@ public class BoardInProjectController {
             @PathVariable Long boardInProjectPk,
             @RequestBody Map<String, String> requestBody
     ) {
+
         String key = requestBody.get("key");
         if (key == null || key.isBlank()) {
             return ResponseEntity.badRequest().body("key 값이 필요합니다.");

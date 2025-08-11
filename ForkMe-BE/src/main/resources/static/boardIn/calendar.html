@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>FullCalendar 일정 관리</title>
-  <!-- FullCalendar 글로벌 번들 (전역 FullCalendar 객체 제공) -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
   <style>
     body {
@@ -16,7 +15,7 @@
       margin: 0 auto;
     }
 
-    #form-section {
+    #form-section, #editModal {
       max-width: 600px;
       margin: 40px auto;
       padding: 20px;
@@ -39,19 +38,40 @@
       margin-top: 15px;
       padding: 10px 20px;
     }
+
+    #editModal {
+      display: none;
+      background-color: #f9f9f9;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    #modalBackdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 999;
+    }
   </style>
 </head>
 <body>
 
 <div id="calendar"></div>
 
+<!-- 일정 추가 폼 -->
 <div id="form-section">
   <h3>일정 추가</h3>
   <form id="scheduleForm">
     <label>프로젝트 ID:
       <input type="number" id="projectPk" required>
     </label>
-    <label>작성자 ID:
+    <label>작성자 ID (내 ID):
       <input type="number" id="userPk" required>
     </label>
     <label>제목:
@@ -70,17 +90,42 @@
   </form>
 </div>
 
-<!-- JS 라이브러리 로딩 순서 중요 -->
+<!-- 수정/삭제 모달 -->
+<div id="modalBackdrop"></div>
+<div id="editModal">
+  <h3>일정 수정</h3>
+  <form id="editForm">
+    <input type="hidden" id="editEventId">
+    <label>제목:
+      <input type="text" id="editTitle" required>
+    </label>
+    <label>시작일시:
+      <input type="datetime-local" id="editStart" required>
+    </label>
+    <label>종료일시:
+      <input type="datetime-local" id="editEnd" required>
+    </label>
+    <label>멘션할 사용자 IDs:
+      <input type="text" id="editMentionedUsers">
+    </label>
+    <button type="submit">수정</button>
+    <button type="button" id="deleteButton" style="background-color: red; color: white;">삭제</button>
+    <button type="button" onclick="closeModal()">취소</button>
+  </form>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <script>
+  let calendar;
+  let currentProjectPk;
+
   document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
-    let calendar;
 
-    // 캘린더 로드 함수
     function loadCalendar(projectPk) {
+      currentProjectPk = projectPk;
       if (calendar) calendar.destroy();
 
       calendar = new FullCalendar.Calendar(calendarEl, {
@@ -95,7 +140,8 @@
                 start: schedule.start,
                 end: schedule.end,
                 extendedProps: {
-                  scheduleMentionPk: schedule.scheduleMentionPk
+                  scheduleMentionPk: schedule.scheduleMentionPk,
+                  userPk: schedule.userPk // 작성자 ID
                 }
               }));
               successCallback(events);
@@ -110,13 +156,28 @@
           if (mentioned && mentioned.length > 0) {
             info.el.title = '멘션: ' + mentioned.join(', ');
           }
+        },
+        eventClick: function(info) {
+          const currentUserPk = parseInt(document.getElementById('userPk').value);
+          const eventOwnerPk = parseInt(info.event.extendedProps.userPk);
+
+            console.log('현재 입력한 userPk:', currentUserPk);
+  console.log('일정 작성자 userPk:', eventOwnerPk);
+  console.log('타입 확인:', typeof currentUserPk, typeof eventOwnerPk);
+
+          if (currentUserPk !== eventOwnerPk) {
+            alert('⚠️ 이 일정은 본인만 수정/삭제할 수 있습니다.');
+            return;
+          }
+
+          openEditModal(info.event);
         }
       });
 
       calendar.render();
     }
 
-    // 폼 제출 처리
+    // 일정 추가
     document.getElementById('scheduleForm').addEventListener('submit', function (e) {
       e.preventDefault();
 
@@ -142,22 +203,97 @@
         scheduleMentionPk
       };
 
-      axios.post('/api/schedules', requestBody, { withCredentials: false
-        // 기본은 false, 서버 CORS 설정에 따라 true로 바꿀 수도 있음
-        })
-
+      axios.post('/api/schedules/project/${projectPk}', requestBody)
         .then(() => {
-          alert('일정이 등록되었습니다!');
+          alert('✅ 일정이 등록되었습니다!');
           loadCalendar(projectPk);
         })
         .catch(err => {
-          console.error('일정 등록 실패:', err);
           alert('등록 실패: ' + (err.response?.data?.message || '서버 오류'));
         });
     });
 
-    // 초기 캘린더 로드 (원한다면 초기 projectPk를 지정해 호출)
-    // loadCalendar(1);
+    // 모달 열기
+    function openEditModal(event) {
+      document.getElementById('editEventId').value = event.id;
+      document.getElementById('editTitle').value = event.title;
+      document.getElementById('editStart').value = formatDateTime(event.start);
+      document.getElementById('editEnd').value = formatDateTime(event.end);
+      document.getElementById('editMentionedUsers').value = (event.extendedProps.scheduleMentionPk || []).join(', ');
+
+      document.getElementById('modalBackdrop').style.display = 'block';
+      document.getElementById('editModal').style.display = 'block';
+    }
+
+    // 모달 닫기
+    window.closeModal = function () {
+      document.getElementById('modalBackdrop').style.display = 'none';
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    // 일정 수정
+    document.getElementById('editForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+       const schedulePk = document.getElementById('editEventId').value;  // 이게 꼭 있어야 함
+  const projectPk = document.getElementById('projectPk').value;    // 프로젝트 PK도 가져오고
+  const title = document.getElementById('editTitle').value;
+  const start = document.getElementById('editStart').value;
+  const end = document.getElementById('editEnd').value;
+  const mentioned = document.getElementById('editMentionedUsers').value
+    .split(',')
+    .map(str => str.trim())
+    .filter(str => str !== '')
+    .map(Number);
+
+
+      axios.put(`/api/schedules/project/${projectPk}/${schedulePk}`, {
+        title, start, end, scheduleMentionPk: mentioned
+      })
+      .then(() => {
+        alert('✅ 일정이 수정되었습니다.');
+        closeModal();
+        loadCalendar(currentProjectPk);
+      })
+      .catch(err => {
+        alert('수정 실패: ' + (err.response?.data?.message || '서버 오류'));
+      });
+    });
+
+    // 일정 삭제
+    document.getElementById('deleteButton').addEventListener('click', function () {
+
+      const schedulePk = document.getElementById('editEventId').value;  // 이게 꼭 있어야 함
+      const projectPk = document.getElementById('projectPk').value;    // 프로젝트 PK도 가져오고
+      const confirmDelete = confirm('정말로 삭제하시겠습니까?');
+      if (!confirmDelete) return;
+
+      axios.delete(`/api/schedules/project/${projectPk}/${schedulePk}`)
+        .then(() => {
+          alert('🗑️ 일정이 삭제되었습니다.');
+          closeModal();
+          loadCalendar(currentProjectPk);
+        })
+        .catch(err => {
+          alert('삭제 실패: ' + (err.response?.data?.message || '서버 오류'));
+        });
+    });
+
+    // 프로젝트 변경 시 자동 로드
+    document.getElementById('projectPk').addEventListener('change', function () {
+      const pk = parseInt(this.value);
+      if (pk) {
+        loadCalendar(pk);
+      }
+    });
+
+    // datetime-local 포맷 함수
+    function formatDateTime(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
   });
 </script>
 

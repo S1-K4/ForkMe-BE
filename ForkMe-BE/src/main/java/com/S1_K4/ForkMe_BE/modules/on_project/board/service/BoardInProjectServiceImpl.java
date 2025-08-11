@@ -8,6 +8,8 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardImageRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
@@ -48,7 +50,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final BoardFileRepository boardFileRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
-    private final ProjectProfileRepository projectProfileRepository;
+    private final CommentInProjectRepository commentInProjectRepository;
 
     // 게시판 생성
     @Transactional
@@ -143,7 +145,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     //게시글 수정
     @Transactional
     public BoardInProject updateBoard(Long projectPk, Long boardInProjectPk, InBoardUpdateRequest request,
-                                      List<MultipartFile> newImages, List<MultipartFile> newFiles) {
+                                      List<MultipartFile> newImages, List<MultipartFile> newFiles,Long userPk) {
 
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
@@ -151,7 +153,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new RuntimeException("프로젝트가 존재하지 않습니다."));
 
-        User user = userRepository.findById(request.getUserPk())
+        User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         ProjectProfile projectProfile = project.getProjectProfile();
@@ -250,6 +252,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         List<S3File> files = boardFileRepository.findByBoardInProject(board);
         boardFileRepository.deleteAll(files);
 
+        //게시글 댓글 하드 삭제
+        List<CommentInProject> commentInProjectList = commentInProjectRepository.findByBoardInProject(board);
+        commentInProjectRepository.deleteAll(commentInProjectList);
+
         // 게시글 소프트 삭제
         board.markDeleted();
         boardInProjectRepository.save(board);
@@ -274,6 +280,12 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
             files.removeIf(file -> file.getUrl() != null && file.getUrl().contains(key));
         }
         // 보통 cascade + orphanRemoval이면 save 안 해도 됩니다.
+    }
+
+    public Long getAuthorUserPk(Long boardInProjectPk) {
+        BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
+                .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
+        return board.getUser().getUserPk();
     }
 
 }

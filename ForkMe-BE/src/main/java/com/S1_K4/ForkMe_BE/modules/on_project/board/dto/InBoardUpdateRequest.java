@@ -19,7 +19,6 @@ public class InBoardUpdateRequest {
 
     private String title;
     private Long projectPk;
-    private Long userPk;
     private String content;
 
     // 🗑️ 삭제 요청된 이미지 URL 목록
