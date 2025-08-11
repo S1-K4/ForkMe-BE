@@ -1,10 +1,12 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook;
 
-import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 /**
  * @author : 김관중
@@ -20,7 +22,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "github_timeline")
-public class Webhook extends BaseTime {
+public class Webhook {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,4 +64,7 @@ public class Webhook extends BaseTime {
     @Column(name = "organization_login", length = 100)
     private String organizationLogin;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }
