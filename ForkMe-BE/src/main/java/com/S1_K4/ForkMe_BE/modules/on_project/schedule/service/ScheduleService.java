@@ -16,4 +16,6 @@ public interface ScheduleService {
 
     List<ScheduleResponse> getSchedulesByProject(Long projectPk);
     ScheduleResponse createSchedule(ScheduleCreateRequest dto);
+    ScheduleResponse updateSchedule(Long scheduleId, ScheduleCreateRequest dto);
+    void deleteSchedule(Long scheduleId);
 }

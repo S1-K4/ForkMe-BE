@@ -21,7 +21,7 @@ import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/api/schedules")
+@RequestMapping("/api/schedules/project/{projectPk}")
 @RestController
 public class ScheduleController {
 
@@ -29,7 +29,7 @@ public class ScheduleController {
 
 
     // 일정 조회
-    @GetMapping("/project/{projectPk}")
+    @GetMapping
     public ResponseEntity<List<ScheduleResponse>> getSchedules(@PathVariable Long projectPk) {
         List<ScheduleResponse> schedules = scheduleService.getSchedulesByProject(projectPk);
         return ResponseEntity.ok(schedules);
@@ -41,6 +41,21 @@ public class ScheduleController {
         log.info("📌 일정 생성 요청 들어옴: {}", dto);
         ScheduleResponse created = scheduleService.createSchedule(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{schedulePk}")
+    public ResponseEntity<ScheduleResponse> updateSchedule(
+            @PathVariable("schedulePk") Long schedulePk,
+            @RequestBody ScheduleCreateRequest dto) {
+
+        ScheduleResponse updated = scheduleService.updateSchedule(schedulePk, dto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{schedulePk}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable("schedulePk") Long schedulePk) {
+        scheduleService.deleteSchedule(schedulePk);
+        return ResponseEntity.noContent().build();
     }
 
 }

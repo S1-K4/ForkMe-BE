@@ -22,5 +22,6 @@ public class ScheduleResponse {
     private String title;
     private LocalDateTime start;
     private LocalDateTime end;
+    private Long userPk;  // 작성자 ID 추가
     private List<Long> scheduleMentionPk; // 멘션된 사용자 ID 목록
 }
