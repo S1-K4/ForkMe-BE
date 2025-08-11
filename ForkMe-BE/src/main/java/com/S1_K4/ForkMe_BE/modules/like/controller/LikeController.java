@@ -25,7 +25,7 @@ public class LikeController {
     /**
      * 좋아요 여부 조회
      * */
-    @GetMapping("{profilePk}/me")
+    @GetMapping("/{profilePk}/me")
     public ResponseEntity<ApiResponse<Boolean>> checkLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
         Long userPk = userDetails.getUserPk();
         boolean hasLiked = likeService.hasUserLikeProfile(userPk, profilePk);
@@ -41,6 +41,22 @@ public class LikeController {
     public ResponseEntity<ApiResponse<LikeDTO>> createLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
         Long userPk = userDetails.getUserPk();
         return ResponseEntity.ok(ApiResponse.success(likeService.createLike(userPk, profilePk), "좋아요 추가 성공"));
+    }
+
+    /**
+     * 좋아요 삭제
+     * */
+    @DeleteMapping("/{profilePk}")
+    public ResponseEntity<ApiResponse<LikeDTO>> deleteLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
+        Long userPk = userDetails.getUserPk();
+        return ResponseEntity.ok(ApiResponse.success(likeService.deleteLike(userPk, profilePk), "좋아요 취소 성공"));
+    }
+
+    @GetMapping("{profilePk}")
+    public ResponseEntity<ApiResponse<Long>> countLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
+        Long userPk = userDetails.getUserPk();
+        Long count = likeService.countLike(profilePk);
+        return ResponseEntity.ok(ApiResponse.success(count, "좋아요 수 조회 성공"));
     }
 
  }

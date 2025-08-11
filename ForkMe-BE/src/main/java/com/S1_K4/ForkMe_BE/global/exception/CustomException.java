@@ -43,7 +43,8 @@ public class CustomException extends RuntimeException {
         COMMENT_NOT_FOUND(404, "댓글을 찾을 수 없습니다."),
 
         //좋아요 관련 에러코드
-        ALREDAY_LIKED(500, "이미 좋아요를 누른 프로젝트입니다.");
+        ALREDAY_LIKED(500, "이미 좋아요를 누른 프로젝트입니다."),
+        LIKED_NOT_FOUND(500, "좋아요 내역이 없습니다.");
 
         private final int code;
         private final String message;

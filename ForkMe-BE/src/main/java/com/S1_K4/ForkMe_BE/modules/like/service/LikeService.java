@@ -14,6 +14,12 @@ public interface LikeService {
     @Transactional(readOnly = true)
     boolean hasUserLikeProfile(Long userPk, Long profilePk);
 
+    @Transactional(readOnly = true)
+    Long countLike(Long profilePk);
+
     @Transactional
     LikeDTO createLike(Long userPk, Long profilePk);
+
+    @Transactional
+    LikeDTO deleteLike(Long userPk, Long profilePk);
 }
