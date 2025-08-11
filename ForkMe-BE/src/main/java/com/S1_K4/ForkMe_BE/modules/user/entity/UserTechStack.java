@@ -17,12 +17,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name="user_tech_stack")
+@Table(name = "user_tech_stack")
 @Entity
 public class UserTechStack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="user_tech_stack_pk")
+    @Column(name = "user_tech_stack_pk")
     private Long userTechStackPk;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,6 +30,11 @@ public class UserTechStack {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="tech_pk", nullable = false)
+    @JoinColumn(name = "tech_pk", nullable = false)
     private TechStack techStack;
+
+    public UserTechStack(User user, TechStack techStack) {
+        this.user = user;
+        this.techStack = techStack;
+    }
 }
