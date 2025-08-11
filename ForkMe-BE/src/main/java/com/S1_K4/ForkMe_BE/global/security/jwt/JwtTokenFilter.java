@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -33,16 +34,43 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+
+        return
+
+                path.startsWith("/login/github")
+                ||path.startsWith("/favicon.ico")
+                ;
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("토큰 유효성 검사 : " + request.getRequestURI());
         String accessToken = resolveToken(request);
         log.info("accessToken : " + accessToken + " /");
 
-        // 토큰 유효성 검사
-        if (StringUtils.hasText(accessToken) && jwtTokenProvider.validateToken(accessToken)) {
-            Authentication authentication = jwtTokenProvider.getAuthenticationByToken(accessToken);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+//        // 토큰 유효성 검사
+//        if (StringUtils.hasText(accessToken) && jwtTokenProvider.validateToken(accessToken)) {
+//            Authentication authentication = jwtTokenProvider.getAuthenticationByToken(accessToken);
+//            SecurityContextHolder.getContext().setAuthentication(authentication);
+//        }
+
+        try {
+            if (StringUtils.hasText(accessToken)) {
+                // 🔥 여기서만 검증 & 인증 처리
+                if (!jwtTokenProvider.validateToken(accessToken)) {
+                    throw new BadCredentialsException("유효하지 않은 JWT 토큰입니다.");
+                }
+
+                Authentication authentication = jwtTokenProvider.getAuthenticationByToken(accessToken);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception ex) {
+            SecurityContextHolder.clearContext();
+            throw ex; // 반드시 예외를 던져야 SecurityConfig에서 401로 처리함
         }
+
 
         filterChain.doFilter(request, response);
     }
