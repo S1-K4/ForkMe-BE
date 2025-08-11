@@ -268,7 +268,7 @@ public class ProjectServiceImpl implements ProjectService{
 
       //삭제 여부 확인
       if("N".equals(project.getDeletedYN())){
-          throw new CustomException(CustomException.ErrorCode.PROJECT_ALLREDAY_DELETE);
+          throw new CustomException(CustomException.ErrorCode.PROJECT_ALREDAY_DELETE);
       }
 
       //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생

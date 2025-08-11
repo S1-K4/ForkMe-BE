@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 //나머지 인증x Get매핑
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
                                 .requestMatchers("/api/comments/**").permitAll()
+                                .requestMatchers("/api/likes/**").permitAll()
 
                                 .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                                 .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
