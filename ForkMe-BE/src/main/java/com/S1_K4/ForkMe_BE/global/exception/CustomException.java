@@ -44,8 +44,11 @@ public class CustomException extends RuntimeException {
 
         //좋아요 관련 에러코드
         ALREDAY_LIKED(500, "이미 좋아요를 누른 프로젝트입니다."),
-        LIKED_NOT_FOUND(500, "좋아요 내역이 없습니다.");
+        LIKED_NOT_FOUND(500, "좋아요 내역이 없습니다."),
 
+        //신청서 관련 에러코드
+        INVALID_PROJECT_POSITION(400, "모집분야가 일치하지 않습니다."),
+        INVALID_TECH_SELECTION(400, "기술스택이 일치하지 않습니다.");
         private final int code;
         private final String message;
     }

@@ -4,9 +4,13 @@ import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -44,4 +48,7 @@ public class Apply extends BaseTime {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="project_position_pk", nullable = false)
     private ProjectPosition projectPosition;
+
+    @OneToMany(mappedBy = "apply", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplyTechStack> applyTechStacks = new ArrayList<>();
 }

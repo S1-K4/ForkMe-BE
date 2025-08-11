@@ -1,7 +1,5 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
-import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
-import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -36,4 +34,29 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
             "from ProjectTechStack pts " +
             "where pts.projectProfile.projectProfilePk = :profilePk")
     List<Long> findTechPksByProfilePk(@Param("profilePk") Long profilePk);
+
+        @Query("""
+        SELECT new com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO(
+            ts.techStack.techPk,
+            ts.techStack.techName
+        )
+        FROM ProjectTechStack ts
+        WHERE ts.projectProfile.projectProfilePk = :profilePk
+    """)
+        List<TechStackResponseDTO> findAllTechStackDTOByProfilePk(@Param("profilePk") Long profilePk);
+
+    @Query("""
+    SELECT ts.techStack.techPk
+    FROM ProjectTechStack ts
+    WHERE ts.projectProfile.projectProfilePk = :profilePk
+""")
+    List<Long> findTechStackPksByProfilePk(@Param("profilePk") Long profilePk);
+
+    @Query("""
+    SELECT ts.techStack.techPk
+    FROM ProjectTechStack ts
+    WHERE ts.projectProfile.projectProfilePk = :profilePk
+""")
+    List<Long> findTechStackIdsByProjectProfilePk(@Param("profilePk") Long profilePk);
+
 }

@@ -41,6 +41,7 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/", "/index.html","/login/**","/api/auth/**","/favicon.ico"
                                 ).permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies").permitAll()
 
                                 //인증 필요한 GET 매핑
                                 .requestMatchers(HttpMethod.GET,
@@ -58,6 +59,8 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
                                 .requestMatchers("/api/comments/**").permitAll()
                                 .requestMatchers("/api/likes/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/apply-form").permitAll()
+
 
                                 .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                                 .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
