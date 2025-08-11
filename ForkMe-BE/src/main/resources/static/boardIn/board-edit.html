@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>게시글 수정</title>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, textarea { width: 300px; padding: 8px; font-size: 14px; }
+        #editor { margin-top: 20px; height: 500px; }
+        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .image-preview { display: inline-block; position: relative; margin: 5px; }
+        .image-preview img { max-width: 120px; max-height: 120px; border: 1px solid #ccc; }
+        .image-preview button { position: absolute; top: 2px; right: 2px; background: red; color: white; border: none; cursor: pointer; border-radius: 3px; padding: 2px 6px; font-size: 12px; }
+    </style>
+</head>
+<body>
+<h2>게시글 수정</h2>
+
+<form id="editForm" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="title">제목</label>
+        <input type="text" id="title" name="title" required />
+    </div>
+
+    <div class="form-group">
+        <label for="projectPk">Project PK</label>
+        <input type="text" id="projectPk" name="projectPk" required />
+    </div>
+
+    <div class="form-group">
+        <label for="userPk">User PK</label>
+        <input type="text" id="userPk" name="userPk" required />
+    </div>
+
+    <div class="form-group">
+        <label>기존 첨부 이미지</label>
+        <div id="existingImages"></div>
+    </div>
+
+    <div class="form-group">
+        <label for="images">새 이미지 첨부</label>
+        <input type="file" id="images" name="images" accept="image/*" multiple />
+    </div>
+
+    <div class="form-group">
+        <label for="files">파일 첨부</label>
+        <input type="file" id="files" name="files" multiple />
+    </div>
+
+    <textarea id="content" name="content" hidden></textarea>
+
+    <div id="editor"></div>
+
+    <button type="submit">수정 저장</button>
+</form>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script>
+    // URL 파라미터에서 게시글 ID, 프로젝트 ID 가져오기
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const boardInProjectPk = getQueryParam('boardInProjectPk');
+    const projectPkFromUrl = getQueryParam('projectPk');
+
+console.log('projectPkFromUrl:', projectPkFromUrl);
+
+    if (!boardInProjectPk || !projectPkFromUrl) {
+      alert('잘못된 접근입니다. 게시글 ID 또는 프로젝트 ID가 없습니다.');
+      throw new Error('Missing boardInProjectPk or projectPk');
+    }
+
+    const editor = new toastui.Editor({
+      el: document.querySelector('#editor'),
+      height: '500px',
+      initialEditType: 'markdown',
+      previewStyle: 'tab',
+      hideModeSwitch: true,
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['hr', 'quote'],
+        ['ul', 'ol', 'task', 'indent', 'outdent'],
+        ['table', 'link'],
+        ['code', 'codeblock'],
+        ['scrollSync']
+      ],
+      hooks: {
+        addImageBlobHook: () => {
+          alert('에디터에서 이미지 업로드는 비활성화되어 있습니다.');
+          return false;
+        }
+      }
+    });
+
+    // 삭제할 기존 이미지 URL 저장 배열
+    const removedImageUrls = [];
+
+    // 기존 게시글 데이터 불러오기
+    fetch(`/api/on-project/${projectPkFromUrl}/boards/${boardInProjectPk}`)
+      .then(res => {
+        if (!res.ok) throw new Error('기존 글 불러오기 실패');
+        return res.json();
+      })
+      .then(data => {
+        // 폼 필드 채우기
+        document.getElementById('title').value = data.title || '';
+        document.getElementById('projectPk').value = data.projectPk || projectPkFromUrl;
+        document.getElementById('userPk').value = data.userPk || '';
+        editor.setMarkdown(data.content || '');
+
+        // 기존 이미지 미리보기 생성
+        const existingImagesDiv = document.getElementById('existingImages');
+        existingImagesDiv.innerHTML = '';
+        data.imageUrls.forEach(url => {
+          const container = document.createElement('div');
+          container.className = 'image-preview';
+
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = '첨부 이미지';
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.innerText = '삭제';
+          btn.addEventListener('click', () => {
+            removedImageUrls.push(url);
+            container.remove();
+          });
+
+          container.appendChild(img);
+          container.appendChild(btn);
+          existingImagesDiv.appendChild(container);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert('게시글 정보를 불러오는 데 실패했습니다.');
+      });
+
+    // 폼 제출 이벤트
+    document.getElementById('editForm').addEventListener('submit', e => {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value.trim();
+      const projectPk = document.getElementById('projectPk').value.trim();
+      const userPk = document.getElementById('userPk').value.trim();
+      const content = editor.getMarkdown();
+
+      if (!title || !projectPk || !userPk || !content) {
+        alert('모든 필드를 입력해주세요.');
+        return;
+      }
+
+      const requestDto = {
+        title,
+        projectPk,
+        userPk,
+        content,
+        removedImageUrls
+      };
+
+      const formData = new FormData();
+      formData.append('request', new Blob([JSON.stringify(requestDto)], { type: 'application/json' }));
+
+      const images = document.getElementById('images').files;
+      for (let i = 0; i < images.length; i++) {
+        formData.append('images', images[i]);
+      }
+
+      const files = document.getElementById('files').files;
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+
+      fetch(`/api/on-project/${projectPk}/boards/${boardInProjectPk}/edit`, {
+        method: 'PUT',
+        body: formData
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('수정 저장 실패');
+          return res.text();
+        })
+        .then(message => {
+          alert(message);
+          // 저장 후 상세보기 페이지로 이동
+          window.location.href = `/board-detail.html?boardInProjectPk=${boardInProjectPk}&projectPk=${projectPk}`;
+        })
+        .catch(err => {
+          console.error(err);
+          alert('저장 중 오류가 발생했습니다.');
+        });
+    });
+</script>
+
+</body>
+</html>

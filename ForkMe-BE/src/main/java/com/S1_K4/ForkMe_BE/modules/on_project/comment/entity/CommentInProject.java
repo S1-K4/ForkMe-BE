@@ -37,7 +37,7 @@ public class CommentInProject extends BaseTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_in_project_pk", nullable = false)
-    private BoardInProject board;
+    private BoardInProject boardInProject;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_pk", nullable = false)

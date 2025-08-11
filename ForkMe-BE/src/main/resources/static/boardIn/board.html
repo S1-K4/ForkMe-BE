@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>프로젝트 게시판</title>
+    <style>
+        body {
+          font-family: sans-serif;
+          margin: 20px;
+        }
+
+        .top-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        input[type="number"] {
+          padding: 5px;
+          font-size: 16px;
+          width: 100px;
+        }
+
+        .create-button {
+          padding: 8px 12px;
+          background-color: #4CAF50;
+          color: white;
+          text-decoration: none;
+          border-radius: 4px;
+        }
+
+        button {
+          padding: 6px 10px;
+          margin-left: 5px;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+        }
+
+        th, td {
+          padding: 10px;
+          border: 1px solid #ccc;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📋 프로젝트 게시판</h1>
+
+<div class="top-bar">
+    <div>
+        <label for="projectInput">Project PK:</label>
+        <input type="number" id="projectInput" placeholder="예: 1" />
+        <button onclick="loadProjectBoards()">불러오기</button>
+    </div>
+    <a id="createBtn" href="/boardIn/board-create.html" class="create-button">+ 새 글 작성</a>
+</div>
+
+<table id="boardTable">
+    <thead>
+    <tr>
+        <th>번호</th>
+        <th>제목</th>
+        <th>내용</th>
+        <th>작성일</th>
+        <th>상세보기</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td colspan="5">프로젝트를 선택하세요.</td></tr>
+    </tbody>
+</table>
+
+<script>
+    function loadProjectBoards() {
+      const projectPk = document.getElementById("projectInput").value.trim();
+      if (!projectPk) {
+        alert("Project PK를 입력하세요.");
+        return;
+      }
+
+      fetch(`/api/on-project/${projectPk}/boards`)
+        .then(res => {
+          if (!res.ok) throw new Error("서버 오류");
+          return res.json();
+        })
+        .then(boards => {
+          const tbody = document.querySelector("#boardTable tbody");
+          tbody.innerHTML = "";
+
+          if (boards.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5">게시글이 없습니다.</td></tr>`;
+            return;
+          }
+
+          boards.forEach((board, index) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${index + 1}</td>
+              <td><a href="/boardIn/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">${board.title}</a></td>
+              <td>${board.content}</td>
+              <td>${new Date(board.createdAt).toLocaleString()}</td>
+              <td><a href="/boardIn/board-detail.html?boardInProjectPk=${board.boardInProjectPk}&projectPk=${projectPk}">상세 보기</a></td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // ✅ "새 글 작성" 링크도 현재 프로젝트 번호로 갱신
+          document.getElementById("createBtn").href = `/board-create.html?projectPk=${projectPk}`;
+        })
+        .catch(err => {
+          console.error("불러오기 실패:", err);
+          const tbody = document.querySelector("#boardTable tbody");
+          tbody.innerHTML = `<tr><td colspan="5">게시글 불러오기 실패</td></tr>`;
+        });
+    }
+</script>
+
+</body>
+</html>

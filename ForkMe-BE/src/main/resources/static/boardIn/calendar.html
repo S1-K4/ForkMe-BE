@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>FullCalendar 일정 관리</title>
+  <!-- FullCalendar 글로벌 번들 (전역 FullCalendar 객체 제공) -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+
+    #calendar {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    #form-section {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="calendar"></div>
+
+<div id="form-section">
+  <h3>일정 추가</h3>
+  <form id="scheduleForm">
+    <label>프로젝트 ID:
+      <input type="number" id="projectPk" required>
+    </label>
+    <label>작성자 ID:
+      <input type="number" id="userPk" required>
+    </label>
+    <label>제목:
+      <input type="text" id="title" required>
+    </label>
+    <label>시작일시:
+      <input type="datetime-local" id="start" required>
+    </label>
+    <label>종료일시:
+      <input type="datetime-local" id="end" required>
+    </label>
+    <label>멘션할 사용자 IDs (쉼표로 구분):
+      <input type="text" id="mentionedUsers" placeholder="예: 2,5,7">
+    </label>
+    <button type="submit">등록</button>
+  </form>
+</div>
+
+<!-- JS 라이브러리 로딩 순서 중요 -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    let calendar;
+
+    // 캘린더 로드 함수
+    function loadCalendar(projectPk) {
+      if (calendar) calendar.destroy();
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        events(fetchInfo, successCallback, failureCallback) {
+          axios.get(`/api/schedules/project/${projectPk}`)
+            .then(response => {
+              const events = response.data.map(schedule => ({
+                id: schedule.id,
+                title: schedule.title,
+                start: schedule.start,
+                end: schedule.end,
+                extendedProps: {
+                  scheduleMentionPk: schedule.scheduleMentionPk
+                }
+              }));
+              successCallback(events);
+            })
+            .catch(error => {
+              console.error('일정 불러오기 실패:', error);
+              failureCallback(error);
+            });
+        },
+        eventDidMount(info) {
+          const mentioned = info.event.extendedProps.scheduleMentionPk;
+          if (mentioned && mentioned.length > 0) {
+            info.el.title = '멘션: ' + mentioned.join(', ');
+          }
+        }
+      });
+
+      calendar.render();
+    }
+
+    // 폼 제출 처리
+    document.getElementById('scheduleForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const projectPk = parseInt(document.getElementById('projectPk').value);
+      const userPk = parseInt(document.getElementById('userPk').value);
+      const title = document.getElementById('title').value;
+      const start = document.getElementById('start').value;
+      const end = document.getElementById('end').value;
+      const mentionInput = document.getElementById('mentionedUsers').value;
+
+      const scheduleMentionPk = mentionInput
+        .split(',')
+        .map(str => str.trim())
+        .filter(str => str !== '')
+        .map(Number);
+
+      const requestBody = {
+        title,
+        start,
+        end,
+        projectPk,
+        userPk,
+        scheduleMentionPk
+      };
+
+      axios.post('/api/schedules', requestBody, { withCredentials: false
+        // 기본은 false, 서버 CORS 설정에 따라 true로 바꿀 수도 있음
+        })
+
+        .then(() => {
+          alert('일정이 등록되었습니다!');
+          loadCalendar(projectPk);
+        })
+        .catch(err => {
+          console.error('일정 등록 실패:', err);
+          alert('등록 실패: ' + (err.response?.data?.message || '서버 오류'));
+        });
+    });
+
+    // 초기 캘린더 로드 (원한다면 초기 projectPk를 지정해 호출)
+    // loadCalendar(1);
+  });
+</script>
+
+</body>
+</html>
