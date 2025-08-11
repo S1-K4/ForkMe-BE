@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Member Review</title>
+</head>
+<body>
+<h1>💬 멤버 평가</h1>
+
+<h2>1️⃣ 리뷰 작성</h2>
+<form id="createForm">
+  <label>Project PK: <input type="number" id="createProjectPk" required></label><br>
+  <label>Writer User PK: <input type="number" id="writerUserPk" required></label><br>
+  <label>Target User PK: <input type="number" id="targetUserPk" required></label><br>
+  <label>Review: <input type="text" id="reviewText" required></label><br>
+  <button type="submit">작성</button>
+</form>
+
+<h2>2️⃣ 내가 작성한 리뷰</h2>
+<form id="writtenForm">
+  <label>Project PK: <input type="number" id="writtenProjectPk" required></label><br>
+  <label>User PK: <input type="number" id="writtenUserPk" required></label><br>
+  <button type="submit">조회</button>
+</form>
+<ul id="writtenList"></ul>
+
+<h2>3️⃣ 내가 받은 리뷰</h2>
+<form id="receivedForm">
+  <label>Project PK: <input type="number" id="receivedProjectPk" required></label><br>
+  <label>User PK: <input type="number" id="receivedUserPk" required></label><br>
+  <button type="submit">조회</button>
+</form>
+<ul id="receivedList"></ul>
+
+<script>
+  // 리뷰 작성
+  document.getElementById("createForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const projectPk = document.getElementById("createProjectPk").value;
+    const writerUserPk = document.getElementById("writerUserPk").value;
+    const targetUserPk = document.getElementById("targetUserPk").value;
+    const review = document.getElementById("reviewText").value;
+
+    const response = await fetch(`/api/projects/${projectPk}/member_review/create?writerUserPk=${writerUserPk}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetUserPk, review })
+    });
+
+    const result = await response.json();
+    alert("리뷰 작성 완료!");
+    console.log(result);
+  });
+
+  // 내가 작성한 리뷰 조회
+  document.getElementById("writtenForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const projectPk = document.getElementById("writtenProjectPk").value;
+    const userPk = document.getElementById("writtenUserPk").value;
+
+    const response = await fetch(`/api/projects/${projectPk}/member_review/written?userPk=${userPk}`);
+    const result = await response.json();
+
+    const list = document.getElementById("writtenList");
+    list.innerHTML = "";
+    result.forEach(r => {
+      const li = document.createElement("li");
+      li.textContent = `리뷰 대상: ${r.targetUserPk}, 내용: ${r.review}`;
+      list.appendChild(li);
+    });
+  });
+
+  // 내가 받은 리뷰 조회
+  document.getElementById("receivedForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const projectPk = document.getElementById("receivedProjectPk").value;
+    const userPk = document.getElementById("receivedUserPk").value;
+
+    const response = await fetch(`/api/projects/${projectPk}/member_review/received?userPk=${userPk}`);
+    const result = await response.json();
+
+    const list = document.getElementById("receivedList");
+    list.innerHTML = "";
+    result.forEach(r => {
+      const li = document.createElement("li");
+      li.textContent = `작성자: ${r.writerUserPk}, 내용: ${r.review}`;
+      list.appendChild(li);
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>멤버 리뷰 작성</title>
+</head>
+<body>
+<h1>📝 멤버 리뷰 작성</h1>
+
+<form id="reviewForm">
+    <label for="writerUserPk">작성자 User PK:</label><br />
+    <input type="number" id="writerUserPk" name="writerUserPk" required /><br /><br />
+
+    <label for="targetUserPk">후기 대상자 User PK:</label><br />
+    <input type="number" id="targetUserPk" name="targetUserPk" required /><br /><br />
+
+    <label for="review">리뷰 내용:</label><br />
+    <textarea id="review" name="review" rows="5" cols="30" required></textarea><br /><br />
+
+    <label for="projectPk">프로젝트 PK:</label><br />
+    <input type="number" id="projectPk" name="projectPk" required /><br /><br />
+
+    <button type="submit">리뷰 작성</button>
+</form>
+
+<script>
+    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const writerUserPk = document.getElementById('writerUserPk').value;
+        const targetUserPk = document.getElementById('targetUserPk').value;
+        const review = document.getElementById('review').value;
+        const projectPk = document.getElementById('projectPk').value;
+
+        const body = {
+            targetUserPk: Number(targetUserPk),
+            review: review
+        };
+
+        try {
+            const response = await fetch(`/api/projects/${projectPk}/member_review/create?writerUserPk=${writerUserPk}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                throw new Error('리뷰 작성 실패');
+            }
+
+            const data = await response.json();
+            alert(`리뷰 작성 성공! ID: ${data.memberReviewPk}`);
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+</script>
+</body>
+</html>

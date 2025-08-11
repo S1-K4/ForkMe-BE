@@ -26,7 +26,7 @@ public interface BoardInProjectService {
 
     // 게시글 수정
     BoardInProject updateBoard(Long projectPk, Long boardInProjectPk, InBoardUpdateRequest request,
-                               List<MultipartFile> newImages, List<MultipartFile> newFiles);
+                               List<MultipartFile> newImages, List<MultipartFile> newFiles, Long userPk);
 
     // 게시글 삭제
     void deleteBoard(Long projectPk, Long boardInProjectPk);
@@ -35,4 +35,5 @@ public interface BoardInProjectService {
     // 게시글 파일삭제
     void removeFileFromBoard(Long boardPk, String key);
 
+    Long getAuthorUserPk(Long boardInProjectPk);
 }
