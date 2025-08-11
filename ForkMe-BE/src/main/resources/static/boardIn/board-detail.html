@@ -174,7 +174,7 @@
   // 💬 댓글 목록 조회
   async function fetchComments() {
     try {
-      const res = await fetch(`/api/comments?boardInProjectPk=${boardInProjectPk}`);
+      const res = await fetch(`/api/on-project/comments?boardInProjectPk=${boardInProjectPk}`);
       const data = await res.json();
 
       if (!Array.isArray(data)) {
@@ -219,7 +219,7 @@
   });
 
   try {
-    const response = await fetch(`/api/comments`, {
+    const response = await fetch(`/api/on-project/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -22,7 +22,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/comments")
+@RequestMapping("/api/on-project/comments")
 public class CommentInProjectController {
 
 
