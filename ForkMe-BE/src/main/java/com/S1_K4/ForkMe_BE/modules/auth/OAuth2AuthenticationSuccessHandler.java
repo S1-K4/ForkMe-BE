@@ -40,7 +40,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-/*
+
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthRepository authRepository;
 
@@ -51,9 +51,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
         HttpSession session = request.getSession(false);
+        //세선에 있는 pendinghookrequest를 꺼냄
         PendingHookRequest pending = (session != null)
                 ? (PendingHookRequest) session.getAttribute(GithubHookSessionKeys.PENDING_HOOK) : null;
 
+        //깃헙 권한 인증후 받아온 깃헙 토큰을 가져옴
         OAuth2AuthenticationToken oauth2 =
                 (authentication instanceof OAuth2AuthenticationToken)
                     ? (OAuth2AuthenticationToken) authentication : null;
@@ -76,6 +78,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 boolean insecure = Boolean.TRUE.equals(pending.insecureSsl());
                 String secret = pending.overrideSecret();
 
+                //훅 정보 생성
                 Map<String, Object> hook;
                 if("repo".equals(pending.mode())) {
                     hook = githubWebhookClient.createRepoWebhook(
@@ -128,5 +131,5 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }*/
+    }
 }
