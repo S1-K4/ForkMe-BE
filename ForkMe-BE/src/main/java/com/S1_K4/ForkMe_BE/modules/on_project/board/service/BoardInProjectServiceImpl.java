@@ -8,6 +8,8 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardImageRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
@@ -48,7 +50,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final BoardFileRepository boardFileRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
-    private final ProjectProfileRepository projectProfileRepository;
+    private final CommentInProjectRepository commentInProjectRepository;
 
     // 게시판 생성
     @Transactional
@@ -249,6 +251,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         // 파일 하드 삭제
         List<S3File> files = boardFileRepository.findByBoardInProject(board);
         boardFileRepository.deleteAll(files);
+
+        //게시글 댓글 하드 삭제
+        List<CommentInProject> commentInProjectList = commentInProjectRepository.findByBoardInProject(board);
+        commentInProjectRepository.deleteAll(commentInProjectList);
 
         // 게시글 소프트 삭제
         board.markDeleted();

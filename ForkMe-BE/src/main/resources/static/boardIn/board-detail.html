@@ -159,7 +159,7 @@
       .then(res => {
         if (!res.ok) throw new Error("삭제 실패");
         alert("게시글이 삭제되었습니다.");
-        window.location.href = `/board.html`;
+        window.location.href = `/boardIn/board.html`;
       })
       .catch(err => {
         console.error("삭제 실패:", err);
