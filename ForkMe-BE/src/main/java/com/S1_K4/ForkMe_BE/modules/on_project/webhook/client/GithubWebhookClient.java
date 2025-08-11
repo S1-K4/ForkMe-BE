@@ -27,7 +27,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class GithubWebhookClient {
-/*
+
     @Value("${github.api.base}")
     private String apiBase;
     @Value("${github.webhook.callback-url}")
@@ -95,7 +95,7 @@ public class GithubWebhookClient {
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
                 .block();
-    }*/
+    }
 }
 
 
