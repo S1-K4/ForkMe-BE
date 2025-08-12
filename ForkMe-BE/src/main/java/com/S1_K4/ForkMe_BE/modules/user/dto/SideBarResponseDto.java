@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Getter
-public class SidebarResponseDto {
+public class SideBarResponseDto {
 
     private List<SideBarProjectDto> preparingProjectList;
     private List<SideBarProjectDto> workSpaceList;

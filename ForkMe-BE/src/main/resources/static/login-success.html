@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 중</title>
+</head>
+<body>  <a>로그인 중</a>
+</body>
+
+<script>
+    (async function handleLoginCallback() {
+        try {
+            // 1. URL에서 Access Token 추출
+            const accessToken = new URLSearchParams(window.location.search).get("accessToken");
+            console.log(accessToken);
+            if (!accessToken) {
+                throw new Error("Access Token이 없습니다.");
+            }
+
+            // 2. Access Token을 사용하여 초기 데이터 요청 API 호출
+            const response = await fetch("/api/user/me", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("초기 데이터 로딩에 실패했습니다.");
+            }
+
+            const initialData = await response.json();
+            console.log(initialData);
+
+            sessionStorage.setItem("accessToken", accessToken);
+            sessionStorage.setItem("userPk", JSON.stringify(initialData.userPk));
+            sessionStorage.setItem("email", JSON.stringify(initialData.email));
+            sessionStorage.setItem("nickname", JSON.stringify(initialData.nickname));
+            sessionStorage.setItem("profileUrl", JSON.stringify(initialData.profileUrl));
+            sessionStorage.setItem("sidebarInfo", JSON.stringify(initialData.sidebarInfo));
+
+            window.location.replace("/");
+
+        } catch (error) {
+            console.error("로그인 콜백 처리 중 에러 발생:", error);
+        }
+    })();
+</script>
+
+</html>

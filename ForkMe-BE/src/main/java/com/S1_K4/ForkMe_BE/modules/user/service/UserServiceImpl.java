@@ -2,9 +2,12 @@ package com.S1_K4.ForkMe_BE.modules.user.service;
 
 import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
-import com.S1_K4.ForkMe_BE.modules.user.dto.SidebarResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.SideBarResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserInfoResponseDto;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.entity.UserTechStack;
+import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserTechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
@@ -27,12 +30,40 @@ import java.util.List;
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private final UserRepository userRepository;
     private final UserTechStackRepository userTechStackRepository;
     private final StackRepository stackRepository;
     private final ProjectRepository projectRepository;
 
     @Override
-    public SidebarResponseDto getSidebarInfo(Long userPk) {
+    public UserInfoResponseDto getMyProfile(Long userPk) {
+
+        UserProfile userProfile = userRepository.findByUserPk(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid User PK: " + userPk));
+        System.out.println("userProfile = " + userProfile.toString());
+
+        SideBarResponseDto sideBarResponseDto = getSidebarInfo(userPk);
+        System.out.println("sideBarResponseDto = " + sideBarResponseDto.toString());
+
+        return UserInfoResponseDto.builder()
+                .userPk(userProfile.getUserPk())
+                .email(userProfile.getEmail())
+                .nickname(userProfile.getNickname())
+                .profileUrl(userProfile.getProfileUrl())
+                .sideBarResponseDto(sideBarResponseDto)
+                .build();
+    }
+
+    @Override
+    public UserProfile getUserProfile(Long userPk){
+        UserProfile userProfile = userRepository.findByUserPk(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid User PK: " + userPk));
+        return userProfile;
+    }
+
+
+    @Override
+    public SideBarResponseDto getSidebarInfo(Long userPk) {
 
         // 준비중인 프로젝트 -> 모집
         // project_status = RECRUITING
@@ -43,7 +74,7 @@ public class UserServiceImpl implements UserService {
         List<SideBarProjectDto> workSpace = projectRepository.findProgressProjectsByUser(userPk);
 
 
-        return SidebarResponseDto.builder()
+        return SideBarResponseDto.builder()
                 .preparingProjectList(preparingProject)
                 .workSpaceList(workSpace)
                 .build();
