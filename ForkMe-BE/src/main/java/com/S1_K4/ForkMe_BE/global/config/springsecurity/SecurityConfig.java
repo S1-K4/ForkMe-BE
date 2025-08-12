@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/", "/index.html","/login/**","/api/auth/**","/favicon.ico"
                                 ).permitAll()
-
+                                .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
+                                        "/api/on-project/comments/**").permitAll()
                                 //인증 필요한 GET 매핑
                                 .requestMatchers(HttpMethod.GET,
                                         "/api/projects/form-info",
