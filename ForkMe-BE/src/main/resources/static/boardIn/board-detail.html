@@ -220,6 +220,31 @@
           editBtn.innerText = "✏️ 수정";
           editBtn.style.marginLeft = "10px";
 
+            // 삭제 버튼 추가
+  const deleteBtn = document.createElement("button");
+  deleteBtn.innerText = "🗑 삭제";
+  deleteBtn.style.marginLeft = "10px";
+  deleteBtn.style.backgroundColor = "#f44336";
+  deleteBtn.style.color = "#fff";
+
+    deleteBtn.addEventListener("click", async () => {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+    try {
+      const response = await fetch(`/api/on-project/comments/${comment.commentInProjectPk}`, {
+        method: "DELETE"
+      });
+      if (!response.ok) throw new Error("댓글 삭제 실패");
+
+      alert("댓글이 삭제되었습니다.");
+      fetchComments();
+    } catch (err) {
+      console.error("댓글 삭제 실패:", err);
+      alert("댓글 삭제 중 오류가 발생했습니다.");
+    }
+  });
+
+
           editBtn.addEventListener("click", () => {
             // 수정 텍스트 영역으로 바꾸기
             const editArea = document.createElement("div");
@@ -279,7 +304,8 @@
             });
           });
 
-          li.appendChild(editBtn);
+            li.appendChild(editBtn);
+  li.appendChild(deleteBtn);
         }
 
         commentList.appendChild(li);
