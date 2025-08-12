@@ -11,6 +11,9 @@
     button { padding: 8px 16px; font-size: 14px; margin-right: 5px; }
     .file-list li { margin-bottom: 5px; }
     textarea { width: 100%; padding: 8px; font-size: 14px; }
+    .comment-item { margin-bottom: 10px; }
+    .comment-text { display: inline-block; margin-right: 10px; }
+    .edit-area { margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -42,7 +45,7 @@
 <div class="comments">
   <h3>💬 댓글</h3>
   <div>
-    <input type="number" id="userPkInput" placeholder="User PK" />
+    <input type="number" id="userPkInput" placeholder="User PK 입력 후 변경 또는 엔터" />
     <input type="text" id="commentInput" placeholder="댓글을 입력하세요" />
     <button id="submitComment">댓글 등록</button>
   </div>
@@ -171,11 +174,22 @@
     window.location.href = `/boardIn/board.html`;
   });
 
-  // 💬 댓글 목록 조회
+  // userPk 입력 박스 이벤트로 댓글 새로고침
+  const userPkInput = document.getElementById("userPkInput");
+  userPkInput.addEventListener("change", fetchComments);
+  userPkInput.addEventListener("keyup", e => {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      fetchComments();
+    }
+  });
+
+  // 💬 댓글 목록 조회 및 본인확인 수정버튼 표시
   async function fetchComments() {
     try {
       const res = await fetch(`/api/on-project/comments?boardInProjectPk=${boardInProjectPk}`);
       const data = await res.json();
+
+      console.log("댓글 목록 데이터:", data);
 
       if (!Array.isArray(data)) {
         console.error("댓글 응답이 배열이 아님:", data);
@@ -185,9 +199,89 @@
       const commentList = document.getElementById("commentList");
       commentList.innerHTML = "";
 
+      const currentUserPk = Number(userPkInput.value.trim());
+
       data.forEach(comment => {
         const li = document.createElement("li");
-        li.innerHTML = `<strong>${comment.name}</strong> (${new Date(comment.createdAt).toLocaleString()}): ${comment.comment}`;
+        li.classList.add("comment-item");
+
+          // ✅ 이 아래 로그 추가
+  console.log("현재 userPk:", currentUserPk);
+  console.log("댓글 userPk:", comment.userPk);
+
+        const commentText = document.createElement("span");
+        commentText.classList.add("comment-text");
+        commentText.innerHTML = `<strong>${comment.name}</strong> (${new Date(comment.createdAt).toLocaleString()}): ${comment.comment}`;
+        li.appendChild(commentText);
+
+        // 본인이면 수정 버튼 추가
+        if (!isNaN(currentUserPk) && currentUserPk === comment.userPk) {
+          const editBtn = document.createElement("button");
+          editBtn.innerText = "✏️ 수정";
+          editBtn.style.marginLeft = "10px";
+
+          editBtn.addEventListener("click", () => {
+            // 수정 텍스트 영역으로 바꾸기
+            const editArea = document.createElement("div");
+            editArea.classList.add("edit-area");
+
+            const editInput = document.createElement("input");
+            editInput.type = "text";
+            editInput.value = comment.comment;
+            editInput.style.width = "300px";
+
+            const saveBtn = document.createElement("button");
+            saveBtn.innerText = "저장";
+            saveBtn.style.marginLeft = "5px";
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.innerText = "취소";
+            cancelBtn.style.marginLeft = "5px";
+
+            editArea.appendChild(editInput);
+            editArea.appendChild(saveBtn);
+            editArea.appendChild(cancelBtn);
+
+            li.appendChild(editArea);
+            commentText.style.display = "none";
+            editBtn.style.display = "none";
+
+            saveBtn.addEventListener("click", async () => {
+              const newComment = editInput.value.trim();
+              if (!newComment) {
+                alert("댓글 내용을 입력해주세요.");
+                return;
+              }
+
+              try {
+                const response = await fetch(`/api/on-project/comments/${comment.commentInProjectPk}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    userPk: currentUserPk,
+                    comment: newComment
+                  })
+                });
+                if (!response.ok) throw new Error("댓글 수정 실패");
+
+                alert("댓글이 수정되었습니다.");
+                fetchComments();
+              } catch (err) {
+                console.error("댓글 수정 실패:", err);
+                alert("댓글 수정 중 오류가 발생했습니다.");
+              }
+            });
+
+            cancelBtn.addEventListener("click", () => {
+              editArea.remove();
+              commentText.style.display = "inline-block";
+              editBtn.style.display = "inline-block";
+            });
+          });
+
+          li.appendChild(editBtn);
+        }
+
         commentList.appendChild(li);
       });
     } catch (err) {
@@ -197,48 +291,44 @@
 
   // 💬 댓글 등록
   document.getElementById("submitComment").addEventListener("click", async () => {
-  const comment = document.getElementById("commentInput").value.trim();
-  const userPkStr = document.getElementById("userPkInput").value.trim();
+    const comment = document.getElementById("commentInput").value.trim();
+    const userPkStr = userPkInput.value.trim();
 
-  // URL에서 boardInProjectPk 가져오기
-  const boardInProjectPkStr = new URLSearchParams(window.location.search).get("boardInProjectPk");
+    if (!comment || !userPkStr) {
+      alert("댓글과 User PK를 입력해주세요.");
+      return;
+    }
 
-  // 숫자로 변환
-  const boardInProjectPk = Number(boardInProjectPkStr);
-  const userPk = Number(userPkStr);
+    const userPk = Number(userPkStr);
+    const boardId = Number(boardInProjectPk);
 
-  if (!comment || isNaN(boardInProjectPk) || isNaN(userPk)) {
-    alert("모든 필드를 올바르게 입력해주세요. (숫자만 허용)");
-    return;
-  }
+    if (isNaN(userPk) || isNaN(boardId)) {
+      alert("User PK와 게시글 PK는 숫자여야 합니다.");
+      return;
+    }
 
-  console.log("💬 댓글 등록 요청 payload:", {
-    boardInProjectPk,
-    userPk,
-    comment
+    try {
+      const response = await fetch(`/api/on-project/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardInProjectPk: boardId,
+          userPk,
+          comment
+        })
+      });
+
+      if (!response.ok) throw new Error("댓글 등록 실패");
+
+      alert("댓글이 등록되었습니다.");
+      document.getElementById("commentInput").value = "";
+      fetchComments();
+    } catch (err) {
+      console.error("댓글 등록 실패:", err);
+      alert("댓글 등록 중 오류 발생");
+    }
   });
 
-  try {
-    const response = await fetch(`/api/on-project/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        boardInProjectPk,
-        userPk,
-        comment
-      })
-    });
-
-    if (!response.ok) throw new Error("댓글 등록 실패");
-
-    alert("댓글이 등록되었습니다.");
-    document.getElementById("commentInput").value = "";
-    fetchComments();
-  } catch (err) {
-    console.error("댓글 등록 실패:", err);
-    alert("댓글 등록 중 오류 발생");
-  }
-});
 </script>
 
 </body>
