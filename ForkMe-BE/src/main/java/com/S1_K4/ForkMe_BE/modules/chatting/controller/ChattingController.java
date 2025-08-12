@@ -1,15 +1,18 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.PrivateChattingRoomResponse;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -40,6 +43,42 @@ public class ChattingController {
     @GetMapping("/{chattingRoomPk}/participants")
     public List<ChattingUserDto> getChattingRoomParticipants(
             @PathVariable("chattingRoomPk") Long chattingRoomPk) {
-        return chattingService.getTeamChattingRoomParticipants(chattingRoomPk);
+        return chattingService.getChattingRoomParticipants(chattingRoomPk);
     }
+
+
+    @GetMapping("/create")
+    public PrivateChattingRoomResponse createPrivateChattingRoom(
+            @RequestParam("projectPk") Long projectPk,
+            @RequestParam("roomType") RoomType roomType,
+            @RequestParam("fromUserPk") Long fromUserPk,
+            @RequestParam("toUserPk") Long toUserPk
+
+    ){
+        //생성 시간 UTC
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+
+        //채팅방 생성
+        ChattingRoom chattingRoom = chattingService.createPrivateChattingRoom(projectPk, roomType, fromUserPk, toUserPk, now);
+
+        //참여자 추가
+        User fromUser = chattingService.addChattingParticipant(chattingRoom, fromUserPk, now);
+        User toUser = chattingService.addChattingParticipant(chattingRoom, toUserPk, now);
+
+        // 3. 직접 참여자 리스트 생성
+        List<ChattingUserDto> participants = List.of(
+                new ChattingUserDto(fromUser.getUserPk(), fromUser.getNickname(), false),
+                new ChattingUserDto(toUser.getUserPk(), toUser.getNickname(), false)
+        );
+
+        // DTO 만들어서 반환
+        return PrivateChattingRoomResponse.builder()
+                .chattingRoomPk(chattingRoom.getChattingRoomPk())
+                .roomType(roomType)
+                .chattingRoomParticipants(participants)
+                .build();
+
+    }
+
 }

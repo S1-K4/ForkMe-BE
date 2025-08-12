@@ -19,13 +19,19 @@ import java.util.List;
  */
 public interface ChattingService {
 
-    ChattingRoom createChattingRoom(Project project, RoomType roomType, LocalDateTime now);
+    ChattingRoom createTeamChattingRoom(Project project, RoomType roomType, LocalDateTime now);
+
+    ChattingRoom createPrivateChattingRoom(
+            Long project, RoomType roomType, Long fromUserPk, Long toUserPk, LocalDateTime now
+    );
 
     void sendMessage(ChattingMessageDto chattingMessageDto);
 
-    List<ChattingUserDto> getTeamChattingRoomParticipants(Long chattingRoomPk);
+    List<ChattingUserDto> getChattingRoomParticipants(Long chattingRoomPk);
 
-    void addChattingParticipant(ChattingRoom chattingRoom, User userPk, LocalDateTime now);
+    User addChattingParticipant(ChattingRoom chattingRoom, Long userPk, LocalDateTime now);
+
+    void noticeJoinChattingRoom(ChattingRoom chattingRoom, User userPk, LocalDateTime now);
 
     void removeChattingParticipant(ChattingRoom chattingRoom, User user, LocalDateTime now);
 
