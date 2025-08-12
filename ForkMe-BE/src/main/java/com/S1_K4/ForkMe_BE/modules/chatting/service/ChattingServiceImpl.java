@@ -117,12 +117,7 @@ public class ChattingServiceImpl implements ChattingService{
     public void sendMessage(ChattingMessageDto chattingMessageDto) {
 
         //서버용 시간은 UTC 시간으로 포맷 맞추기
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-
-        // 프론트에 보낼 시간은 KST 로 변환해서 DTO 에 세팅
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         // 1. 채팅방 조회
         ChattingRoom chattingRoom = chattingRoomRepository.findById(chattingMessageDto.getChattingRoomPk())
@@ -141,7 +136,8 @@ public class ChattingServiceImpl implements ChattingService{
         chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 채팅방에 속한 사용자가 아닙니다."));
 
-        /**[추가된 로직 시작] — 개인 채팅방에서 상대방 탈퇴 시 메시지 차단**/
+
+        /** 개인 채팅방에서 상대방 탈퇴 시 메시지 송신 차단**/
         if (chattingRoom.getRoomType() == RoomType.P) {
             List<ChattingParticipant> participants = chattingParticipantRepository.findByChattingRoomPk(chattingRoom);
 
@@ -152,11 +148,10 @@ public class ChattingServiceImpl implements ChattingService{
                 throw new IllegalStateException("상대방이 탈퇴하여 메시지를 보낼 수 없습니다.");
             }
         }
-        /**[추가된 로직 끝]**/
 
-        //Redis 발행용 데이터 세팅 (시간 포맷 적용)
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        chattingMessageDto.setCreatedAt(nowKST);
+
+        //Redis 발행용 데이터 세팅 (시간 포맷 적용);
+        chattingMessageDto.setCreatedAt(now);
         chattingMessageDto.setNickName(user.getNickname());
         chattingMessageDto.setChattingMessageType(ChattingMessageType.CHAT);
 
@@ -199,19 +194,14 @@ public class ChattingServiceImpl implements ChattingService{
     // 채팅방 입장 메세지 출력 및 저장
     public void noticeJoinChattingRoom(ChattingRoom chattingRoom, User userPk, LocalDateTime now){
 
-        // 프론트에 보낼 시간은 KST 로 변환해서 DTO 에 세팅
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
-
         // 실시간 입장 알림 DTO 생성
         ChattingMessageDto joinMessage = ChattingMessageDto.builder()
                 .chattingRoomPk(chattingRoom.getChattingRoomPk())
                 .userPk(userPk.getUserPk())
                 .nickName(userPk.getNickname())
                 .message(userPk.getNickname() + " 님이 입장했습니다.")
-                .createdAt(nowKST)
-                .chattingMessageType(ChattingMessageType.JOIN) // ✅ 메시지 타입 설정
+                .createdAt(now)
+                .chattingMessageType(ChattingMessageType.JOIN) //메시지 타입 설정
                 .build();
 
         // DB 저장 (MySQL + MongoDB)
@@ -221,7 +211,7 @@ public class ChattingServiceImpl implements ChattingService{
         //Redis 발행 (채널명은 고정)
         redisPublisher.publish("chat", joinMessage);
 
-        // ✅ 입장 후 실시간 참여자 리스트 전송
+        // 입장 후 실시간 참여자 리스트 전송
         List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
         redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
     }
@@ -254,18 +244,13 @@ public class ChattingServiceImpl implements ChattingService{
         chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .ifPresent(chattingParticipantRepository::delete);
 
-        // 2. 프론트에 보낼 시간 (KST)
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
-
         // 3. 퇴장 메시지 DTO
         ChattingMessageDto leaveMessage = ChattingMessageDto.builder()
                 .chattingRoomPk(chattingRoom.getChattingRoomPk())
                 .userPk(user.getUserPk())
                 .nickName(user.getNickname())
                 .message(user.getNickname() + " 님이 퇴장했습니다.")
-                .createdAt(nowKST)
+                .createdAt(now)
                 .chattingMessageType(ChattingMessageType.LEAVE) // 퇴장 메시지 타입
                 .build();
 
@@ -276,7 +261,7 @@ public class ChattingServiceImpl implements ChattingService{
         // 5. Redis 발행
         redisPublisher.publish("chat", leaveMessage);
 
-        // 퇴장 후 실시간 참여자 리스트 전송
+        // ✅ 퇴장 후 실시간 참여자 리스트 전송
         List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
         redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
 
@@ -333,7 +318,7 @@ public class ChattingServiceImpl implements ChattingService{
 
 
 
-    /** 헬버 메서드 **/
+    /** 헬퍼 메서드 **/
     private void validateProjectMember(Project project, Long userPk) {
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
