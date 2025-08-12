@@ -12,10 +12,14 @@ import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingMessageRepository
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingParticipantRepository;
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingRoomRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,11 +43,12 @@ public class ChattingServiceImpl implements ChattingService{
     private final ChattingRoomRepository chattingRoomRepository;
     private final ChattingParticipantRepository chattingParticipantRepository;
     private final UserRepository userRepository;
-//    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
 
 
     @Override
-    public ChattingRoom createChattingRoom(Project project, RoomType roomType, LocalDateTime now) {
+    public ChattingRoom createTeamChattingRoom(Project project, RoomType roomType, LocalDateTime now) {
         // 채팅방 생성
         ChattingRoom chattingRoom = ChattingRoom.create(project, roomType, now);
         chattingRoomRepository.save(chattingRoom);
@@ -52,9 +57,59 @@ public class ChattingServiceImpl implements ChattingService{
     }
 
     @Override
-    public ChattingRoom getChattingRoom(Project projectPk){
-        return chattingRoomRepository.findByProjectPk(projectPk)
-                .orElseThrow(() -> new IllegalStateException("채팅방이 없습니다."));
+    public ChattingRoom createPrivateChattingRoom(
+            Long projectPk, RoomType roomType, Long fromUserPk, Long toUserPk, LocalDateTime now
+    ){
+        // 실제 DB 에서 한번 더 조회해도 좋음 (PK로 비교만 하려면 아래처럼도 가능)
+
+        //프로젝트 존재 확인
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
+
+        //유저 존재만 확인(멤버 검증은  '새로 만들 때만')
+        userRepository.findById(fromUserPk)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        userRepository.findById(toUserPk)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+
+        //1. 채팅방 참여자 두명 모두 '현재 참여자' 인 경우 기존 방 반환
+        ChattingRoom existingChattingRoom = chattingRoomRepository
+                .findByProjectPkAndRoomTypeAndParticipants(projectPk, roomType, fromUserPk, toUserPk)
+                .orElse(null);
+
+        if (existingChattingRoom != null) {
+            // 이미 있으면 그 방 리턴
+            return existingChattingRoom;
+        }
+
+        // 2.요청자(fromUser)는 현재 '참여자' + 상대(toUser)는 과거 '메시지 기록' 이 있는 기존 방
+        existingChattingRoom = chattingRoomRepository
+                .findPrivateRoomByParticipantAndHistory(projectPk, roomType, fromUserPk, toUserPk) // ← 여기 추가
+                .orElse(null);
+        if (existingChattingRoom != null) return existingChattingRoom;
+
+
+        /** 방을 생성하기 전 프로젝트 멤버인지 검사 **/
+
+        // 둘 다 없으면 "생성 가능 조건" 체크: 두 사람 모두 현재 프로젝트 멤버여야 함
+        validateProjectMember(project, fromUserPk);
+        validateProjectMember(project, toUserPk);
+
+        //존재하는 방 없으면 방 생성
+        ChattingRoom newChattingRoom = ChattingRoom.create(project, roomType, now);
+        chattingRoomRepository.save(newChattingRoom);
+
+        return newChattingRoom;
+    }
+
+    @Override
+    public ChattingRoom getChattingRoom(Long projectPk, RoomType roomType) {
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트가 존재하지 않습니다."));
+
+        return chattingRoomRepository.findByProjectPkAndRoomType(project, roomType)
+                .orElseThrow(() -> new IllegalStateException("해당 타입의 채팅방이 존재하지 않습니다."));
     }
 
 
@@ -62,12 +117,7 @@ public class ChattingServiceImpl implements ChattingService{
     public void sendMessage(ChattingMessageDto chattingMessageDto) {
 
         //서버용 시간은 UTC 시간으로 포맷 맞추기
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-
-        // 프론트에 보낼 시간은 KST 로 변환해서 DTO 에 세팅
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         // 1. 채팅방 조회
         ChattingRoom chattingRoom = chattingRoomRepository.findById(chattingMessageDto.getChattingRoomPk())
@@ -86,9 +136,22 @@ public class ChattingServiceImpl implements ChattingService{
         chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 채팅방에 속한 사용자가 아닙니다."));
 
-        //Redis 발행용 데이터 세팅 (시간 포맷 적용)
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        chattingMessageDto.setCreatedAt(nowKST);
+
+        /** 개인 채팅방에서 상대방 탈퇴 시 메시지 송신 차단**/
+        if (chattingRoom.getRoomType() == RoomType.P) {
+            List<ChattingParticipant> participants = chattingParticipantRepository.findByChattingRoomPk(chattingRoom);
+
+            boolean hasOtherUser = participants.stream()
+                    .anyMatch(participant -> !participant.getUserPk().getUserPk().equals(user.getUserPk()));
+
+            if (!hasOtherUser) {
+                throw new IllegalStateException("상대방이 탈퇴하여 메시지를 보낼 수 없습니다.");
+            }
+        }
+
+
+        //Redis 발행용 데이터 세팅 (시간 포맷 적용);
+        chattingMessageDto.setCreatedAt(now);
         chattingMessageDto.setNickName(user.getNickname());
         chattingMessageDto.setChattingMessageType(ChattingMessageType.CHAT);
 
@@ -110,32 +173,35 @@ public class ChattingServiceImpl implements ChattingService{
 
 
     @Override
-    public void addChattingParticipant(ChattingRoom chattingRoom, User userPk, LocalDateTime now){
+    public User addChattingParticipant(ChattingRoom chattingRoom, Long userPk, LocalDateTime now){
+
+        // User 엔티티 조회
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
         // 중복 참여자 방지
         boolean alreadyInRoom = chattingParticipantRepository
-                .findByChattingRoomPkAndUserPk(chattingRoom, userPk)
+                .findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .isPresent();
 
-        if (alreadyInRoom) return;
+        if (alreadyInRoom) return user;
 
         // 참여자 저장
-        chattingParticipantRepository.save(ChattingParticipant.create(chattingRoom, userPk, now));
+        chattingParticipantRepository.save(ChattingParticipant.create(chattingRoom, user, now));
+        return user;
+    }
 
-
-
-        // 프론트에 보낼 시간은 KST 로 변환해서 DTO 에 세팅
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
+    // 채팅방 입장 메세지 출력 및 저장
+    public void noticeJoinChattingRoom(ChattingRoom chattingRoom, User userPk, LocalDateTime now){
 
         // 실시간 입장 알림 DTO 생성
         ChattingMessageDto joinMessage = ChattingMessageDto.builder()
                 .chattingRoomPk(chattingRoom.getChattingRoomPk())
                 .userPk(userPk.getUserPk())
                 .nickName(userPk.getNickname())
-                .message(userPk.getNickname() + " 님이 참여했습니다.")
-                .createdAt(nowKST)
-                .chattingMessageType(ChattingMessageType.JOIN) // ✅ 메시지 타입 설정
+                .message(userPk.getNickname() + " 님이 입장했습니다.")
+                .createdAt(now)
+                .chattingMessageType(ChattingMessageType.JOIN) //메시지 타입 설정
                 .build();
 
         // DB 저장 (MySQL + MongoDB)
@@ -144,18 +210,39 @@ public class ChattingServiceImpl implements ChattingService{
 
         //Redis 발행 (채널명은 고정)
         redisPublisher.publish("chat", joinMessage);
+
+        // 입장 후 실시간 참여자 리스트 전송
+        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
+        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
     }
 
+    /** 멤버를 삭제해야할 채팅방 조회 및 삭제 메서드 호출 **/
+    //"프로젝트 내 모든 채팅방(T/P)에서 해당 유저 제거" 메서드 추가
+    @Transactional
+    public void performRemoveUserFromAllChattingRooms(Long projectPk, Long userPk, LocalDateTime now) {
+
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        // 이 프로젝트에서 이 유저가 연결된 모든 참여 레코드(팀/개인 전부)
+        List<ChattingParticipant> links =
+                chattingParticipantRepository
+                        .findByUserPk_UserPkAndChattingRoomPk_ProjectPk_ProjectPk(userPk, projectPk);
+
+        // 방 기준 중복 제거 후, 기존 removeChattingParticipant 재사용
+        links.stream()
+                .map(ChattingParticipant::getChattingRoomPk)
+                .distinct()
+                .forEach(room -> removeChattingParticipant(room, user, now));
+    }
+
+
+    /** 채팅방 삭제 및 퇴장 메세지 출력 **/
     @Override
     public void removeChattingParticipant(ChattingRoom chattingRoom, User user, LocalDateTime now) {
         // 1. DB 에서 참여자 제거
         chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .ifPresent(chattingParticipantRepository::delete);
-
-        // 2. 프론트에 보낼 시간 (KST)
-        LocalDateTime nowKST = now.atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime();
 
         // 3. 퇴장 메시지 DTO
         ChattingMessageDto leaveMessage = ChattingMessageDto.builder()
@@ -163,7 +250,7 @@ public class ChattingServiceImpl implements ChattingService{
                 .userPk(user.getUserPk())
                 .nickName(user.getNickname())
                 .message(user.getNickname() + " 님이 퇴장했습니다.")
-                .createdAt(nowKST)
+                .createdAt(now)
                 .chattingMessageType(ChattingMessageType.LEAVE) // 퇴장 메시지 타입
                 .build();
 
@@ -173,31 +260,76 @@ public class ChattingServiceImpl implements ChattingService{
 
         // 5. Redis 발행
         redisPublisher.publish("chat", leaveMessage);
+
+        // ✅ 퇴장 후 실시간 참여자 리스트 전송
+        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
+        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
+
     }
 
     //채팅방 참여자 리스트 불러오기
     @Override
-    public List<ChattingUserDto> getTeamChattingRoomParticipants(Long chattingRoomPk) {
+    public List<ChattingUserDto> getChattingRoomParticipants(Long chattingRoomPk) {
         ChattingRoom chattingRoom = chattingRoomRepository.findById(chattingRoomPk)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
 
-        Project projectPk = chattingRoom.getProjectPk(); // ✅ 수정: 리더 확인을 위한 project 추출
+        RoomType roomType = chattingRoom.getRoomType(); // roomType 가져오기
+        Project projectPk = chattingRoom.getProjectPk(); // 수정: 리더 확인을 위한 project 추출
+
 
         return chattingParticipantRepository.findByChattingRoomPk(chattingRoom)
                 .stream()
-                .map(cp -> {
-//                    boolean isLeader = projectMemberRepository
-//                            .findByProjectPkAndUserPk(projectPk, cp.getUserPk())
-//                            .map(projectMember -> "leader".equals(projectMember.getIsLeader()))
-//                            .orElse(false);
+                .map(chattingParticipant -> {
+                    boolean isLeader = false;
 
-                    return ChattingUserDto.builder() // ✅ 빌더 사용
-                            .userPk(cp.getUserPk().getUserPk())
-                            .nickName(cp.getUserPk().getNickname())
-//                            .leader(isLeader)
+                    // roomType 이 T일 때만 리더 여부 체크
+                    if (RoomType.T.equals(roomType)) {
+                        isLeader = projectMemberRepository
+                                .findByProjectPkAndUserPk(projectPk, chattingParticipant.getUserPk())
+                                .map(pm -> pm.getIsLeader() == IsLeader.LEADER) // ← enum 은 == 로 비교
+                                .orElse(false);
+                    }
+
+                    return ChattingUserDto.builder() // 빌더 사용
+                            .userPk(chattingParticipant.getUserPk().getUserPk())
+                            .nickName(chattingParticipant.getUserPk().getNickname())
+                            .leader(isLeader)
                             .build();
                 })
                 .toList();
+    }
+
+
+    //개인 채팅방에서 상대방 존재 여부 확인
+    public boolean hasOtherUser(ChattingRoom chattingRoom, Long myUserPk) {
+        return chattingParticipantRepository.findByChattingRoomPk(chattingRoom).stream()
+                .anyMatch(p -> !p.getUserPk().getUserPk().equals(myUserPk));
+    }
+
+
+    //개인 채팅방 생성 시 상대가 현재 프로젝트 멤버인지 체크
+    public boolean isProjectMember(Long projectPk, Long userPk) {
+        Project p = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트가 존재하지 않습니다."));
+        return projectMemberRepository.findByProjectPkAndUserPk(p,
+                        userRepository.findById(userPk).orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다.")))
+                .isPresent();
+    }
+
+
+
+    /** 헬퍼 메서드 **/
+    private void validateProjectMember(Project project, Long userPk) {
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        boolean isMember = projectMemberRepository
+                .findByProjectPkAndUserPk(project, user)
+                .isPresent();
+
+        if (!isMember) {
+            throw new IllegalArgumentException("프로젝트 멤버가 아닌 유저입니다: userPk = " + userPk);
+        }
     }
 
 }

@@ -46,10 +46,12 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
     List<PositionResponseDTO> findAllPositionDTOByProfilePk(@Param("profilePk") Long profilePk);
 
     @Query("""
-    SELECT p FROM ProjectPosition p
-    WHERE p.projectProfile.projectProfilePk = :profilePk
-      AND p.projectPositionPk = :positionPk
-""")
-    Optional<ProjectPosition> findByProjectProfileAndPositionPk(@Param("profilePk") Long profilePk, @Param("positionPk") Long positionPk);
+        SELECT p
+        FROM ProjectPosition p
+        WHERE p.projectProfile.project.projectPk = :projectPk
+          AND p.projectPositionPk = :projectPositionPk
+    """)
+    Optional<ProjectPosition> findByProjectPkAndProjectPositionPk(@Param("projectPk") Long projectPk,
+                                                                  @Param("projectPositionPk") Long projectPositionPk);
 
 }

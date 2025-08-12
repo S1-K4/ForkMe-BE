@@ -48,25 +48,14 @@ public class ChattingHistoryServiceImpl implements ChattingHistoryService{
         return chattingMessageMongoRepository
                 .findByChattingRoomPkAndCreatedAtAfterOrderByCreatedAtAsc(chattingRoomPk, joinTime)
                 .stream()
-                .map(document -> {
-                    // KST 로 시간 변환
-                    LocalDateTime kstTime = document.getCreatedAt()
-                            .atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                            .toLocalDateTime();
-
-                    return ChattingMessageDto.builder()
-                            .chattingRoomPk(document.getChattingRoomPk())
-                            .userPk(document.getUserPk())
-                            .nickName(document.getNickName())
-                            .message(document.getMessage())
-                            .chattingMessageType(document.getChattingMessageType())
-                            .createdAt(kstTime)  //변환된 시간 사용
-                            .build();
-                })
-
-                // 이전 채팅(입/퇴장 포함) 시간 순 정렬 한 번 더 보장
-                .sorted((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                .map(document -> ChattingMessageDto.builder()
+                        .chattingRoomPk(document.getChattingRoomPk())
+                        .userPk(document.getUserPk())
+                        .nickName(document.getNickName())
+                        .message(document.getMessage())
+                        .chattingMessageType(document.getChattingMessageType())
+                        .createdAt(document.getCreatedAt()) // 변환 제거
+                        .build())
                 .toList();
     }
 }

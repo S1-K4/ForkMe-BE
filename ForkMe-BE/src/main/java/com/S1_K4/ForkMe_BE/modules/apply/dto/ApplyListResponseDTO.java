@@ -20,6 +20,6 @@ public class ApplyListResponseDTO {
     private Long userPk;
     private String nickname;
     private String profileUrl;
-    private ApplyStatus status;
+    private String status;
     private LocalDateTime createdAt;
 }

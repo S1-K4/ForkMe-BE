@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -19,21 +20,79 @@ import java.util.Optional;
 @Repository
 public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long> {
 
-    @Query("""
-        SELECT r FROM ChattingRoom r
-        JOIN r.chattingParticipants p1
-        JOIN r.chattingParticipants p2
-        WHERE r.projectPk.projectPk = :projectPk
-          AND r.roomType = :roomType
-          AND p1.userPk.userPk = :user1
-          AND p2.userPk.userPk = :user2
-    """)
-    Optional<ChattingRoom> findByProjectPkAndRoomTypeAndParticipants(
-            Long projectPk, RoomType roomType, Long user1, Long user2
-    );
-
     // 프로젝트로 채팅방 찾기
     Optional<ChattingRoom> findByProjectPk(Project project);
+
+    Optional<ChattingRoom> findByProjectPkAndRoomType(Project project, RoomType roomType);
+
+    // 두명 모두 '현재 프로젝트 참여자' 인 기존 개인방
+    @Query("""
+        select r
+        from ChattingRoom r
+        join r.chattingParticipants p
+        where r.projectPk.projectPk = :projectPk
+          and r.roomType = :roomType
+          and p.userPk.userPk in (:user1, :user2)
+        group by r
+        having count(distinct p.userPk.userPk) = 2
+    """)
+    Optional<ChattingRoom> findByProjectPkAndRoomTypeAndParticipants(
+            @Param("projectPk") Long projectPk,
+            @Param("roomType") RoomType roomType,
+            @Param("user1") Long user1,
+            @Param("user2") Long user2
+    );
+
+
+    // 두 사용자 모두 '메세지 기록' 이 있는 기존 개인방
+    @Query("""
+        select r
+        from ChattingRoom r
+        where r.projectPk.projectPk = :projectPk
+          and r.roomType = :roomType
+          and exists (
+             select m1.chattingMessagePk           
+             from ChattingMessage m1               
+             where m1.chattingRoomPk = r
+               and m1.userPk.userPk = :user1       
+          )
+          and exists (
+             select m2.chattingMessagePk       
+             from ChattingMessage m2
+             where m2.chattingRoomPk = r
+               and m2.userPk.userPk = :user2       
+          )
+    """)
+    Optional<ChattingRoom> findPrivateRoomByHistory(
+            @Param("projectPk") Long projectPk,
+            @Param("roomType") RoomType roomType,
+            @Param("user1") Long user1,
+            @Param("user2") Long user2
+    );
+
+    //추가: 요청자는 '현재 참여자' + 상대는 '과거 메시지 기록'이 있는 기존 개인방 조회
+    @Query("""
+        select distinct r                       
+        from ChattingRoom r
+        join r.chattingParticipants p1      
+        where r.projectPk.projectPk = :projectPk
+          and r.roomType = :roomType
+          and p1.userPk.userPk = :user1            
+          and exists (
+             select m2.chattingMessagePk            
+             from ChattingMessage m2
+             where m2.chattingRoomPk = r
+               and m2.userPk.userPk = :user2     
+          )
+    """)
+    Optional<ChattingRoom> findPrivateRoomByParticipantAndHistory(
+            @Param("projectPk") Long projectPk,
+            @Param("roomType") RoomType roomType,
+            @Param("user1") Long user1,   // fromUserPk
+            @Param("user2") Long user2    // toUserPk
+    );
+
+
 
 
 }

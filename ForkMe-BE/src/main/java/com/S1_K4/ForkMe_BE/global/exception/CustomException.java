@@ -51,7 +51,10 @@ public class CustomException extends RuntimeException {
         INVALID_PROJECT_POSITION(400, "모집분야가 일치하지 않습니다."),
         INVALID_TECH_SELECTION(400, "기술스택이 일치하지 않습니다."),
         ALREADY_APPLIED(400, "이미 신청한 프로젝트입니다."),
-        APPLY_NOT_FOUND(404,"신청서를 찾을 수 없습니다.");
+        APPLY_NOT_FOUND(404,"신청서를 찾을 수 없습니다."),
+        LEADER_CANNOT_APPLY(403,"팀장은 신청이 불가합니다."),
+        INVALID_STATUS_CHANGE(403, "이미 처리된 신청서는 취소가 불가능합니다.");
+
         private final int code;
         private final String message;
     }

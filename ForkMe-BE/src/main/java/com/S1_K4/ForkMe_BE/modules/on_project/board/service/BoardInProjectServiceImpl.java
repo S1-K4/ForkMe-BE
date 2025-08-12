@@ -102,7 +102,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     public List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk) {
-        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYN(projectPk, Yn.N);
+        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N);
 
         return boards.stream()
                 .map(InBoardSimpleResponse::from)

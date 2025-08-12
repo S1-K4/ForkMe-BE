@@ -39,18 +39,23 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                                 // ====== Public ======
                                 .requestMatchers(
-                                        "/", "/index.html","/login/**","/api/auth/**","/favicon.ico"
+                                        "/", "/index.html","/login/**","/api/auth/**","/favicon.ico", "login-success.html", "/login-error"
                                 ).permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies").permitAll()
-//                                .requestMatchers(HttpMethod.GET, "/api/projects/*/apply/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/form").permitAll() //신청서 생성폼 조회
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/*").permitAll()   //신청서 조회(단건)
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies").permitAll()   //신청서 조회(목록) -> 팀장
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies").permitAll() //신청서 작성
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/cancel").permitAll() //신청서 취소(status 변경)
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/approve").permitAll()  //(팀장) 신청서 수락
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/reject").permitAll()  //(팀장) 신청서 거절
 
 
-
+                                .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
+                                        "/api/on-project/comments/**").permitAll() //0812 김송이 추가
                                 //인증 필요한 GET 매핑
                                 .requestMatchers(HttpMethod.GET,
-                                        "/api/projects/form-info"
-//                                        "/api/projects/**/update-form",
-//                                        "/api/projects/**/apply-form"
+                                        "/api/projects/form-info",
+                                        "/api/projects/**/update-form"
                                 ).authenticated()
 
                                 //인증 필요
@@ -58,7 +63,9 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.PUT,    "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.PATCH,  "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.DELETE, "/api/projects/**").authenticated()
-//                                .requestMatchers(HttpMethod.POST, "/api/projects/{projectPk}/applies").authenticated()
+
+                                .requestMatchers(HttpMethod.GET,   "/api/user/me/**").authenticated()
+                                .requestMatchers(HttpMethod.POST,  "/api/user/me/**").authenticated()
 
                                 //나머지 인증x Get매핑
 

@@ -55,8 +55,7 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
     @Query("""
     SELECT ts.techStack.techPk
     FROM ProjectTechStack ts
-    WHERE ts.projectProfile.projectProfilePk = :profilePk
+    WHERE ts.projectProfile.project.projectPk = :projectPk
 """)
-    List<Long> findTechStackIdsByProjectProfilePk(@Param("profilePk") Long profilePk);
-
+    List<Long> findTechStackIdsByProjectPk(@Param("projectPk") Long projectPk);
 }

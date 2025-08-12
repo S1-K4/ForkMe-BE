@@ -27,11 +27,22 @@ public interface ApplyService {
      * 신청서 단건조회 메서드
      * */
     @Transactional(readOnly = true)
-    ApplyResponseDTO getApply(Long projectPk, Long applyPk);
+    ApplyResponseDTO getApply(Long userPk, Long projectPk, Long applyPk);
 
     /*
      * 신청서 목록 조회(팀장기준)
      * */
     @Transactional(readOnly = true)
     List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk);
+
+    @Transactional
+    void cancelApply(Long userPk, Long projectPk, Long applyPk);
+
+    //신청서 수락 메서드(팀장만 가능)
+    @Transactional
+    void approveApply(Long userPk, Long projectPk, Long applyPk);
+
+    //신청서 거절 메서드(팀장만 가능)
+    @Transactional
+    void rejectedApply(Long userPk, Long projectPk, Long applyPk);
 }

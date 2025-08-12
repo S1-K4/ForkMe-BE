@@ -22,6 +22,7 @@ public class CommentResponse {
     private Long commentInProjectPk;
     private String comment;
     private String name;
+    private Long userPk; // ✅ 이거 있어야 함
     private LocalDateTime createdAt;
 
     public static CommentResponse from(CommentInProject comment) {
@@ -29,6 +30,7 @@ public class CommentResponse {
                 .commentInProjectPk(comment.getCommentInProjectPk())
                 .comment(comment.getComment())
                 .name(comment.getUser().getNickname())  // 필요에 따라 nickname 등으로 변경 가능
+                .userPk(comment.getUser().getUserPk())
                 .createdAt(comment.getCreatedAt())
                 .build();
     }
