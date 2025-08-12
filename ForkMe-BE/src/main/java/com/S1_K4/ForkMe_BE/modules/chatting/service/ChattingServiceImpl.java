@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.global.common.redis.RedisPublisher;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.ChattingMessageType;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
@@ -308,12 +309,35 @@ public class ChattingServiceImpl implements ChattingService{
 
 
     //개인 채팅방 생성 시 상대가 현재 프로젝트 멤버인지 체크
+    @Override
     public boolean isProjectMember(Long projectPk, Long userPk) {
         Project p = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트가 존재하지 않습니다."));
         return projectMemberRepository.findByProjectPkAndUserPk(p,
                         userRepository.findById(userPk).orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다.")))
                 .isPresent();
+    }
+
+    @Override
+    public List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk) {
+        // 내가 참여자로 들어가 있는 개인(P) 채팅방들
+        List<ChattingRoom> privateChattingRooms = chattingRoomRepository
+                .findMyPrivateRoomsInProject(projectPk, RoomType.P, userPk);
+
+        return privateChattingRooms.stream()
+                .map(chattingRoom -> {
+                    List<ChattingUserDto> participants =
+                            getChattingRoomParticipants(chattingRoom.getChattingRoomPk());
+                    boolean canSend = hasOtherUser(chattingRoom, userPk); // 상대 존재 여부
+
+                    return ChattingRoomResponse.builder()
+                            .chattingRoomPk(chattingRoom.getChattingRoomPk())
+                            .roomType(RoomType.P)
+                            .chattingRoomParticipants(participants)
+                            .canSendMessage(canSend)
+                            .build();
+                })
+                .toList();
     }
 
 

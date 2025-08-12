@@ -103,12 +103,13 @@ public class ChattingController {
     }
 
 
-//    @GetMapping("/private")
-//    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
-//            @RequestParam("projectPk") Long projectPk,
-//            @RequestParam("userPk") Long userPk
-//    ) {
-//        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
-//    }
+    //현재 프로젝트에 귀속된 개인 채팅방 리스트 보여주기
+    @GetMapping("/private")
+    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
+            @RequestParam("projectPk") Long projectPk,
+            @RequestParam("userPk") Long userPk
+    ) {
+        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
+    }
 
 }
