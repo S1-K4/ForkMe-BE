@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>프로젝트 대시보드</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #top-inputs {
+      margin-bottom: 30px;
+      width: 900px;
+      display: flex;
+      gap: 20px;
+    }
+    #top-inputs label {
+      flex: 1;
+    }
+    #calendar {
+      max-width: 900px;
+      margin-bottom: 40px;
+    }
+    #board-section {
+      max-width: 900px;
+      width: 100%;
+      border: 1px solid #ccc;
+      padding: 20px;
+    }
+    #board-section h2 {
+      margin-top: 0;
+    }
+    #board-list {
+      list-style: none;
+      padding: 0;
+    }
+    #board-list li {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+    }
+    #board-list li:hover {
+      background-color: #f0f0f0;
+    }
+    #board-list li:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="top-inputs">
+  <label>프로젝트 ID:
+    <input type="number" id="projectPk" placeholder="프로젝트 ID 입력" />
+  </label>
+  <label>내 사용자 ID:
+    <input type="number" id="userPk" placeholder="내 사용자 ID 입력" />
+  </label>
+  <button id="loadBtn">불러오기</button>
+</div>
+
+<div id="calendar"></div>
+
+<div id="board-section">
+  <h2>최근 게시글 (최대 5개)</h2>
+  <ul id="board-list">
+    <li>게시글을 불러오려면 프로젝트 ID를 입력하고 불러오기 버튼을 누르세요.</li>
+  </ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  let calendar;
+  let currentProjectPk = null;
+
+  const projectInput = document.getElementById('projectPk');
+  const userInput = document.getElementById('userPk');
+  const loadBtn = document.getElementById('loadBtn');
+  const boardList = document.getElementById('board-list');
+
+  loadBtn.addEventListener('click', () => {
+    const projectPkVal = projectInput.value;
+    const userPkVal = userInput.value;
+
+    if (!projectPkVal || !userPkVal) {
+      alert('프로젝트 ID와 사용자 ID를 모두 입력해주세요.');
+      return;
+    }
+
+    currentProjectPk = parseInt(projectPkVal);
+
+    if (calendar) {
+      calendar.destroy();
+    }
+
+    loadCalendar(currentProjectPk);
+    loadBoards(currentProjectPk);
+  });
+
+  function loadCalendar(projectPk) {
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      locale: 'ko',
+      events(fetchInfo, successCallback, failureCallback) {
+        axios.get(`/api/schedules/project/${projectPk}`)
+          .then(response => {
+            const events = response.data.map(schedule => ({
+              id: schedule.id,
+              title: schedule.title,
+              start: schedule.start,
+              end: schedule.end,
+            }));
+            successCallback(events);
+          })
+          .catch(error => {
+            console.error('일정 불러오기 실패:', error);
+            failureCallback(error);
+          });
+      },
+    });
+    calendar.render();
+  }
+
+  function loadBoards(projectPk) {
+    boardList.innerHTML = '<li>게시글을 불러오는 중...</li>';
+
+    axios.get(`/api/on-project/${projectPk}/boards`)
+      .then(response => {
+        const boards = response.data.slice(0,5); // 최근 5개
+
+        if (boards.length === 0) {
+          boardList.innerHTML = '<li>게시글이 없습니다.</li>';
+          return;
+        }
+
+        boardList.innerHTML = '';
+
+        boards.forEach(board => {
+          const li = document.createElement('li');
+          li.textContent = board.title + ' (' + new Date(board.createdAt).toLocaleDateString() + ')';
+          li.style.cursor = 'pointer';
+          li.onclick = () => {
+            alert(`게시글 제목: ${board.title}\n작성자: ${board.userName || '알수없음'}\n내용 미리보기는 별도 구현 필요`);
+          };
+          boardList.appendChild(li);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        boardList.innerHTML = '<li>게시글을 불러오는 중 오류가 발생했습니다.</li>';
+      });
+  }
+</script>
+
+</body>
+</html>
