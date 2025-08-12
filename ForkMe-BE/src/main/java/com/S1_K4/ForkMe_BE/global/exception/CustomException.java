@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.global.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 /**
  * @author : 선순주
@@ -48,7 +49,9 @@ public class CustomException extends RuntimeException {
 
         //신청서 관련 에러코드
         INVALID_PROJECT_POSITION(400, "모집분야가 일치하지 않습니다."),
-        INVALID_TECH_SELECTION(400, "기술스택이 일치하지 않습니다.");
+        INVALID_TECH_SELECTION(400, "기술스택이 일치하지 않습니다."),
+        ALREADY_APPLIED(400, "이미 신청한 프로젝트입니다."),
+        APPLY_NOT_FOUND(404,"신청서를 찾을 수 없습니다.");
         private final int code;
         private final String message;
     }

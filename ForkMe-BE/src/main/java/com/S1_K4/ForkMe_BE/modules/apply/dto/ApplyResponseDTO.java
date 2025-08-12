@@ -7,6 +7,7 @@ import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -28,6 +29,7 @@ public class ApplyResponseDTO {
     private List<TechStackInfo> techStacks;        // 신청서에 포함된 기술스택
     private List<TechStackInfo> userTechStacks;    // 유저의 전체 기술스택
     private String status;
+    private LocalDateTime createdAt;
 
     @Getter
     @Builder
@@ -64,6 +66,7 @@ public class ApplyResponseDTO {
                                 .toList()
                 )
                 .status(apply.getStatus().name())
+                .createdAt(apply.getCreatedAt())
                 .build();
     }
 }

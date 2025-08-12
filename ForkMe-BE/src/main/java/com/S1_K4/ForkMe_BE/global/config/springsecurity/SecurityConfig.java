@@ -41,12 +41,16 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/", "/index.html","/login/**","/api/auth/**","/favicon.ico"
                                 ).permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies").permitAll()
+//                                .requestMatchers(HttpMethod.GET, "/api/projects/*/apply/*").permitAll()
+
+
 
                                 //인증 필요한 GET 매핑
                                 .requestMatchers(HttpMethod.GET,
-                                        "/api/projects/form-info",
-                                        "/api/projects/*/update-form"
+                                        "/api/projects/form-info"
+//                                        "/api/projects/**/update-form",
+//                                        "/api/projects/**/apply-form"
                                 ).authenticated()
 
                                 //인증 필요
@@ -54,20 +58,21 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.PUT,    "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.PATCH,  "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.DELETE, "/api/projects/**").authenticated()
+//                                .requestMatchers(HttpMethod.POST, "/api/projects/{projectPk}/applies").authenticated()
 
                                 //나머지 인증x Get매핑
+
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/projects/{projectPk}/apply/{applyPk}").permitAll()
                                 .requestMatchers("/api/comments/**").permitAll()
                                 .requestMatchers("/api/likes/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/projects/*/apply-form").permitAll()
-
 
                                 .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                                 .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
                                 .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/github/hooks/authorize").permitAll()
 
-                        //  .anyRequest().authenticated()
+                        .anyRequest().authenticated()
                 )
 
                 .exceptionHandling(e -> e

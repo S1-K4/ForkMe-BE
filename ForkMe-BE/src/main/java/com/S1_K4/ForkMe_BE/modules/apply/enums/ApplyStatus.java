@@ -15,7 +15,12 @@ import lombok.Getter;
 public enum ApplyStatus {
     PENDING("대기"),
     APPROVED("수락"),
-    REJECTED("거절");
+    REJECTED("거절"),
+    CANCEL("취소");
 
     private final String description;
+
+    public boolean isNotReapplicable() {
+        return this == PENDING || this == APPROVED;
+    }
 }

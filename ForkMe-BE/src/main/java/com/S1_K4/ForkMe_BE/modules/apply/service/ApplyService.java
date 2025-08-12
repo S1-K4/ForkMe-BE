@@ -2,7 +2,11 @@ package com.S1_K4.ForkMe_BE.modules.apply.service;
 
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateRequestDTO;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyResponseDTO;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -18,4 +22,16 @@ public interface ApplyService {
      * 신청서 작성 메서드
      * */
     ApplyResponseDTO createApply(Long userPk, Long projectPk, ApplyCreateRequestDTO dto);
+
+    /*
+     * 신청서 단건조회 메서드
+     * */
+    @Transactional(readOnly = true)
+    ApplyResponseDTO getApply(Long projectPk, Long applyPk);
+
+    /*
+     * 신청서 목록 조회(팀장기준)
+     * */
+    @Transactional(readOnly = true)
+    List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk);
 }

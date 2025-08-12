@@ -14,7 +14,6 @@ import java.util.List;
  * @date : 2025-08-04
  * @description : 유저 엔티티
  */
-@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
