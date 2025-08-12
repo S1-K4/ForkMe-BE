@@ -1,7 +1,9 @@
 package com.S1_K4.ForkMe_BE.modules.user.repository;
 
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -17,4 +19,12 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByGitId(Long gitId);
+
+
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile(" +
+            "u.userPk, u.email, u.nickname, u.profileUrl)" +
+            "FROM User u " +
+            "WHERE u.userPk = :userPk")
+    Optional<UserProfile> findByUserPk(Long userPk);
+
 }

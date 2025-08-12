@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.user.service;
 
-import com.S1_K4.ForkMe_BE.modules.user.dto.SidebarResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.SideBarResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserInfoResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 
 import java.util.List;
@@ -14,7 +16,11 @@ import java.util.List;
  */
 public interface UserService {
 
-    public SidebarResponseDto getSidebarInfo(Long userPk);
+    UserInfoResponseDto getMyProfile(Long userPk);
 
-    public void updateUserTechStack(User user, List<Long> techStackPkList);
+    UserProfile getUserProfile(Long userPk);
+
+    SideBarResponseDto getSidebarInfo(Long userPk);
+
+    void updateUserTechStack(User user, List<Long> techStackPkList);
 }
