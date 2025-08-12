@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.repository;
 
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
@@ -27,4 +28,20 @@ public interface ChattingParticipantRepository extends JpaRepository<ChattingPar
 
     //채팅방에 해당하는 참여자 리스트 보기
     List<ChattingParticipant> findByChattingRoomPk(ChattingRoom chattingRoom);
+
+
+    // ===================== 여기부터 수정 =====================
+    // CHANGE: "해당 프로젝트에서 특정 유저가 속한 모든 방의 참여 레코드" 조회용 메서드 추가
+    //  - Team(T), Private(P) 전부 한 번에 조회
+    List<ChattingParticipant> findByUserPk_UserPkAndChattingRoomPk_ProjectPk_ProjectPk(
+            Long userPk, Long projectPk
+    );
+    // ===================== 여기까지 수정 =====================
+
+    List<ChattingParticipant> findByUserPk_UserPkAndChattingRoomPk_ProjectPk_ProjectPkAndChattingRoomPk_RoomType(
+            Long userPk,
+            Long projectPk,
+            RoomType roomType
+    );
+
 }

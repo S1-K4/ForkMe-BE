@@ -44,8 +44,8 @@ public class RedisConfig {
 
         // LocalDateTime 직렬화를 위한 ObjectMapper 설정 추가
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule()); // LocalDateTime 지원
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // ISO-8601 포맷 유지
+        objectMapper.registerModule(new JavaTimeModule()); // ✅ LocalDateTime 지원
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // ✅ ISO-8601 포맷 유지
 
         // 기존 Jackson2JsonRedisSerializer 생성 방식 유지하되, ObjectMapper 만 커스터마이징
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
@@ -53,14 +53,13 @@ public class RedisConfig {
         // 직렬화기 설정
         jsonRedisTemplate.setKeySerializer(new StringRedisSerializer());
         jsonRedisTemplate.setValueSerializer(serializer);
-        jsonRedisTemplate.setHashKeySerializer(new StringRedisSerializer());  // 해시 사용 시에도 동일한 직렬화기 설정
+        jsonRedisTemplate.setHashKeySerializer(new StringRedisSerializer());  // ✅ 해시 사용 시에도 동일한 직렬화기 설정
         jsonRedisTemplate.setHashValueSerializer(serializer);
 
         return jsonRedisTemplate;
     }
 
-    /** 채팅용 리스너 **/
-    //  Redis Subscriber 가 "chat" 채널을 구독하게 설정
+    // Redis Subscriber 가 "chat" 채널을 구독하게 설정
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,
