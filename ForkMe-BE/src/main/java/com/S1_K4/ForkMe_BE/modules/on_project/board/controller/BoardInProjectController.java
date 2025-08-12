@@ -40,14 +40,15 @@ public class BoardInProjectController {
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<InBoardDetailResponse> createBoard(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            //@AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectPk,
             @RequestPart("request") InBoardCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
 
-        Long userPk = userDetails.getUserPk();
+        //Long userPk = userDetails.getUserPk();
+        Long userPk = request.getUserPk();
 
         System.out.println("=== InBoardCreateRequest 확인 ===");
         System.out.println("title: " + request.getTitle());
@@ -110,13 +111,13 @@ public class BoardInProjectController {
     public ResponseEntity<?> updateBoard(
             @PathVariable Long projectPk,
             @PathVariable Long boardInProjectPk,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+           // @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestPart("request") InBoardUpdateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
-
+        //Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
+        Long loggedInUserPk = request.getUserPk();
         // 2. 게시글 작성자 userPk 가져오기 (서비스에서)
         Long authorUserPk = boardInProjectService.getAuthorUserPk(boardInProjectPk);
 
