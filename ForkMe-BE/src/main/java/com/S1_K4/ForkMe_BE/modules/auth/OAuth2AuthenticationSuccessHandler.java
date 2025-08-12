@@ -9,10 +9,14 @@ import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.client.GithubWebhookClient;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.dto.PendingHookRequest;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
+import com.S1_K4.ForkMe_BE.modules.user.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -22,6 +26,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import reactor.netty.http.Cookies;
 
 import java.io.IOException;
 import java.util.Map;
@@ -47,7 +52,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final GithubWebhookClient githubWebhookClient;
     private final OAuth2AuthorizedClientService authorizedClientService;
 
+    private final UserService userService;
+
+    private final ObjectMapper objectMapper;
+
     @Override
+    @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
         HttpSession session = request.getSession(false);
@@ -125,11 +135,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         auth.updateRefreshToken(refreshToken);
         authRepository.save(auth);
 
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8080/")
+
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setPath("/");
+        response.addCookie(refreshTokenCookie);
+
+        String url = "http://localhost:8080/login-success.html";
+        String targetUrl = UriComponentsBuilder.fromUriString(url)
                 .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
     }
 }

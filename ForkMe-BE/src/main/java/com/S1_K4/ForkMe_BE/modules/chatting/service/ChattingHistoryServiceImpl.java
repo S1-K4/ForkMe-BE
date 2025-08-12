@@ -70,4 +70,3 @@ public class ChattingHistoryServiceImpl implements ChattingHistoryService{
                 .toList();
     }
 }
-

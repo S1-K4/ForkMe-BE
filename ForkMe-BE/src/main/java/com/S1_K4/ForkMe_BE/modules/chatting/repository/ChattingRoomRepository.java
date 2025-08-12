@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -20,16 +21,19 @@ import java.util.Optional;
 public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long> {
 
     @Query("""
-        SELECT r FROM ChattingRoom r
-        JOIN r.chattingParticipants p1
-        JOIN r.chattingParticipants p2
-        WHERE r.projectPk.projectPk = :projectPk
-          AND r.roomType = :roomType
-          AND p1.userPk.userPk = :user1
-          AND p2.userPk.userPk = :user2
-    """)
+    SELECT r FROM ChattingRoom r
+    JOIN r.chattingParticipants p
+    WHERE r.projectPk.projectPk = :projectPk
+      AND r.roomType = :roomType
+      AND p.userPk.userPk IN (:user1, :user2)
+    GROUP BY r
+    HAVING COUNT(DISTINCT p.userPk.userPk) = 2 AND SIZE(r.chattingParticipants) = 2
+""")
     Optional<ChattingRoom> findByProjectPkAndRoomTypeAndParticipants(
-            Long projectPk, RoomType roomType, Long user1, Long user2
+            @Param("projectPk") Long projectPk,
+            @Param("roomType") RoomType roomType,
+            @Param("user1") Long user1,
+            @Param("user2") Long user2
     );
 
     // 프로젝트로 채팅방 찾기

@@ -18,5 +18,6 @@ public class ChattingUserDto {
 
     private Long userPk;
     private String nickName;
-    private boolean leader; // ✅ 리더 여부 필드 추가
+    private boolean leader; // 리더 여부 필드 추가
+//    private boolean online; //접속중 여부 추가
 }
