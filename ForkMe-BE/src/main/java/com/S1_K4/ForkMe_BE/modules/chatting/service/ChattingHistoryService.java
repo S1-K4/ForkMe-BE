@@ -15,3 +15,4 @@ public interface ChattingHistoryService {
 
     List<ChattingMessageDto> getChattingHistory(Long chattingRoomPk, Long userPk);
 }
+

@@ -19,17 +19,33 @@ import java.util.List;
  */
 public interface ChattingService {
 
-    ChattingRoom createChattingRoom(Project project, RoomType roomType, LocalDateTime now);
+    ChattingRoom createTeamChattingRoom(Project project, RoomType roomType, LocalDateTime now);
+
+    ChattingRoom createPrivateChattingRoom(
+            Long project, RoomType roomType, Long fromUserPk, Long toUserPk, LocalDateTime now
+    );
 
     void sendMessage(ChattingMessageDto chattingMessageDto);
 
-    List<ChattingUserDto> getTeamChattingRoomParticipants(Long chattingRoomPk);
+    List<ChattingUserDto> getChattingRoomParticipants(Long chattingRoomPk);
 
-    void addChattingParticipant(ChattingRoom chattingRoom, User userPk, LocalDateTime now);
+    User addChattingParticipant(ChattingRoom chattingRoom, Long userPk, LocalDateTime now);
+
+    void noticeJoinChattingRoom(ChattingRoom chattingRoom, User userPk, LocalDateTime now);
 
     void removeChattingParticipant(ChattingRoom chattingRoom, User user, LocalDateTime now);
 
-    ChattingRoom getChattingRoom(Project projectPk);
+    ChattingRoom getChattingRoom(Long projectPk, RoomType roomType);
+
+    void performRemoveUserFromAllChattingRooms(Long projectPk, Long userPk, LocalDateTime now);
+
+    boolean hasOtherUser(ChattingRoom chattingRoom, Long myUserPk);
+
+//    // 프로젝트 워크스페이스 내에서 유저가 속한 개인 채팅방 리스트 불러오기
+//    List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
+
+    boolean isProjectMember(Long projectPk, Long userPk);
+
 
 
 }

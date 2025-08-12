@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                                 // ====== Public ======
                                 .requestMatchers(
-                                        "/", "/index.html","/login/**","/api/auth/**","/favicon.ico"
+                                        "/", "/index.html","/login/**","/api/auth/**","/favicon.ico", "login-success.html", "/login-error"
                                 ).permitAll()
                                 .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
                                         "/api/on-project/comments/**").permitAll()
@@ -54,6 +54,9 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.PUT,    "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.PATCH,  "/api/projects/**").authenticated()
                                 .requestMatchers(HttpMethod.DELETE, "/api/projects/**").authenticated()
+
+                                .requestMatchers(HttpMethod.GET,   "/api/user/me/**").authenticated()
+                                .requestMatchers(HttpMethod.POST,  "/api/user/me/**").authenticated()
 
                                 //나머지 인증x Get매핑
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()

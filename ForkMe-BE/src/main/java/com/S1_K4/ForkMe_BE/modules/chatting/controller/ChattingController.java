@@ -1,15 +1,17 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -40,6 +42,73 @@ public class ChattingController {
     @GetMapping("/{chattingRoomPk}/participants")
     public List<ChattingUserDto> getChattingRoomParticipants(
             @PathVariable("chattingRoomPk") Long chattingRoomPk) {
-        return chattingService.getTeamChattingRoomParticipants(chattingRoomPk);
+        return chattingService.getChattingRoomParticipants(chattingRoomPk);
     }
+
+
+    @GetMapping("/create")
+    public ChattingRoomResponse createPrivateChattingRoom(
+            @RequestParam("projectPk") Long projectPk,
+            @RequestParam("roomType") RoomType roomType,
+            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
+            @RequestParam(value = "toUserPk", required = false) Long toUserPk
+
+    ){
+        //생성 시간 UTC
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+        ChattingRoom chattingRoom;
+        List<ChattingUserDto> participants;
+        boolean canSendMessage = true; // 기본값 true (팀 채팅은 항상 true)
+
+
+        if (roomType == RoomType.T) {
+            chattingRoom = chattingService.getChattingRoom(projectPk, roomType);
+            participants = chattingService.getChattingRoomParticipants(chattingRoom.getChattingRoomPk());
+
+        } else if (roomType == RoomType.P) {
+            if (fromUserPk == null || toUserPk == null) {
+                throw new IllegalArgumentException("개인 채팅방 생성 시 fromUserPk, toUserPk는 필수입니다.");
+            }
+
+            // 방 생성 or 조회
+            chattingRoom = chattingService.createPrivateChattingRoom(projectPk, roomType, fromUserPk, toUserPk, now);
+
+            // 필요시 참여자 등록 (중복이면 내부에서 무시됨)
+            //현재 멤버만 참여자로 추가 (탈퇴자는 재등록 금지)
+            if (chattingService.isProjectMember(projectPk, fromUserPk)) {
+                chattingService.addChattingParticipant(chattingRoom, fromUserPk, now);
+            }
+            if (chattingService.isProjectMember(projectPk, toUserPk)) {
+                chattingService.addChattingParticipant(chattingRoom, toUserPk, now);
+            }
+
+
+            // 참여자 조회
+            participants = chattingService.getChattingRoomParticipants(chattingRoom.getChattingRoomPk());
+
+            // 상대방 존재 여부
+            canSendMessage = chattingService.hasOtherUser(chattingRoom, fromUserPk);
+
+        } else {
+            throw new IllegalArgumentException("유효하지 않은 채팅방 타입입니다.");
+        }
+
+        return ChattingRoomResponse.builder()
+                .chattingRoomPk(chattingRoom.getChattingRoomPk())
+                .roomType(roomType)
+                .chattingRoomParticipants(participants)
+                .canSendMessage(canSendMessage)
+                .build();
+    }
+
+
+//    @GetMapping("/private")
+//    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
+//            @RequestParam("projectPk") Long projectPk,
+//            @RequestParam("userPk") Long userPk
+//    ) {
+//        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
+//    }
+
 }

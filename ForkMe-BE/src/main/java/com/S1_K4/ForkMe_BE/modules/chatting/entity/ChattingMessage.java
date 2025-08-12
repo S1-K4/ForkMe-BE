@@ -37,7 +37,7 @@ public class ChattingMessage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_pk", nullable = false)
-    private User user;
+    private User userPk;
 
     @Column(name = "message", length = 255)
     private String message;
@@ -53,7 +53,7 @@ public class ChattingMessage {
             ChattingRoom chattingRoomPk, User userPk, String message, ChattingMessageType chattingMessageType, LocalDateTime now){
         return ChattingMessage.builder()
                 .chattingRoomPk(chattingRoomPk)
-                .user(userPk)
+                .userPk(userPk)
                 .message(message)
                 .chattingMessageType(chattingMessageType)
                 .createdAt(now)
@@ -61,3 +61,4 @@ public class ChattingMessage {
     }
 
 }
+
