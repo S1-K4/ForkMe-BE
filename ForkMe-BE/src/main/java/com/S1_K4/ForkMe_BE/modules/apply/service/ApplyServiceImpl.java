@@ -42,7 +42,6 @@ public class ApplyServiceImpl implements ApplyService{
 
     private final ProjectPositionRepository projectPositionRepository;
     private final ProjectTechStackRepository projectTechStackRepository;
-    private final ProjectProfileRepository profileRepository;
     private final ProjectRepository projectRepository;
     private final ApplyRepository applyRepository;
     private final ApplyTechStackRepository applyTechStackRepository;
@@ -74,8 +73,9 @@ public class ApplyServiceImpl implements ApplyService{
      * 신청서 작성 메서드
      * */
     @Override
+    @Transactional
     public ApplyResponseDTO createApply(Long userPk, Long projectPk, ApplyCreateRequestDTO dto) {
-        User user = userRepository.findById(userPk)
+        User user = userRepository.findByIdWithTechStacks(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 
         Project project = projectRepository.findById(projectPk)
@@ -121,4 +121,8 @@ public class ApplyServiceImpl implements ApplyService{
 
         return ApplyResponseDTO.from(apply);
     }
+
+    /*
+     * 신청서 단건조회 메서드
+     * */
 }

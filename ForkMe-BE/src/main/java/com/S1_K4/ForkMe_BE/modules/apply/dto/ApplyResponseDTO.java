@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.apply.dto;
 
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.user.entity.UserTechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,7 +25,8 @@ public class ApplyResponseDTO {
     private String nickname;
     private String content;
     private String positionName;
-    private List<TechStackInfo> techStacks;
+    private List<TechStackInfo> techStacks;        // 신청서에 포함된 기술스택
+    private List<TechStackInfo> userTechStacks;    // 유저의 전체 기술스택
     private String status;
 
     @Getter
@@ -54,6 +56,11 @@ public class ApplyResponseDTO {
                 .techStacks(
                         apply.getApplyTechStacks().stream()
                                 .map(ats -> TechStackInfo.from(ats.getTechStack()))
+                                .toList()
+                )
+                .userTechStacks(
+                        apply.getUser().getUserTechStacks().stream()
+                                .map(uts -> TechStackInfo.from(uts.getTechStack()))
                                 .toList()
                 )
                 .status(apply.getStatus().name())

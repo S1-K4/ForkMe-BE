@@ -25,17 +25,17 @@ public class ApplyController {
 
     /**
      * 생성폼 조회(기술스택, 모집분야 SELECTBOX)
-     * */
+     */
     @GetMapping("/{projectPk}/apply-form")
-    public ResponseEntity<ApiResponse<ApplyCreateFormDTO>> getApplyCreateFrom(@PathVariable Long projectPk){
+    public ResponseEntity<ApiResponse<ApplyCreateFormDTO>> getApplyCreateFrom(@PathVariable Long projectPk) {
 
         ApplyCreateFormDTO dto = applyService.getApplyCreateForm(projectPk);
-        return ResponseEntity.ok(ApiResponse.success(dto,"신청서 생성 폼 데이터 조회 성공"));
+        return ResponseEntity.ok(ApiResponse.success(dto, "신청서 생성 폼 데이터 조회 성공"));
     }
 
     /**
      * 신청서 작성
-     * */
+     */
     @PostMapping("/{projectPk}/applies")
     public ResponseEntity<ApiResponse<ApplyResponseDTO>> createApply(
             @RequestBody ApplyCreateRequestDTO dto,
@@ -45,4 +45,13 @@ public class ApplyController {
         ApplyResponseDTO saved = applyService.createApply(userPk, projectPk, dto);
         return ResponseEntity.ok(ApiResponse.success(saved, "신청서 작성 완료"));
     }
+
+    /**
+     * 신청서 단건 조회
+     */
+    @GetMapping("/{projectPk}/apply/{applyPk}")
+    public ResponseEntity<ApiResponse<ApplyResponseDTO>> getApply(){
+        return null;
+    }
+
 }

@@ -34,6 +34,7 @@ public class Apply extends BaseTime {
     @Column(name="content", nullable = false)
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="status", nullable = false)
     private ApplyStatus status = ApplyStatus.PENDING;   //기본값 : 대기
 
@@ -50,5 +51,6 @@ public class Apply extends BaseTime {
     private ProjectPosition projectPosition;
 
     @OneToMany(mappedBy = "apply", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ApplyTechStack> applyTechStacks = new ArrayList<>();
 }

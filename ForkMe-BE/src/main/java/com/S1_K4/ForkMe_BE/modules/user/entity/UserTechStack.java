@@ -2,10 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.user.entity;
 
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * @author : 선순주
@@ -19,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Table(name = "user_tech_stack")
 @Entity
+@Getter
 public class UserTechStack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
