@@ -169,7 +169,7 @@
           li.textContent = board.title + ' (' + new Date(board.createdAt).toLocaleDateString() + ')';
           li.style.cursor = 'pointer';
           li.onclick = () => {
-            alert(`게시글 제목: ${board.title}\n작성자: ${board.userName || '알 수 없음'}\n내용 미리보기는 별도 구현 필요`);
+            alert(`게시글 제목: ${board.title}\n작성자: ${board.boardInProjectPk || '알 수 없음'}\n내용 미리보기는 별도 구현 필요`);
           };
           boardList.appendChild(li);
         });
