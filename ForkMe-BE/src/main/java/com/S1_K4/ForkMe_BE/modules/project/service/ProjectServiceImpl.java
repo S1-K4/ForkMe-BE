@@ -451,4 +451,37 @@ public class ProjectServiceImpl implements ProjectService{
 
         return ProjectResponseDTO.fromEntity(project, techStacks, positions);
     }
+
+    @Override
+    public List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk){
+
+        List<CompletedProjectSummaryDto> completedProjectSummaryList = projectRepository.findCompletedProjectsByUserPk(userPk);
+
+        List<Long> projectPkList = completedProjectSummaryList.stream().map(CompletedProjectSummaryDto::getProjectPk).toList();
+        List<Long> projectProfilePkList = completedProjectSummaryList.stream().map(CompletedProjectSummaryDto::getProjectProfilePk).toList();
+
+        // 프로젝트 참여 수
+        List<ProjectMemberCountDto> projectMemberCount = projectMemberRepository.findProjectMemberCountByProjectPk(projectPkList);
+        Map<Long, Long> projectMemberCountMap = projectMemberCount.stream()
+                .collect(Collectors.toMap(ProjectMemberCountDto::getProjectPk, ProjectMemberCountDto::getMemberCount));
+
+        List<ProjectTechStackDto> projectTechStack = projectTechStackRepository.findTechStacksByProfilePkIn(projectProfilePkList);
+        Map<Long, List<TechStackResponseDTO>> projectTechStackMap = projectTechStack.stream()
+                .collect(Collectors.groupingBy(
+                        ProjectTechStackDto::getProjectProfilePk,
+                        Collectors.mapping(
+                                dto -> new TechStackResponseDTO(dto.getTechPk(), dto.getTechName()),
+                                Collectors.toList()
+                        )
+                ));
+
+        for (CompletedProjectSummaryDto dto : completedProjectSummaryList) {
+            dto.setMemberCount(projectMemberCountMap.get(dto.getProjectPk()));
+            dto.setTechStack(projectTechStackMap.get(dto.getProjectProfilePk()));
+        }
+
+        return completedProjectSummaryList;
+    }
+
+
 }

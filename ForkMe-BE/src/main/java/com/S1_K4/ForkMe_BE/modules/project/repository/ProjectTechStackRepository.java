@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
-import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
-import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectTechStackDto;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -36,4 +35,10 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
             "from ProjectTechStack pts " +
             "where pts.projectProfile.projectProfilePk = :profilePk")
     List<Long> findTechPksByProfilePk(@Param("profilePk") Long profilePk);
+
+
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.ProjectTechStackDto(pts.projectProfile.projectProfilePk, pts.techStack.techPk, pts.techStack.techName)" +
+            "FROM ProjectTechStack pts " +
+            "WHERE pts.projectProfile.projectProfilePk IN (:profilePkList)")
+    List<ProjectTechStackDto> findTechStacksByProfilePkIn(@Param("profilePkList") List<Long> profilePkList);
 }

@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.modules.project.dto.CompletedProjectSummaryDto;
 import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -52,5 +53,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "WHERE pm.user.userPk = :userPk AND p.projectStatus IN ('IN_PROGRESS','ADDING') AND p.deletedYN = 'N'")
     List<SideBarProjectDto> findProgressProjectsByUser(@Param("userPk") Long userPk);
 
-
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.CompletedProjectSummaryDto(" +
+            "p.projectPk, p.projectTitle, p.projectStartDate, p.projectEndDate, p.projectStatus," +
+            "pp.projectProfilePk, pp.projectProfileTitle, pp.progressType) " +
+            "FROM ProjectMember pm, ProjectProfile pp " +
+            "JOIN pm.project p " +
+            "WHERE pp.project = p " +
+            "AND pm.user.userPk = :userPk AND p.projectStatus = 'COMPLETED' AND p.deletedYN = 'N'")
+    List<CompletedProjectSummaryDto> findCompletedProjectsByUserPk(@Param("userPk") Long userPk);
 }
