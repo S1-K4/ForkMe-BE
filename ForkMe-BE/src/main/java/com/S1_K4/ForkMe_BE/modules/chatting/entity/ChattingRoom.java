@@ -44,7 +44,7 @@ public class ChattingRoom {
     @Column(name = "deleted_yn", nullable = false, length = 1)
     private Yn deletedYn = Yn.N;
 
-    @ManyToOne(fetch = FetchType.LAZY) // ✅ 프로젝트와 연관관계
+    @ManyToOne(fetch = FetchType.LAZY) // 프로젝트와 연관관계
     @JoinColumn(name = "project_pk", nullable = false)
     private Project projectPk;
 
