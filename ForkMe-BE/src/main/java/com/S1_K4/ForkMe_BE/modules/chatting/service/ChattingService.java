@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.chatting.service;
 
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
@@ -41,11 +42,13 @@ public interface ChattingService {
 
     boolean hasOtherUser(ChattingRoom chattingRoom, Long myUserPk);
 
-//    // 프로젝트 워크스페이스 내에서 유저가 속한 개인 채팅방 리스트 불러오기
-//    List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
-
     boolean isProjectMember(Long projectPk, Long userPk);
 
+    //프로젝트 워크스페이스 내에서 유저가 속한 개인 채팅방 리스트 불러오기
+    List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
 
+    //프로젝트 삭제 시 연관된 모든 채팅방 삭제
+    void softDeleteAllChattingRoomsByProject(Long projectPk, Long userPk);
 
 }
+

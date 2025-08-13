@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
@@ -8,6 +9,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -50,12 +52,15 @@ public class ChattingController {
     public ChattingRoomResponse createPrivateChattingRoom(
             @RequestParam("projectPk") Long projectPk,
             @RequestParam("roomType") RoomType roomType,
-            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
-            @RequestParam(value = "toUserPk", required = false) Long toUserPk
+//            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
+            @RequestParam(value = "toUserPk", required = false) Long toUserPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails
 
     ){
         //생성 시간 UTC
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+        Long fromUserPk = userDetails.getUserPk();
 
         ChattingRoom chattingRoom;
         List<ChattingUserDto> participants;
@@ -75,7 +80,7 @@ public class ChattingController {
             chattingRoom = chattingService.createPrivateChattingRoom(projectPk, roomType, fromUserPk, toUserPk, now);
 
             // 필요시 참여자 등록 (중복이면 내부에서 무시됨)
-            //현재 멤버만 참여자로 추가 (탈퇴자는 재등록 금지)
+            // CHANGED: 현재 멤버만 참여자로 추가 (탈퇴자는 재등록 금지)
             if (chattingService.isProjectMember(projectPk, fromUserPk)) {
                 chattingService.addChattingParticipant(chattingRoom, fromUserPk, now);
             }
@@ -103,12 +108,14 @@ public class ChattingController {
     }
 
 
-//    @GetMapping("/private")
-//    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
-//            @RequestParam("projectPk") Long projectPk,
-//            @RequestParam("userPk") Long userPk
-//    ) {
-//        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
-//    }
+    //현재 프로젝트에 귀속된 개인 채팅방 리스트 보여주기
+    @GetMapping("/private")
+    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
+            @RequestParam("projectPk") Long projectPk,
+            @RequestParam("userPk") Long userPk
+    ) {
+        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
+    }
+
 
 }

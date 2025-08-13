@@ -34,8 +34,7 @@ public class ChattingMessageDto {
     private ChattingMessageType chattingMessageType; //"JOIN", "CHAT", LEAVE"
 
     //json 직렬화 - KST 타임으로 프론트에 보냄
-//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
-    private LocalDateTime createdAt;  // 시간 타입으로 변경해야 @JsonFormat 이 의미 있음
+    private LocalDateTime createdAt;
 
 
     //MySQL 엔티티 변환

@@ -21,15 +21,16 @@ import java.util.List;
 public class RedisPublisher {
 
     private final RedisTemplate<String, Object> jsonRedisTemplate;
-    private final SimpMessagingTemplate messagingTemplate; // ✅ 추가
+    private final SimpMessagingTemplate messagingTemplate; // 추가
 
     public void publish(String topic, ChattingMessageDto message) {
         jsonRedisTemplate.convertAndSend(topic, message);
     }
 
-    // 채팅 참여자 리스트 자체를 실시간으로 전달하는 방식으로 변경
+    // 리스트 자체를 전달받는 방식으로 변경
     public void publishParticipantList(Long roomPk, List<ChattingUserDto> participants) {
         messagingTemplate.convertAndSend("/topic/chat/" + roomPk + "/members", participants);
     }
 }
+
 
