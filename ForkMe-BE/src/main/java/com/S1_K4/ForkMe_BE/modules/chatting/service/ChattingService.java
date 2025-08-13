@@ -47,5 +47,8 @@ public interface ChattingService {
     //프로젝트 워크스페이스 내에서 유저가 속한 개인 채팅방 리스트 불러오기
     List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
 
+    //프로젝트 삭제 시 연관된 모든 채팅방 삭제
+    void softDeleteAllChattingRoomsByProject(Long projectPk, Long userPk);
+
 }
 

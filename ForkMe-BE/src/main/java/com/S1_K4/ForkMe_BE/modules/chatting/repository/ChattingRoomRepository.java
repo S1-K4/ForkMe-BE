@@ -22,7 +22,7 @@ import java.util.Optional;
 public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long> {
 
     // 프로젝트로 채팅방 찾기
-    Optional<ChattingRoom> findByProjectPk(Project project);
+    List<ChattingRoom> findByProjectPk(Project project);
 
     Optional<ChattingRoom> findByProjectPkAndRoomType(Project project, RoomType roomType);
 

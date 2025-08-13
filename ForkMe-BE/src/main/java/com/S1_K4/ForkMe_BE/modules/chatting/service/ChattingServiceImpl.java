@@ -351,6 +351,30 @@ public class ChattingServiceImpl implements ChattingService{
                 .toList();
     }
 
+    // 프로젝트의 모든 채팅방을 소프트 삭제 처리하는 메서드
+    @Transactional
+    public void softDeleteAllChattingRoomsByProject(Long projectPk, Long userPk) { // [추가]
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트가 존재하지 않습니다."));
+
+        // 유저 조회
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+
+        // 프로젝트 리더 검증
+        projectMemberRepository.findByProjectPkAndUserPk(project, user)
+                .filter(projectMember -> projectMember.getIsLeader() == IsLeader.LEADER)
+                .orElseThrow(() -> new IllegalStateException("프로젝트 리더만 삭제할 수 있습니다."));
+
+        // 해당 프로젝트의 모든 채팅방 조회
+        List<ChattingRoom> rooms = chattingRoomRepository.findByProjectPk(project);
+
+        for (ChattingRoom room : rooms) {
+            room.markAsDeleted(); // [추가] 엔티티 메서드 활용
+            chattingRoomRepository.save(room);
+        }
+    }
+
 
 
     /** 헬버 메서드 **/

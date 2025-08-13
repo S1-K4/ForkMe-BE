@@ -61,6 +61,12 @@ public class ChattingRoom {
                 .createdAt(now)
                 .build();
     }
+
+
+    //채팅방 소프트 삭제
+    public void markAsDeleted() {
+        this.deletedYn = Yn.Y;
+    }
 }
 
 
