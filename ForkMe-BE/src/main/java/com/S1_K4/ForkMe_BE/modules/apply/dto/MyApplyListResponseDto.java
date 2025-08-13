@@ -19,7 +19,7 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
-public class ApplyDto {
+public class MyApplyListResponseDto {
     private Long applyPk;
     private String content;
     private ApplyStatus state;
@@ -35,7 +35,7 @@ public class ApplyDto {
 
     private List<TechStackResponseDTO> techStacks;
 
-    public ApplyDto(Long applyPk, String content, ApplyStatus state, LocalDateTime createdAt, LocalDateTime updatedAt, Long userPk, Long projectPk, Long positionPk, String positionName) {
+    public MyApplyListResponseDto(Long applyPk, String content, ApplyStatus state, LocalDateTime createdAt, LocalDateTime updatedAt, Long userPk, Long projectPk, Long positionPk, String positionName) {
         this.applyPk = applyPk;
         this.content = content;
         this.state = state;

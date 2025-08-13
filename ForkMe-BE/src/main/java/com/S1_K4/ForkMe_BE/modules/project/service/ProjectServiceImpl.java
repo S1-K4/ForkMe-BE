@@ -457,6 +457,7 @@ public class ProjectServiceImpl implements ProjectService{
 
         List<CompletedProjectSummaryDto> completedProjectSummaryList = projectRepository.findCompletedProjectsByUserPk(userPk);
 
+        // pk 값 추출
         List<Long> projectPkList = completedProjectSummaryList.stream().map(CompletedProjectSummaryDto::getProjectPk).toList();
         List<Long> projectProfilePkList = completedProjectSummaryList.stream().map(CompletedProjectSummaryDto::getProjectProfilePk).toList();
 
@@ -465,6 +466,7 @@ public class ProjectServiceImpl implements ProjectService{
         Map<Long, Long> projectMemberCountMap = projectMemberCount.stream()
                 .collect(Collectors.toMap(ProjectMemberCountDto::getProjectPk, ProjectMemberCountDto::getMemberCount));
 
+        // 프로젝트 기술 스택
         List<ProjectTechStackDto> projectTechStack = projectTechStackRepository.findTechStacksByProfilePkIn(projectProfilePkList);
         Map<Long, List<TechStackResponseDTO>> projectTechStackMap = projectTechStack.stream()
                 .collect(Collectors.groupingBy(

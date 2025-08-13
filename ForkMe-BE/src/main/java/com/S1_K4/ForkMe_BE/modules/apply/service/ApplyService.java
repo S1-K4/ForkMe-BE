@@ -5,7 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateRequestDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyResponseDTO;
 import org.springframework.transaction.annotation.Transactional;
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyDto;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto;
 
 import java.util.List;
 
@@ -49,5 +49,5 @@ public interface ApplyService {
 
 
     //지원서 리스트
-    List<ApplyDto> getApplyList(Long userPk, List<String> stateList);
+    List<MyApplyListResponseDto> getMyApplyList(Long userPk, List<String> stateList);
 }

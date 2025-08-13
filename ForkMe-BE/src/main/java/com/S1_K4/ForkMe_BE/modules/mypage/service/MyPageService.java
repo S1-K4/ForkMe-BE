@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.mypage.service;
 
 import com.S1_K4.ForkMe_BE.modules.mypage.dto.MyPageResponseDto;
-import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 
 /**
  * @author : 김종국
@@ -12,6 +11,6 @@ import com.S1_K4.ForkMe_BE.modules.user.entity.User;
  */
 public interface MyPageService {
 
-    public MyPageResponseDto getMyPage(Long userPk);
+    MyPageResponseDto getMyPage(Long userPk);
 
 }

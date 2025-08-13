@@ -1,8 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.mypage.dto;
 
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyDto;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto;
 import com.S1_K4.ForkMe_BE.modules.project.dto.CompletedProjectSummaryDto;
-import com.S1_K4.ForkMe_BE.modules.user.entity.User;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,13 +24,13 @@ import java.util.List;
 public class MyPageResponseDto {
 
     // 마이페이지 기본 정보
-    private User user;
+    private UserProfile userProfile;
 
     // 기술 스택
     private List<TechStackResponseDTO> techStack;
 
     // 신청 내역
-    private List<ApplyDto> applyList;
+    private List<MyApplyListResponseDto> applyList;
 
     // 완료한 프로제트
     private List<CompletedProjectSummaryDto> completedProjectList;
