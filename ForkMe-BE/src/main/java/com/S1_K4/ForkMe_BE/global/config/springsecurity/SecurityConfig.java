@@ -57,8 +57,8 @@ public class SecurityConfig {
                                         "/api/on-project/comments/**").permitAll() //0812 김송이 추가
                                 //인증 필요한 GET 매핑
                                 .requestMatchers(HttpMethod.GET,
-                                        "/api/projects/form-info",
-                                        "/api/projects/**/update-form"
+                                        "/api/projects/form-info"
+                                        //"/api/projects/**/update-form"
                                 ).authenticated()
 
                                 //인증 필요
