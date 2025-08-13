@@ -20,5 +20,6 @@ import java.util.List;
 public interface BoardInProjectRepository extends JpaRepository<BoardInProject, Long> {
 
     // 특정 프로젝트에 속한 게시글 전체 조회
-    List<BoardInProject> findByProject_ProjectPkAndDeletedYN(Long projectPk, Yn deletedYN);
+   // List<BoardInProject> findByProject_ProjectPkAndDeletedYN(Long projectPk, Yn deletedYN);
+    List<BoardInProject> findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(Long projectPk, Yn deletedYN);
 }

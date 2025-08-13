@@ -23,6 +23,7 @@ public class InBoardCreateRequest {
     private Long projectPk;
     private String title;
     private String content;
+    private Long userPk;
 
     private List<String> imageUrls; // 기존 이미지 URL (빈칸 포함 가능)
     private List<String> fileUrls;  // 기존 첨부파일 URL (빈칸 포함 가능)
