@@ -4,6 +4,9 @@ import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author : 선순주
  * @packageName : com.S1_K4.ForkMe_BE.modules.user.entity
@@ -11,7 +14,6 @@ import lombok.*;
  * @date : 2025-08-04
  * @description : 유저 엔티티
  */
-@ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -35,6 +37,9 @@ public class User extends BaseTime {
 
     @Column(name="profile_url")
     private String profileUrl;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserTechStack> userTechStacks = new ArrayList<>();
 
     public User(Long gitId, String email, String nickname, String profileUrl) {
         this.gitId = gitId;

@@ -1,12 +1,17 @@
 package com.S1_K4.ForkMe_BE.modules.apply.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
+import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -30,6 +35,7 @@ public class Apply extends BaseTime {
     @Column(name="content", nullable = false)
     private String content;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="status", nullable = false)
     private ApplyStatus status = ApplyStatus.PENDING;   //기본값 : 대기
 
@@ -44,4 +50,34 @@ public class Apply extends BaseTime {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="project_position_pk", nullable = false)
     private ProjectPosition projectPosition;
+
+    @OneToMany(mappedBy = "apply", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ApplyTechStack> applyTechStacks = new ArrayList<>();
+
+    //신청서 취소 메서드
+    public void cancel() {
+        if (this.status != ApplyStatus.PENDING) {
+            throw new CustomException(CustomException.ErrorCode.INVALID_STATUS_CHANGE);
+        }
+        this.applyTechStacks.clear();   //db에서 해당 신청서 기술스택 삭제
+        this.status = ApplyStatus.CANCEL;
+    }
+
+    //신청서 수락
+    public void approve(){
+        if(this.status!=ApplyStatus.PENDING){
+            throw new CustomException(CustomException.ErrorCode.INVALID_STATUS_CHANGE);
+        }
+        this.status = ApplyStatus.APPROVED;
+    }
+
+    //신청서 거절
+    public void reject(){
+        if(this.status!=ApplyStatus.PENDING){
+            throw new CustomException(CustomException.ErrorCode.INVALID_STATUS_CHANGE);
+        }
+        this.applyTechStacks.clear();   //db에서 해당 신청서 기술스택 삭제
+        this.status = ApplyStatus.REJECTED;
+    }
 }
