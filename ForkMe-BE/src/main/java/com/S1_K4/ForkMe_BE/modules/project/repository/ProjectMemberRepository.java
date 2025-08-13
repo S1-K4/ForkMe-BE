@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberCountDto;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,4 +31,11 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     // 프로젝트 + 유저로 멤버 조회
     @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.user = :user")
     Optional<ProjectMember> findByProjectPkAndUserPk(@Param("project") Project project, @Param("user") User user);
+
+    // 프로젝트 pk 리스트로 조회
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberCountDto(pm.project.projectPk, COUNT(pm.projectMemberPk))"+
+            "FROM ProjectMember pm " +
+            "WHERE pm.project.projectPk IN (:projectPkList) " +
+            "GROUP BY pm.project.projectPk")
+    List<ProjectMemberCountDto> findProjectMemberCountByProjectPk(@Param("projectPkList") List<Long> projectPkList);
 }

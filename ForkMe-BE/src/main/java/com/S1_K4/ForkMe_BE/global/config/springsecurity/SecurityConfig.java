@@ -67,6 +67,8 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET,   "/api/user/me/**").authenticated()
                                 .requestMatchers(HttpMethod.POST,  "/api/user/me/**").authenticated()
 
+                                .requestMatchers(HttpMethod.GET,   "/api/mypage/**").authenticated()
+
                                 //나머지 인증x Get매핑
 
                                 .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
@@ -100,10 +102,10 @@ public class SecurityConfig {
                         .authorizationEndpoint(auth -> auth
                                 .baseUri("/login")
                         )
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userService(customOAuth2UserService)
+                                )
+                                .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

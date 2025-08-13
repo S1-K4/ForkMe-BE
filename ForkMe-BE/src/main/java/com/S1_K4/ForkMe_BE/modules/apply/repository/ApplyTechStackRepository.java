@@ -1,8 +1,12 @@
 package com.S1_K4.ForkMe_BE.modules.apply.repository;
 
+import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyTechStackDto;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -14,4 +18,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ApplyTechStackRepository extends JpaRepository<ApplyTechStack, Long> {
     void deleteByApply_Project_ProjectPk(Long projectPk);
+
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyTechStackDto(ats.apply.applyPk, ats.techStack.techPk, ats.techStack.techName) " +
+            "FROM ApplyTechStack ats " +
+            "WHERE ats.apply.applyPk IN (:applyPkList)")
+    List<ApplyTechStackDto> findApplyTechStacksByApplyPkIn(List<Long> applyPkList);
 }

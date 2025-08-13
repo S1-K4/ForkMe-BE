@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateRequestDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyResponseDTO;
 import org.springframework.transaction.annotation.Transactional;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto;
 
 import java.util.List;
 
@@ -45,4 +46,8 @@ public interface ApplyService {
     //신청서 거절 메서드(팀장만 가능)
     @Transactional
     void rejectedApply(Long userPk, Long projectPk, Long applyPk);
+
+
+    //지원서 리스트
+    List<MyApplyListResponseDto> getMyApplyList(Long userPk, List<String> stateList);
 }

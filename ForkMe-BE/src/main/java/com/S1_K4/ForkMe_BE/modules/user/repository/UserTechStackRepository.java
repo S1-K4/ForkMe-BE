@@ -2,7 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.user.repository;
 
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.entity.UserTechStack;
-import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto;
+import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,11 +23,12 @@ public interface UserTechStackRepository extends JpaRepository<UserTechStack, Lo
 
     void deleteAllByUser(User user);
 
+
     @Query(
-            "SELECT new com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto(ts.techPk, ts.techName) " +
-                    "FROM UserTechStack uts JOIN TechStack ts ON uts.techStack.techPk = ts.techPk " +
-                    "WHERE uts.user.userPk = :userPk"
+            "SELECT new com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO(uts.techStack.techPk, uts.techStack.techName) " +
+            "FROM UserTechStack uts " +
+            "WHERE uts.user.userPk = :userPk"
     )
-    List<TechStackDto> findUserTechStackByUserPk(@Param("userPk") Long userPk);
+    List<TechStackResponseDTO> findUserTechStackByUserPk(@Param("userPk") Long userPk);
 
 }

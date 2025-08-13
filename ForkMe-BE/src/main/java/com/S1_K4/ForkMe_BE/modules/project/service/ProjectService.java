@@ -56,4 +56,9 @@ public interface ProjectService {
      */
     @Transactional
     ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk);
+
+    /*
+     * 완료된 프로젝트 정보
+     */
+    List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk);
 }
