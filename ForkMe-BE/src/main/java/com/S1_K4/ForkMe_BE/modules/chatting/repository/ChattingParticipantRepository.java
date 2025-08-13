@@ -5,6 +5,8 @@ import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,18 +32,27 @@ public interface ChattingParticipantRepository extends JpaRepository<ChattingPar
     List<ChattingParticipant> findByChattingRoomPk(ChattingRoom chattingRoom);
 
 
-    // ===================== 여기부터 수정 =====================
     // CHANGE: "해당 프로젝트에서 특정 유저가 속한 모든 방의 참여 레코드" 조회용 메서드 추가
-    //  - Team(T), Private(P) 전부 한 번에 조회
+    //  - Team(T), Private(P) 전부 한 번에 조회됩니다.
     List<ChattingParticipant> findByUserPk_UserPkAndChattingRoomPk_ProjectPk_ProjectPk(
             Long userPk, Long projectPk
     );
-    // ===================== 여기까지 수정 =====================
+
 
     List<ChattingParticipant> findByUserPk_UserPkAndChattingRoomPk_ProjectPk_ProjectPkAndChattingRoomPk_RoomType(
             Long userPk,
             Long projectPk,
             RoomType roomType
     );
+
+
+
+    @Query("""
+        select cp
+        from ChattingParticipant cp
+        join fetch cp.userPk
+        where cp.chattingRoomPk = :room
+    """)
+    List<ChattingParticipant> findWithUserByChattingRoomPk(@Param("room") ChattingRoom room); //
 
 }

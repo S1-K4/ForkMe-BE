@@ -48,3 +48,4 @@ public interface ChattingService {
     List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
 
 }
+

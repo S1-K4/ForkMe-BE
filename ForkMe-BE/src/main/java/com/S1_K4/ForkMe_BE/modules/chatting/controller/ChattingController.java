@@ -75,7 +75,7 @@ public class ChattingController {
             chattingRoom = chattingService.createPrivateChattingRoom(projectPk, roomType, fromUserPk, toUserPk, now);
 
             // 필요시 참여자 등록 (중복이면 내부에서 무시됨)
-            //현재 멤버만 참여자로 추가 (탈퇴자는 재등록 금지)
+            // CHANGED: 현재 멤버만 참여자로 추가 (탈퇴자는 재등록 금지)
             if (chattingService.isProjectMember(projectPk, fromUserPk)) {
                 chattingService.addChattingParticipant(chattingRoom, fromUserPk, now);
             }
@@ -111,5 +111,6 @@ public class ChattingController {
     ) {
         return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
     }
+
 
 }

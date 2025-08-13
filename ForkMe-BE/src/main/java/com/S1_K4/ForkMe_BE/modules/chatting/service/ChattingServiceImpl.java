@@ -8,6 +8,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.presence.service.ChattingPresenceService;
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingMessageMongoRepository;
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingMessageRepository;
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingParticipantRepository;
@@ -46,6 +47,7 @@ public class ChattingServiceImpl implements ChattingService{
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
+    private final ChattingPresenceService chattingPresenceService;
 
 
     @Override
@@ -137,8 +139,7 @@ public class ChattingServiceImpl implements ChattingService{
         chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 채팅방에 속한 사용자가 아닙니다."));
 
-
-        /** 개인 채팅방에서 상대방 탈퇴 시 메시지 송신 차단**/
+        /**개인 채팅방에서 상대방 탈퇴 시 메시지 송신 차단**/
         if (chattingRoom.getRoomType() == RoomType.P) {
             List<ChattingParticipant> participants = chattingParticipantRepository.findByChattingRoomPk(chattingRoom);
 
@@ -151,7 +152,7 @@ public class ChattingServiceImpl implements ChattingService{
         }
 
 
-        //Redis 발행용 데이터 세팅 (시간 포맷 적용);
+        //Redis 발행용 데이터 세팅 (시간 포맷 적용)
         chattingMessageDto.setCreatedAt(now);
         chattingMessageDto.setNickName(user.getNickname());
         chattingMessageDto.setChattingMessageType(ChattingMessageType.CHAT);
@@ -202,7 +203,7 @@ public class ChattingServiceImpl implements ChattingService{
                 .nickName(userPk.getNickname())
                 .message(userPk.getNickname() + " 님이 입장했습니다.")
                 .createdAt(now)
-                .chattingMessageType(ChattingMessageType.JOIN) //메시지 타입 설정
+                .chattingMessageType(ChattingMessageType.JOIN) // 메시지 타입 설정
                 .build();
 
         // DB 저장 (MySQL + MongoDB)
@@ -213,12 +214,12 @@ public class ChattingServiceImpl implements ChattingService{
         redisPublisher.publish("chat", joinMessage);
 
         // 입장 후 실시간 참여자 리스트 전송
-        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
-        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
+        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); //
+        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); //
     }
 
     /** 멤버를 삭제해야할 채팅방 조회 및 삭제 메서드 호출 **/
-    //"프로젝트 내 모든 채팅방(T/P)에서 해당 유저 제거" 메서드 추가
+    // CHANGE: "프로젝트 내 모든 채팅방(T/P)에서 해당 유저 제거" 메서드 추가
     @Transactional
     public void performRemoveUserFromAllChattingRooms(Long projectPk, Long userPk, LocalDateTime now) {
 
@@ -236,6 +237,7 @@ public class ChattingServiceImpl implements ChattingService{
                 .distinct()
                 .forEach(room -> removeChattingParticipant(room, user, now));
     }
+
 
 
     /** 채팅방 삭제 및 퇴장 메세지 출력 **/
@@ -262,14 +264,15 @@ public class ChattingServiceImpl implements ChattingService{
         // 5. Redis 발행
         redisPublisher.publish("chat", leaveMessage);
 
-        // ✅ 퇴장 후 실시간 참여자 리스트 전송
-        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); // ✅
-        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); // ✅
+        // 퇴장 후 실시간 참여자 리스트 전송
+        List<ChattingUserDto> participants = getChattingRoomParticipants(chattingRoom.getChattingRoomPk()); //
+        redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); //
 
     }
 
     //채팅방 참여자 리스트 불러오기
     @Override
+    @Transactional(readOnly = true) //조회 중 세션 유지
     public List<ChattingUserDto> getChattingRoomParticipants(Long chattingRoomPk) {
         ChattingRoom chattingRoom = chattingRoomRepository.findById(chattingRoomPk)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
@@ -278,8 +281,11 @@ public class ChattingServiceImpl implements ChattingService{
         Project projectPk = chattingRoom.getProjectPk(); // 수정: 리더 확인을 위한 project 추출
 
 
-        return chattingParticipantRepository.findByChattingRoomPk(chattingRoom)
-                .stream()
+        // 변경: fetch join 으로 User 까지 한 번에 로딩
+        List<ChattingParticipant> participants =
+                chattingParticipantRepository.findWithUserByChattingRoomPk(chattingRoom);
+
+        return participants.stream()
                 .map(chattingParticipant -> {
                     boolean isLeader = false;
 
@@ -291,10 +297,14 @@ public class ChattingServiceImpl implements ChattingService{
                                 .orElse(false);
                     }
 
+                    boolean online = chattingPresenceService
+                            .isOnline(chattingRoomPk, chattingParticipant.getUserPk().getUserPk()); // 온라인 상태 추가
+
                     return ChattingUserDto.builder() // 빌더 사용
                             .userPk(chattingParticipant.getUserPk().getUserPk())
                             .nickName(chattingParticipant.getUserPk().getNickname())
                             .leader(isLeader)
+                            .online(online) // 온라인 상태 추가
                             .build();
                 })
                 .toList();
@@ -302,6 +312,7 @@ public class ChattingServiceImpl implements ChattingService{
 
 
     //개인 채팅방에서 상대방 존재 여부 확인
+    @Override
     public boolean hasOtherUser(ChattingRoom chattingRoom, Long myUserPk) {
         return chattingParticipantRepository.findByChattingRoomPk(chattingRoom).stream()
                 .anyMatch(p -> !p.getUserPk().getUserPk().equals(myUserPk));
@@ -342,7 +353,7 @@ public class ChattingServiceImpl implements ChattingService{
 
 
 
-    /** 헬퍼 메서드 **/
+    /** 헬버 메서드 **/
     private void validateProjectMember(Project project, Long userPk) {
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));

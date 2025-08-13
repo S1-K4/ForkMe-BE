@@ -61,17 +61,6 @@ public class ChattingRoom {
                 .createdAt(now)
                 .build();
     }
-
-    public void addParticipant(ChattingParticipant participant){
-        chattingParticipants.add(participant);
-        participant.setChattingRoomPk(this);
-    }
-
-    public void removeParticipant(ChattingParticipant participant){
-        chattingParticipants.remove(participant);
-        participant.setChattingRoomPk(null);
-    }
-
 }
 
 
