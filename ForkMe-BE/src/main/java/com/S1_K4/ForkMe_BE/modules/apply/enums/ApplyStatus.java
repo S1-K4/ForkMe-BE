@@ -13,9 +13,10 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum ApplyStatus {
-    PENDING("대기"),
+    PENDING("대기중"),
     APPROVED("수락"),
-    REJECTED("거절");
+    REJECTED("거절"),
+    CANCEL("취소");
 
     private final String description;
 }
