@@ -22,6 +22,7 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserTechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.position.repository.TechStackRepository;
+//import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
@@ -144,6 +145,7 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional(readOnly = true)
     public ApplyResponseDTO getApply(Long userPk, Long projectPk, Long applyPk) {
+
         // 1) 신청서 본문 조회
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
@@ -197,18 +199,7 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional(readOnly = true)
     public List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk) {
-        userRepository.findByIdWithTechStacks(userPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
-
-        projectRepository.findById(projectPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
-
-        //팀장 권한 검증
-        boolean isLeader = projectMemberRepository
-                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
-        if (!isLeader) {
-            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
-        }
+        checkValid(userPk, projectPk);
         
         //신청서 목록 조회
         return applyRepository.findAllByProjectPk(projectPk).stream()
@@ -230,19 +221,10 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void cancelApply(Long userPk, Long projectPk, Long applyPk){
-        userRepository.findById(userPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
-
-        projectRepository.findById(projectPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
-
+        checkValid(userPk, projectPk);
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
-        //권한 체크 : 신청자 본인만 취소 가능
-        if(!apply.getUser().getUserPk().equals(userPk)){
-            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
-        }
         apply.cancel();
     }
 
@@ -250,21 +232,10 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void approveApply(Long userPk, Long projectPk, Long applyPk){
-        userRepository.findById(userPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
-
-        projectRepository.findById(projectPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+        checkValid(userPk, projectPk);
 
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
-
-        //권한 체크 : 팀장만 수락가능
-        boolean isLeader = projectMemberRepository
-                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
-        if (!isLeader) {
-            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
-        }
 
         apply.approve();
     }
@@ -273,23 +244,28 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void rejectedApply(Long userPk, Long projectPk, Long applyPk){
-        userRepository.findById(userPk)
+        checkValid(userPk, projectPk);
+
+        Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
+                .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
+
+        apply.reject();
+    }
+
+
+    public void checkValid(Long userPk, Long projectPk){
+        userRepository.findByIdWithTechStacks(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 
         projectRepository.findById(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
-        Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
-                .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
-
-        //권한 체크 : 팀장만 거절 가능
+        //팀장 권한 검증
         boolean isLeader = projectMemberRepository
                 .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
         if (!isLeader) {
             throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
         }
-
-        apply.reject();
     }
 
 }

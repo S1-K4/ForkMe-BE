@@ -20,4 +20,4 @@ public enum ProjectStatus {
     COMPLETED("종료");
 
     private final String description;
-}
+    }

@@ -9,6 +9,7 @@ import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
+import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
@@ -451,4 +452,57 @@ public class ProjectServiceImpl implements ProjectService{
 
         return ProjectResponseDTO.fromEntity(project, techStacks, positions);
     }
+
+    /**
+    * 프로젝트 상태 변경(모집 -> 진행중)
+    * */
+
+    //기획 -> 모집 상태 변경
+    @Override
+    @Transactional
+    public void toRecruiting(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.recruiting();
+    }
+
+    //모집 -> 진행중 상태 변경
+    @Override
+    @Transactional
+    public void toInProgress(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.progress();
+    }
+
+    //진행중 -> 충원
+    @Override
+    @Transactional
+    public void toAdding(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.adding();
+    }
+
+    //진행중 -> 종료
+    @Override
+    @Transactional
+    public void toCompleted(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.complete();
+    }
+
+    public Project checkValid(Long userPk, Long projectPk){
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+    return project;
+    }
+
 }
