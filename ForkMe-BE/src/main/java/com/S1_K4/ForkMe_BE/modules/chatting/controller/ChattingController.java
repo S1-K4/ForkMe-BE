@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
@@ -8,6 +9,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -50,12 +52,15 @@ public class ChattingController {
     public ChattingRoomResponse createPrivateChattingRoom(
             @RequestParam("projectPk") Long projectPk,
             @RequestParam("roomType") RoomType roomType,
-            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
-            @RequestParam(value = "toUserPk", required = false) Long toUserPk
+//            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
+            @RequestParam(value = "toUserPk", required = false) Long toUserPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails
 
     ){
         //생성 시간 UTC
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+        Long fromUserPk = userDetails.getUserPk();
 
         ChattingRoom chattingRoom;
         List<ChattingUserDto> participants;
