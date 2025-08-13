@@ -20,15 +20,16 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOriginPatterns(List.of("*")); // file:// 로 테스트해도 통과
-        c.setAllowedMethods(List.of("POST", "OPTIONS"));
+        c.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000")); // file:// 로 테스트해도 통과
+        c.setAllowedMethods(List.of("GET", "POST", "OPTIONS")); // 최소한의 추가(GET)
         c.setAllowedHeaders(List.of(
-                "Content-Type", "X-Hub-Signature-256", "X-GitHub-Event", "X-GitHub-Delivery"
+                "Authorization","Content-Type", "X-Hub-Signature-256", "X-GitHub-Event", "X-GitHub-Delivery"
         ));
         c.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
         s.registerCorsConfiguration("/webhooks/github/**", c);
+        s.registerCorsConfiguration("/api/**", c);
         return s;
     }
 }
