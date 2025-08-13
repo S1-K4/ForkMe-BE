@@ -43,4 +43,8 @@ public class CommentInProject extends BaseTime {
     @JoinColumn(name = "user_pk", nullable = false)
     private User user;
 
+    public void updateContent(String newContent) {
+        this.comment = newContent;
+    }
+
 }

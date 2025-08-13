@@ -17,10 +17,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PrivateChattingRoomResponse {
+public class ChattingRoomResponse {
 
     private Long chattingRoomPk;
     private RoomType roomType;
     private List<ChattingUserDto> chattingRoomParticipants;
+
+    private boolean canSendMessage; // 추가: 메시지 전송 가능 여부
 }
+
 

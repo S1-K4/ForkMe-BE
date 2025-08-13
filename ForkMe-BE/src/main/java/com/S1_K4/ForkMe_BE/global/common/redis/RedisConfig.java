@@ -12,6 +12,8 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.TimeZone;
+
 /**
  * @author : 김관중
  * @packageName : com.S1_K4.ForkMe_BE.global.common.redis
@@ -42,15 +44,16 @@ public class RedisConfig {
         jsonRedisTemplate.setConnectionFactory(redisConnectionFactory); //주입 방식
 
 
-        // LocalDateTime 직렬화를 위한 ObjectMapper 설정 추가
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule()); // LocalDateTime 지원
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // ISO-8601 포맷 유지
+        //LocalDateTime 직렬화를 위한 ObjectMapper 설정 추가
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule()) // LocalDateTime 지원
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) // ISO-8601 포맷 유지
+                .setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); // Redis 직렬화/역직렬화 시 날짜·시간이 항상 KST 시간 포맷 고정
 
-        // 기존 Jackson2JsonRedisSerializer 생성 방식 유지하되, ObjectMapper 만 커스터마이징
+        //기존 Jackson2JsonRedisSerializer 생성 방식 유지하되, ObjectMapper 만 커스터마이징
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
 
-        // 직렬화기 설정
+        //직렬화기 설정
         jsonRedisTemplate.setKeySerializer(new StringRedisSerializer());
         jsonRedisTemplate.setValueSerializer(serializer);
         jsonRedisTemplate.setHashKeySerializer(new StringRedisSerializer());  // 해시 사용 시에도 동일한 직렬화기 설정
@@ -59,8 +62,7 @@ public class RedisConfig {
         return jsonRedisTemplate;
     }
 
-    /** 채팅용 리스너 **/
-    //  Redis Subscriber 가 "chat" 채널을 구독하게 설정
+    // Redis Subscriber 가 "chat" 채널을 구독하게 설정
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory connectionFactory,

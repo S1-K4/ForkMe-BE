@@ -20,6 +20,8 @@ public class InBoardUpdateRequest {
     private String title;
     private Long projectPk;
     private String content;
+    private Long userPk;
+
 
     // 🗑️ 삭제 요청된 이미지 URL 목록
     private List<String> removedImageUrls;

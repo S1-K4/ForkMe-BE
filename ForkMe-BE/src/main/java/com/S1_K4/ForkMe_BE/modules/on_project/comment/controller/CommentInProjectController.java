@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.on_project.comment.controller;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.dto.CommentCreateRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.dto.CommentResponse;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.dto.CommentUpdateRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.service.CommentInProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,10 +45,22 @@ public class CommentInProjectController {
         return ResponseEntity.ok(comments);
     }
 
+    //댓글 수정
+    @PutMapping("/{commentInProjectPk}")
+    public ResponseEntity<CommentResponse> updateComment(@PathVariable Long commentInProjectPk,
+                                                          @RequestBody CommentUpdateRequest request){
+        log.info("댓글 수정 요청: boardInProjectPk={}, userPk={}, comment={}",
+                commentInProjectPk, request.getComment());
+
+        CommentResponse updated  = commentInProjectService.updateComment(commentInProjectPk, request);
+
+        return ResponseEntity.ok(updated);
+    }
+
     // 댓글 삭제
-    @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
-        commentInProjectService.deleteComment(commentId);
+    @DeleteMapping("/{commentInProjectPk}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long commentInProjectPk) {
+        commentInProjectService.deleteComment(commentInProjectPk);
         return ResponseEntity.noContent().build();
     }
 

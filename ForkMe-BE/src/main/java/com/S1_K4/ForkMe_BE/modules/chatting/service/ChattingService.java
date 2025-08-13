@@ -35,7 +35,17 @@ public interface ChattingService {
 
     void removeChattingParticipant(ChattingRoom chattingRoom, User user, LocalDateTime now);
 
-    ChattingRoom getChattingRoom(Project projectPk);
+    ChattingRoom getChattingRoom(Long projectPk, RoomType roomType);
+
+    void performRemoveUserFromAllChattingRooms(Long projectPk, Long userPk, LocalDateTime now);
+
+    boolean hasOtherUser(ChattingRoom chattingRoom, Long myUserPk);
+
+//    // 프로젝트 워크스페이스 내에서 유저가 속한 개인 채팅방 리스트 불러오기
+//    List<ChattingRoomResponse> getMyPrivateChattingRooms(Long projectPk, Long userPk);
+
+    boolean isProjectMember(Long projectPk, Long userPk);
+
 
 
 }
