@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>내 워크스페이스</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { margin-bottom: 20px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 10px; padding: 10px; background: #f0f0f0; border-radius: 4px; }
+        .workspace-name { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>가입된 워크스페이스 목록</h1>
+
+<ul id="workspaceList">
+    <li>불러오는 중...</li>
+</ul>
+
+<script>
+    // 로그인 -> 사이드바 API 호출
+    fetch('/api/user/me/sidebar')
+      .then(res => res.json())
+      .then(data => {
+        const listEl = document.getElementById('workspaceList');
+        listEl.innerHTML = '';
+
+        if (data.workSpaceList && Array.isArray(data.workSpaceList) && data.workSpaceList.length > 0) {
+          data.workSpaceList.forEach(ws => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="workspace-name">${ws.name || '이름 없음'}</span> (ID: ${ws.id || '-'})`;
+            listEl.appendChild(li);
+          });
+        } else {
+          listEl.innerHTML = '<li>가입된 워크스페이스가 없습니다.</li>';
+        }
+      })
+      .catch(err => {
+        console.error('워크스페이스 정보 불러오기 실패:', err);
+        document.getElementById('workspaceList').innerHTML = '<li>정보를 불러오는 데 실패했습니다.</li>';
+      });
+</script>
+
+</body>
+</html>

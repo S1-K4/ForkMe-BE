@@ -1,11 +1,91 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="UTF-8" />
+    <title>인덱스 페이지</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .workspace-box { margin-top: 20px; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 6px 0; }
+        a.workspace-link {
+            text-decoration: none;
+            color: #007bff;
+        }
+        a.workspace-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-인덱스페이지<br/>
-<a href="http://localhost:8080/login/github">Login with GitHub</a>
+
+<h1>인덱스 페이지</h1>
+
+<!-- GitHub 로그인 버튼 -->
+<p>
+    <a href="http://localhost:8080/login/github">🔐 GitHub 로그인</a>
+</p>
+
+<!-- 로그인된 경우에만 보일 영역 -->
+<div id="loggedInArea" style="display: none;">
+    <p><strong>✅ 로그인 되었습니다!</strong></p>
+
+    <!-- 게시판 링크 -->
+    <p>
+        <a href="/boardIn/board.html">📝 게시판으로 이동</a>
+    </p>
+
+    <!-- 워크스페이스 목록 -->
+    <div class="workspace-box">
+        <h3>가입된 워크스페이스 목록</h3>
+        <ul id="workspaceList">
+            <li>불러오는 중...</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 로그인되지 않은 경우 -->
+<div id="loggedOutArea">
+    <p>❗ 게시판 및 워크스페이스 정보를 보시려면 먼저 GitHub로 로그인해주세요.</p>
+</div>
+
+<script>
+    // 로그인 여부 확인 + 워크스페이스 정보 불러오기
+    fetch('/api/user/me/sidebar')
+      .then(res => res.json())
+      .then(data => {
+        console.log("API 응답 전체:", data);
+        console.log("workSpaceList:", data.workSpaceList);
+
+        if (data && data.workSpaceList !== null) {
+          document.getElementById('loggedInArea').style.display = 'block';
+          document.getElementById('loggedOutArea').style.display = 'none';
+
+          const list = document.getElementById('workspaceList');
+          list.innerHTML = '';
+
+          if (data.workSpaceList.length === 0) {
+            list.innerHTML = '<li>가입된 워크스페이스가 없습니다.</li>';
+          } else {
+            data.workSpaceList.forEach(ws => {
+              const li = document.createElement('li');
+              const link = document.createElement('a');
+
+              link.href = `/boardIn/dashboard.html?projectPk=${ws.projectPk}`;
+              link.textContent = `${ws.projectName || '워크스페이스 이름 없음'} (ID: ${ws.projectPk || '-'})`;
+              link.className = 'workspace-link';
+
+              li.appendChild(link);
+              list.appendChild(li);
+            });
+          }
+        }
+      })
+      .catch(error => {
+        console.log('로그인되지 않음 또는 오류:', error);
+        // 기본적으로 비로그인 영역이 보이도록 설정됨
+      });
+</script>
+
 </body>
 </html>
