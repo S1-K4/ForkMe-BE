@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // ====== Public ======
                                 .requestMatchers(
-                                        "/", "/index.html","/login/**","/oauth2/**","/api/auth/**","/favicon.ico", "login-success.html", "/login-error"
+                                        "/", "/index.html","/login/**","/oauth2/**","/api/auth/**","/favicon.ico", "/login-success.html", "/login-error"
                                 ).permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/form").permitAll() //신청서 생성폼 조회
                                 .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/*").permitAll()   //신청서 조회(단건)

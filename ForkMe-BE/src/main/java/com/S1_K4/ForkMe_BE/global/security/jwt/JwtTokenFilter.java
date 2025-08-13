@@ -38,8 +38,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         return
 
                 path.startsWith("/login/github")
-                ||path.startsWith("/favicon.ico")
-                ||path.startsWith("/api/projects");
+                ||path.startsWith("/favicon.ico");
     }
 
     @Override
