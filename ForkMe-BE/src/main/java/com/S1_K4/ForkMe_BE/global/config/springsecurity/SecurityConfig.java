@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -33,6 +34,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
@@ -51,6 +53,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/projects/*/title").permitAll()          //(팀장)프로젝트명 수정
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/*/members/me").permitAll()
                         .requestMatchers(HttpMethod.DELETE,"/api/projects/*/members/*").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                // ====== Public ======
+                                .requestMatchers(
+                                        "/", "/index.html","/login/**","/oauth2/**","/api/auth/**","/favicon.ico", "/login-success.html", "/login-error"
+                                ).permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/form").permitAll() //신청서 생성폼 조회
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/*").permitAll()   //신청서 조회(단건)
+                                .requestMatchers(HttpMethod.GET, "/api/projects/*/applies").permitAll()   //신청서 조회(목록) -> 팀장
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies").permitAll() //신청서 작성
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/cancel").permitAll() //신청서 취소(status 변경)
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/approve").permitAll()  //(팀장) 신청서 수락
+                                .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/reject").permitAll()  //(팀장) 신청서 거절
+
 
                         .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
                                 "/api/on-project/comments/**").permitAll() //0812 김송이 추가
@@ -59,6 +74,13 @@ public class SecurityConfig {
                                 "/api/projects/form-info",
                                 "/api/projects/**/update-form"
                         ).authenticated()
+                                .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
+                                        "/api/on-project/comments/**").permitAll() //0812 김송이 추가
+                                //인증 필요한 GET 매핑
+                                .requestMatchers(HttpMethod.GET,
+                                        "/api/projects/form-info"
+                                        //"/api/projects/**/update-form"
+                                ).authenticated()
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/projects/*/status/recruiting",
@@ -77,6 +99,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,  "/api/user/me/**").authenticated()
 
                         //나머지 인증x Get매핑
+                                .requestMatchers(HttpMethod.GET,   "/api/mypage/**").authenticated()
+
+                                //나머지 인증x Get매핑
 
                         .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/projects/{projectPk}/apply/{applyPk}").permitAll()
@@ -107,12 +132,12 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(auth -> auth
-                                .baseUri("/login")
+                                .baseUri("/oauth2/authorization")
                         )
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userService(customOAuth2UserService)
+                                )
+                                .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

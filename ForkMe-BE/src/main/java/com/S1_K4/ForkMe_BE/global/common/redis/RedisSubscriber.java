@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class RedisSubscriber implements MessageListener {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final RedisPublisher redisPublisher; // 추가(실시간으로 참여자 리스트 변동 적용)
+    private final RedisPublisher redisPublisher; // 추가
 
     // LocalDateTime 지원을 위한 설정 추가
     private final ObjectMapper objectMapper = new ObjectMapper()
@@ -36,7 +36,7 @@ public class RedisSubscriber implements MessageListener {
             ChattingMessageDto chattingMessage = objectMapper.readValue(message.getBody(), ChattingMessageDto.class);
             ChattingMessageType chattingMessageType = chattingMessage.getChattingMessageType();
 
-            Long roomPk = chattingMessage.getChattingRoomPk(); //반복 제거용
+            Long roomPk = chattingMessage.getChattingRoomPk(); // 반복 제거용
 
             //타입 분기
             switch (chattingMessageType) {

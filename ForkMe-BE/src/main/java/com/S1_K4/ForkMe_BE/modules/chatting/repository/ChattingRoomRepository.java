@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,7 +22,7 @@ import java.util.Optional;
 public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long> {
 
     // 프로젝트로 채팅방 찾기
-    Optional<ChattingRoom> findByProjectPk(Project project);
+    List<ChattingRoom> findByProjectPk(Project project);
 
     Optional<ChattingRoom> findByProjectPkAndRoomType(Project project, RoomType roomType);
 
@@ -93,6 +94,20 @@ public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long
     );
 
 
-
+    // 프로젝트에 귀속되면서 내가 속한 개인 채팅방 리스트 조회
+    @Query("""
+    select distinct cr
+    from ChattingRoom cr
+    join ChattingParticipant cp on cp.chattingRoomPk = cr
+    where cr.projectPk.projectPk = :projectPk
+      and cr.roomType = :roomType
+      and cp.userPk.userPk = :userPk
+""")
+    List<ChattingRoom> findMyPrivateRoomsInProject(
+            @Param("projectPk") Long projectPk,
+            @Param("roomType") RoomType roomType,
+            @Param("userPk") Long userPk
+    );
 
 }
+

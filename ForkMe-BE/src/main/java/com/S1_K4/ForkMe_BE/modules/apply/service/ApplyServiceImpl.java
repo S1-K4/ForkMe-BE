@@ -1,10 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.apply.service;
 
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateFormDTO;
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateRequestDTO;
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyResponseDTO;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.*;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
@@ -32,7 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author : 선순주
@@ -169,12 +168,12 @@ public class ApplyServiceImpl implements ApplyService{
 
         // 3) 유저 전체 기술스택을 별도 쿼리로 조회 -> DTO 매핑
         Long applicantUserPk = apply.getUser().getUserPk(); //신청자의 기술스택
-        List<TechStackDto> userStackDtos = userTechStackRepository.findUserTechStackByUserPk(applicantUserPk);
+        List<TechStackResponseDTO> userStackDtos = userTechStackRepository.findUserTechStackByUserPk(applicantUserPk);
 
         List<ApplyResponseDTO.TechStackInfo> userStacks = userStackDtos.stream()
                 .map(ts -> ApplyResponseDTO.TechStackInfo.builder()
-                        .techPk(ts.getTechStackPk())
-                        .techName(ts.getTechStackName())
+                        .techPk(ts.getTechPk())
+                        .techName(ts.getTechName())
                         .build())
                 .toList();
 
@@ -201,6 +200,19 @@ public class ApplyServiceImpl implements ApplyService{
     public List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk) {
         checkValid(userPk, projectPk);
         
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+
         //신청서 목록 조회
         return applyRepository.findAllByProjectPk(projectPk).stream()
                 .map(a -> ApplyListResponseDTO.builder()
@@ -266,6 +278,32 @@ public class ApplyServiceImpl implements ApplyService{
         if (!isLeader) {
             throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
         }
+    }
+
+
+
+    @Override
+    public List<MyApplyListResponseDto> getMyApplyList(Long userPk, List<String> statusList) {
+
+        List<MyApplyListResponseDto> applyList = applyRepository.findApplyByUserPkInState(userPk, statusList);
+
+        List<Long> applyPkList = applyList.stream().map(MyApplyListResponseDto::getApplyPk).toList();
+
+        List<ApplyTechStackDto> applyTechStackList = applyTechStackRepository.findApplyTechStacksByApplyPkIn(applyPkList);
+        Map<Long, List<TechStackResponseDTO>> applyTechStackMap = applyTechStackList.stream()
+                .collect(Collectors.groupingBy(
+                        ApplyTechStackDto::getApplyPk,
+                        Collectors.mapping(
+                                dto -> new TechStackResponseDTO(dto.getTechPk(), dto.getTechName()),
+                                Collectors.toList()
+                        )
+                ));
+
+        for (MyApplyListResponseDto myApplyListResponseDto : applyList) {
+            myApplyListResponseDto.setTechStacks(applyTechStackMap.get(myApplyListResponseDto.getApplyPk()));
+        }
+
+        return applyList;
     }
 
 }

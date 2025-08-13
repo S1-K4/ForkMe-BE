@@ -81,4 +81,9 @@ public interface ProjectService {
 
     @Transactional
     void kickMember(Long loginUserPk, Long projectPk, Long targetUserPk);
+
+    /*
+     * 완료된 프로젝트 정보
+     */
+    List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk);
 }
