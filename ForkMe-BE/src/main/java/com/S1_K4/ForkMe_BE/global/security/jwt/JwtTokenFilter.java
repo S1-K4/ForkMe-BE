@@ -1,8 +1,6 @@
 package com.S1_K4.ForkMe_BE.global.security.jwt;
 
-import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.auth.service.JwtTokenProvider;
-import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,12 +38,17 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         return
 
                 path.startsWith("/login/github")
-                ||path.startsWith("/favicon.ico")
-                ||path.startsWith("/api/projects");
+                ||path.startsWith("/favicon.ico");
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         log.info("토큰 유효성 검사 : " + request.getRequestURI());
         String accessToken = resolveToken(request);
         log.info("accessToken : " + accessToken + " /");

@@ -62,16 +62,11 @@ public class ChattingRoom {
                 .build();
     }
 
-    public void addParticipant(ChattingParticipant participant){
-        chattingParticipants.add(participant);
-        participant.setChattingRoomPk(this);
-    }
 
-    public void removeParticipant(ChattingParticipant participant){
-        chattingParticipants.remove(participant);
-        participant.setChattingRoomPk(null);
+    //채팅방 소프트 삭제
+    public void markAsDeleted() {
+        this.deletedYn = Yn.Y;
     }
-
 }
 
 
