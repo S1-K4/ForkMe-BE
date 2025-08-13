@@ -48,6 +48,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/cancel").permitAll() //신청서 취소(status 변경)
                         .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/approve").permitAll()  //(팀장) 신청서 수락
                         .requestMatchers(HttpMethod.POST, "/api/projects/*/applies/*/reject").permitAll()  //(팀장) 신청서 거절
+                        .requestMatchers(HttpMethod.POST, "/api/projects/*/title").permitAll()          //(팀장)프로젝트명 수정
+                        .requestMatchers(HttpMethod.DELETE, "/api/projects/*/members/me").permitAll()
+                        .requestMatchers(HttpMethod.DELETE,"/api/projects/*/members/*").permitAll()
 
                         .requestMatchers("/api/projects/**", "/api/on-project/**", "boardIn/**", "/api/schedules/**",
                                 "/api/on-project/comments/**").permitAll() //0812 김송이 추가

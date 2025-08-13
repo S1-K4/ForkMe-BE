@@ -103,4 +103,9 @@ public class Project extends BaseTime {
         }
         this.projectStatus = ProjectStatus.COMPLETED;
     }
+
+    //프로젝트 명 변경 메서드
+    public void updateProjectTitle(String projectTitle){
+        this.projectTitle = projectTitle;
+    }
 }

@@ -72,4 +72,13 @@ public interface ProjectService {
     //진행중 -> 종료
     @Transactional
     void toCompleted(Long userPk, Long projectPk);
+
+    @Transactional
+    void updateProjectTitle(Long userPk, Long projectPk, String newTitleRaw);
+
+    @Transactional
+    void leaveProject(Long userPk, Long projectPk);
+
+    @Transactional
+    void kickMember(Long loginUserPk, Long projectPk, Long targetUserPk);
 }

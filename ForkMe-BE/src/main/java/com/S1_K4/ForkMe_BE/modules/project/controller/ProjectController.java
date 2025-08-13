@@ -114,7 +114,7 @@ public class ProjectController {
 
 
     /**
-    * 신청서 상태 조회(기획 -> 모집)
+    * 프로젝트 상태 조회(기획 -> 모집)
     * */
     @PostMapping("/{projectPk}/status/recruiting")
     public ResponseEntity<ApiResponse<String>> recruiting(
@@ -127,7 +127,7 @@ public class ProjectController {
     }
 
     /**
-     * 신청서 상태 조회(모집 -> 진행)
+     * 프로젝트 상태 조회(모집 -> 진행)
      * */
     @PostMapping("/{projectPk}/status/progress")
     public ResponseEntity<ApiResponse<String>> progress(
@@ -140,28 +140,69 @@ public class ProjectController {
     }
 
     /**
-     * 신청서 상태 조회(진행 -> 충원)
+     * 프로젝트 상태 조회(진행 -> 충원)
      * */
     @PostMapping("/{projectPk}/status/adding")
     public ResponseEntity<ApiResponse<String>> adding(
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 2L;
+        Long userPk = 1L;
         projectService.toAdding(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("ADDING", "상태를 충원으로 변경"));
     }
 
     /**
-     * 신청서 상태 조회(진행 -> 종료)
+     * 프로젝트 상태 조회(진행 -> 종료)
      * */
     @PostMapping("/{projectPk}/status/complete")
     public ResponseEntity<ApiResponse<String>> complete(
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 2L;
+        Long userPk = 1L;
         projectService.toCompleted(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("COMPLETED", "상태를 종료로 변경"));
     }
+
+    /**
+     * 프로젝트 명 변경
+     * */
+    @PostMapping("/{projectPk}/title")
+    public ResponseEntity<ApiResponse<Long>> updateProjectTitle(
+            @PathVariable Long projectPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody ProjectTitleUpdateDTO dto
+            ) {
+        Long userPk = 2L;
+        projectService.updateProjectTitle(userPk, projectPk, dto.projectTitle());
+        return ResponseEntity.ok(ApiResponse.success(projectPk, "프로젝트명 변경 완료"));
+    }
+    
+    /**
+     * (팀원)프로젝트 탈퇴
+     * */
+    @DeleteMapping("{projectPk}/members/me")
+    public ResponseEntity<ApiResponse<Long>> leaveProject(
+            @PathVariable Long projectPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk =2L;
+        projectService.leaveProject(userPk, projectPk);
+        return ResponseEntity.ok(ApiResponse.success(projectPk,"프로젝트 탈퇴가 완료되었습니다."));
+    }
+
+    /**
+     * (팀장)프로젝트 강퇴
+     * */
+    @DeleteMapping("/{projectPk}/members/{targetUserPk}")
+    public ResponseEntity<ApiResponse<String>> kickMember(
+            @PathVariable Long projectPk,
+            @PathVariable Long targetUserPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long actingUserPk = 2L;
+        projectService.kickMember(actingUserPk, projectPk, targetUserPk);
+        return ResponseEntity.ok(ApiResponse.success("강퇴한 멤버 pk->" + targetUserPk ,"해당 팀원을 강퇴했습니다."));
+    }
+
 }
