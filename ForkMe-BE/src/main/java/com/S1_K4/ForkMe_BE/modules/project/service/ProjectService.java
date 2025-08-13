@@ -57,6 +57,31 @@ public interface ProjectService {
     @Transactional
     ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk);
 
+    //기획 -> 모집 상태 변경
+    @Transactional
+    void toRecruiting(Long userPk, Long projectPk);
+
+    //모집 -> 진행중 상태 변경
+    @Transactional
+    void toInProgress(Long userPk, Long projectPk);
+
+    //진행중 -> 충원
+    @Transactional
+    void toAdding(Long userPk, Long projectPk);
+
+    //진행중 -> 종료
+    @Transactional
+    void toCompleted(Long userPk, Long projectPk);
+
+    @Transactional
+    void updateProjectTitle(Long userPk, Long projectPk, String newTitleRaw);
+
+    @Transactional
+    void leaveProject(Long userPk, Long projectPk);
+
+    @Transactional
+    void kickMember(Long loginUserPk, Long projectPk, Long targetUserPk);
+
     /*
      * 완료된 프로젝트 정보
      */
