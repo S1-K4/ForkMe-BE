@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.apply.repository;
 
-import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
+import com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -48,5 +48,12 @@ public interface ApplyRepository extends JpaRepository<Apply,Long> {
         ORDER BY a.createdAt DESC
     """)
     List<Apply> findAllByProjectPk(@Param("projectPk") Long projectPk);
+
+
+    @Query("SELECT new com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto(" +
+            "a.applyPk, a.content, a.status, a.createdAt, a.updatedAt, a.user.userPk,a.project.projectPk,a.projectPosition.position.positionPk, a.projectPosition.position.positionName) " +
+            "FROM Apply a " +
+            "WHERE a.user.userPk = :userPk AND a.deletedYN = 'N' AND a.status IN(:stateList)")
+    List<MyApplyListResponseDto> findApplyByUserPkInState(Long userPk, List<String> stateList) ;
 
 }

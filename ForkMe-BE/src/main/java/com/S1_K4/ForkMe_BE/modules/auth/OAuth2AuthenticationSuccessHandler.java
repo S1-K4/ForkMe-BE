@@ -26,7 +26,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import reactor.netty.http.Cookies;
 
 import java.io.IOException;
 import java.util.Map;
@@ -141,7 +140,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         refreshTokenCookie.setPath("/");
         response.addCookie(refreshTokenCookie);
 
-        String url = "http://localhost:8080/login-success.html";
+        String url = "http://localhost:3000/login-success.html";
         String targetUrl = UriComponentsBuilder.fromUriString(url)
                 .queryParam("accessToken", accessToken)
                 .build().toUriString();

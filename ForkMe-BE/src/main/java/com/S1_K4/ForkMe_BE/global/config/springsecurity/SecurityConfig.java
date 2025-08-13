@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -33,13 +34,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // ====== Public ======
                                 .requestMatchers(
-                                        "/", "/index.html","/login/**","/api/auth/**","/favicon.ico", "login-success.html", "/login-error"
+                                        "/", "/index.html","/login/**","/oauth2/**","/api/auth/**","/favicon.ico", "login-success.html", "/login-error"
                                 ).permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/form").permitAll() //신청서 생성폼 조회
                                 .requestMatchers(HttpMethod.GET, "/api/projects/*/applies/*").permitAll()   //신청서 조회(단건)
@@ -66,6 +69,8 @@ public class SecurityConfig {
 
                                 .requestMatchers(HttpMethod.GET,   "/api/user/me/**").authenticated()
                                 .requestMatchers(HttpMethod.POST,  "/api/user/me/**").authenticated()
+
+                                .requestMatchers(HttpMethod.GET,   "/api/mypage/**").authenticated()
 
                                 //나머지 인증x Get매핑
 
@@ -98,12 +103,12 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(auth -> auth
-                                .baseUri("/login")
+                                .baseUri("/oauth2/authorization")
                         )
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userService(customOAuth2UserService)
+                                )
+                                .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
