@@ -19,8 +19,6 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserTechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.position.repository.TechStackRepository;
-//import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto;
-import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackDto;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import lombok.RequiredArgsConstructor;

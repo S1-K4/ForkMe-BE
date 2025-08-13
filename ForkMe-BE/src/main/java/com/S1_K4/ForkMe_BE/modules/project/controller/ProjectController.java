@@ -121,7 +121,7 @@ public class ProjectController {
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 1L;
+        Long userPk = userDetails.getUserPk();
         projectService.toRecruiting(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("RECRUITING", "상태를 모집으로 변경"));
     }
@@ -134,7 +134,7 @@ public class ProjectController {
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 1L;
+        Long userPk = userDetails.getUserPk();
         projectService.toInProgress(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("IN_PROGRESS", "상태를 진행중으로 변경"));
     }
@@ -147,7 +147,7 @@ public class ProjectController {
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 1L;
+        Long userPk = userDetails.getUserPk();
         projectService.toAdding(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("ADDING", "상태를 충원으로 변경"));
     }
@@ -160,7 +160,7 @@ public class ProjectController {
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userPk = 1L;
+        Long userPk = userDetails.getUserPk();
         projectService.toCompleted(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success("COMPLETED", "상태를 종료로 변경"));
     }
@@ -174,7 +174,7 @@ public class ProjectController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody ProjectTitleUpdateDTO dto
             ) {
-        Long userPk = 2L;
+        Long userPk = userDetails.getUserPk();
         projectService.updateProjectTitle(userPk, projectPk, dto.projectTitle());
         return ResponseEntity.ok(ApiResponse.success(projectPk, "프로젝트명 변경 완료"));
     }
@@ -186,7 +186,7 @@ public class ProjectController {
     public ResponseEntity<ApiResponse<Long>> leaveProject(
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userPk =2L;
+        Long userPk = userDetails.getUserPk();
         projectService.leaveProject(userPk, projectPk);
         return ResponseEntity.ok(ApiResponse.success(projectPk,"프로젝트 탈퇴가 완료되었습니다."));
     }
@@ -200,7 +200,7 @@ public class ProjectController {
             @PathVariable Long targetUserPk,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long actingUserPk = 2L;
+        Long actingUserPk = userDetails.getUserPk();
         projectService.kickMember(actingUserPk, projectPk, targetUserPk);
         return ResponseEntity.ok(ApiResponse.success("강퇴한 멤버 pk->" + targetUserPk ,"해당 팀원을 강퇴했습니다."));
     }
