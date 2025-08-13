@@ -67,5 +67,9 @@ public class Project extends BaseTime {
         }
     }
 
+    /*
+    * 프로젝트 상태 수정 시 사용하는 메서드
+    * */
+
 
 }

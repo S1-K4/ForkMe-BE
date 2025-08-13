@@ -35,13 +35,13 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getServletPath();
+        String path = request.getRequestURI();
 
         return
 
                 path.startsWith("/login/github")
                 ||path.startsWith("/favicon.ico")
-                ;
+                ||path.startsWith("/api/projects");
     }
 
     @Override
