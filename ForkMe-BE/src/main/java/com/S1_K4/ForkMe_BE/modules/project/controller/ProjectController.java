@@ -118,7 +118,7 @@ public class ProjectController {
     * */
     @PostMapping("/{projectPk}/status/recruiting")
     public ResponseEntity<ApiResponse<String>> recruiting(
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long userPk = userDetails.getUserPk();

@@ -5,6 +5,9 @@ import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
@@ -37,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -67,6 +72,8 @@ public class ProjectServiceImpl implements ProjectService{
     private final S3Repository s3Repository;
     private final MemberReviewRepository memberReviewRepository;
     private final CommentRepository commentRepository;
+
+    private final ChattingService chattingService;
 
     /*
      * 프로젝트 상세 조회
@@ -468,6 +475,16 @@ public class ProjectServiceImpl implements ProjectService{
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
         project.recruiting();
+
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 채팅방 생성
+        ChattingRoom teamChattingRoom = chattingService.createTeamChattingRoom(project, RoomType.T, now);
+
+        // 팀장 자동 채팅방 참여
+        ProjectMember leader = projectMemberRepository.findLeaderByProjectPk(project)
+                .orElseThrow(() -> new IllegalStateException("리더가 없습니다."));
+        chattingService.addChattingParticipant(teamChattingRoom, leader.getUser().getUserPk(), now);
     }
 
     //모집 -> 진행중 상태 변경
