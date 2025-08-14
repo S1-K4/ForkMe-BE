@@ -23,4 +23,6 @@ public interface UserService {
     SideBarResponseDto getSidebarInfo(Long userPk);
 
     void updateUserTechStack(User user, List<Long> techStackPkList);
+
+    void withdrawUser(Long userPk);
 }

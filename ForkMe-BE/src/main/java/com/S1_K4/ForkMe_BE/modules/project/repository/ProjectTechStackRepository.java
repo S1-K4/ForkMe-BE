@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectTechStackDto;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -72,4 +73,9 @@ public interface ProjectTechStackRepository extends JpaRepository<ProjectTechSta
         WHERE pts.projectProfile.projectProfilePk = :projectProfilePk
     """)
     List<Long> findTechStackIdsByProjectProfilePk(@Param("projectProfilePk") Long projectProfilePk);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ProjectTechStack pt WHERE pt.projectProfile.projectProfilePk IN (:projectProfilePkList)")
+    void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
+
 }

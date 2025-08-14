@@ -1,20 +1,26 @@
 package com.S1_K4.ForkMe_BE.modules.user.service;
 
+import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
+import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.auth.repository.AuthRepository;
+import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
+import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import com.S1_K4.ForkMe_BE.modules.user.dto.SideBarResponseDto;
-import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.modules.user.dto.UserInfoResponseDto;
+import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.entity.UserTechStack;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserTechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,10 +36,16 @@ import java.util.List;
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private final ApplyRepository applyRepository;
+    private final ApplyTechStackRepository applyTechStackRepository;
+    private final AuthRepository authRepository;
+    private final LikeRepository likeRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectService projectService;
+    private final StackRepository stackRepository;
     private final UserRepository userRepository;
     private final UserTechStackRepository userTechStackRepository;
-    private final StackRepository stackRepository;
-    private final ProjectRepository projectRepository;
 
     @Override
     public UserInfoResponseDto getMyProfile(Long userPk) {
@@ -55,7 +67,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserProfile getUserProfile(Long userPk){
+    public UserProfile getUserProfile(Long userPk) {
         UserProfile userProfile = userRepository.findByUserPk(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid User PK: " + userPk));
         return userProfile;
@@ -81,7 +93,7 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    //@Override
+    @Override
     @Transactional
     public void updateUserTechStack(User user, List<Long> techStackList) {
         log.info("updateUserTechStack : " + user.getUserPk() + " / " + techStackList);
@@ -99,5 +111,45 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    @Transactional
+    public void withdrawUser(Long userPk) {
+        log.info("withdrawUser : " + userPk);
+
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid User PK: " + userPk));
+        log.info("user = " + user.toString());
+
+        // 유저 정보 탈퇴로 변경
+        user.withdraw();
+
+        // 유저 기술 스택 삭제
+        userTechStackRepository.deleteAllByUser(user);
+        log.info("유저 기술 스택 삭제");
+
+        // Auth 삭제
+        authRepository.deleteAllByUser(user);
+        log.info("Auth 삭제");
+
+        // 프로젝트(탈퇴한 유저가 팀장인 프로젝트)
+        projectService.withdrawUser(user);
+
+/*
+데이터 없어서 주석해놈
+        // like
+        likeRepository.deleteByUser(user);
+        // apply + applyTechStack
+        applyTechStackRepository.deleteApplyTechStackByApply_UserInBulk(user);
+        applyRepository.deleteApplyByUserInBulk(user);
+        // 참여중인 프로젝트
+        projectMemberRepository.deleteByUserInBulk(user);
+*/
+
+        // 나머지 기능들에서 삭제하거나 deleted_yn 변경하는 과정 필요
+
+
+        userRepository.save(user);
+        log.info("withdrawUser - success");
+    }
 
 }
