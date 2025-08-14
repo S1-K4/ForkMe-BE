@@ -41,6 +41,7 @@ public class ChattingController {
     /**
      * 채팅방 참여자 리스트 조회
      */
+    //채팅방 참여자 조회(참여자 조회에 권한 체크 필요하면 나중에 추가)
     @GetMapping("/{chattingRoomPk}/participants")
     public List<ChattingUserDto> getChattingRoomParticipants(
             @PathVariable("chattingRoomPk") Long chattingRoomPk) {
