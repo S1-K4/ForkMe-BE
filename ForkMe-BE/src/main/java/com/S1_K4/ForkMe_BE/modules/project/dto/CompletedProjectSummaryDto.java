@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
+import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
@@ -36,6 +37,7 @@ public class CompletedProjectSummaryDto {
 
     private Long memberCount;
     private List<TechStackResponseDTO> techStack;
+    private List<String> review;
 
     public CompletedProjectSummaryDto(Long projectPk, String projectTitle, LocalDate projectStartDate, LocalDate projectEndDate, ProjectStatus projectStatus, Long projectProfilePk, String projectProfileTitle, ProgressType progressType) {
         this.projectPk = projectPk;

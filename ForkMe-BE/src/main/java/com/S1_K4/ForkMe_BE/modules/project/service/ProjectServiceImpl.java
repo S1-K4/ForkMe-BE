@@ -8,6 +8,8 @@ import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
+import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -63,6 +65,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final ApplyTechStackRepository applyTechStackRepository;
     private final S3Service s3Service;
     private final S3Repository s3Repository;
+    private final MemberReviewRepository memberReviewRepository;
     private final CommentRepository commentRepository;
 
     /*
@@ -616,11 +619,23 @@ public class ProjectServiceImpl implements ProjectService{
                         )
                 ));
 
+        // 멤버 리뷰
+        List<MemberReviewMypageDto> memberReviewList = memberReviewRepository.findMemberReviewByProjectPkIn(userPk, projectPkList);
+        Map<Long, List<String>> reviewMap = memberReviewList.stream()
+                .collect(Collectors.groupingBy(
+                        MemberReviewMypageDto::getProjectPk,
+                        Collectors.mapping(
+                                MemberReviewMypageDto::getReview,
+                                Collectors.toList()
+                        )
+                ));
+
         for (CompletedProjectSummaryDto dto : completedProjectSummaryList) {
             dto.setMemberCount(projectMemberCountMap.get(dto.getProjectPk()));
             dto.setTechStack(projectTechStackMap.get(dto.getProjectProfilePk()));
+            dto.setReview(reviewMap.get(dto.getProjectPk()));
         }
-
+        log.info("get project summary list completed :");
         return completedProjectSummaryList;
     }
 
