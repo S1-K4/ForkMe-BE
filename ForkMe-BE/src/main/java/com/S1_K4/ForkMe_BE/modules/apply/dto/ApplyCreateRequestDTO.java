@@ -1,7 +1,9 @@
 package com.S1_K4.ForkMe_BE.modules.apply.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -14,6 +16,8 @@ import java.util.List;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ApplyCreateRequestDTO {
     private Long projectPk;
     private Long projectPositionPk;
