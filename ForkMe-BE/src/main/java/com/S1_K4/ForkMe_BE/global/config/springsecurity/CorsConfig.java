@@ -20,7 +20,7 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000")); // file:// 로 테스트해도 통과
+        c.setAllowedOrigins(List.of("http://forkme.site:3000", "http://127.0.0.1:3000")); // file:// 로 테스트해도 통과
         c.setAllowedMethods(List.of("GET", "POST", "OPTIONS")); // 최소한의 추가(GET)
         c.setAllowedHeaders(List.of(
                 "Authorization","Content-Type", "X-Hub-Signature-256", "X-GitHub-Event", "X-GitHub-Delivery"
