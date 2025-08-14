@@ -9,6 +9,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -80,7 +81,11 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
 
     @Transactional
     public void deleteComment(Long commentPk) {
-        // ❗️보안 미적용 상태 — 아무나 삭제 가능
-        commentRepository.deleteById(commentPk);
+
+        // 0814 softdelete 로 변경
+        CommentInProject comment = commentRepository.findById(commentPk)
+                .orElseThrow(() -> new EntityNotFoundException("댓글이 존재하지 않습니다."));
+
+        comment.markDeleted(); // deletedYN = Y로 변경
     }
 }
