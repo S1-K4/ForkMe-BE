@@ -159,7 +159,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성폼
      * */
     @Transactional(readOnly = true)
-    @PreAuthorize("isAuthenticated()")
     @Override
     public ProjectCreateFormDTO getProjectCreateFormInfo(Long userPk){
 
@@ -200,7 +199,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images, Long userPk) {
@@ -255,7 +253,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 삭제
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public void deleteProject(Long projectPk, Long userPk){
@@ -300,7 +297,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정폼 불러오는 메서드
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional(readOnly = true)
     public ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk, Long userPk) {
@@ -339,7 +335,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정
      */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk) {
