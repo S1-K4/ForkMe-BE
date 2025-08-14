@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
@@ -25,6 +26,7 @@ import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +46,7 @@ import java.util.stream.IntStream;
  * @date : 2025-08-05
  * @description : ProjectServiceImpl
  */
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService{
@@ -61,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final ApplyTechStackRepository applyTechStackRepository;
     private final S3Service s3Service;
     private final S3Repository s3Repository;
+    private final CommentRepository commentRepository;
 
     /*
      * 프로젝트 상세 조회
@@ -622,4 +625,60 @@ public class ProjectServiceImpl implements ProjectService{
     }
 
 
+    @Override
+    @Transactional
+    public void withdrawUser(User user) {
+        log.info("project withdraw");
+        // 삭제할 프로젝트 조회
+        List<Project> projectsDeleteList = projectRepository.findAllByUser(user);
+
+        // 삭제할 프로젝트가 없으면 반환
+        if(projectsDeleteList.isEmpty()){
+            log.info("project withdraw - no project");
+            return;
+        }
+
+        List<Long> projectPkList = projectsDeleteList.stream().map(Project::getProjectPk).toList();
+
+        List<Long> projectProfilePkList = projectsDeleteList.stream().map(p -> p.getProjectProfile().getProjectProfilePk()).toList();
+
+        // 하드 딜리트
+        // s3
+        s3Repository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        // like
+        likeRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        // 프로젝트 기술 스택
+        projectTechStackRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        // 프로젝트 포지션
+        projectPositionRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+
+        // 프로젝트 멤버
+        projectMemberRepository.deleteByProject_ProjectPkInBulk(projectPkList);
+        // 지원서 기술 스택
+        applyTechStackRepository.deleteApplyTechStacksByApply_Project_ProjectPkInBulk(projectPkList);
+        // 지원서
+        applyRepository.deleteApplyByApplyByProject_ProjectPkInBulk(projectPkList);
+
+
+        // 소프트 딜리트
+        // 댓글
+        commentRepository.softDeleteByProjectProfilePkInBulk(projectProfilePkList);
+        // 프로젝트 프로필
+        projectProfileRepository.softDeleteByProjectProfilePkInBulk(projectProfilePkList);
+        // 프로젝트
+        projectRepository.softDeleteByProjectPkInBulk(projectPkList);
+
+
+        //Delete 추가 필요
+            // 팀원 후기
+            // board_in_project
+            // comment_in_project
+            // github_timeline
+            // s3_file
+            // chatting_room
+            // chatting_message
+            // chatting_participant
+
+
+    }
 }

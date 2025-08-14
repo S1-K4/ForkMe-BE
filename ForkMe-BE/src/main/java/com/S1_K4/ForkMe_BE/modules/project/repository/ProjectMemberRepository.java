@@ -52,4 +52,12 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
             "WHERE pm.project.projectPk IN (:projectPkList) " +
             "GROUP BY pm.project.projectPk")
     List<ProjectMemberCountDto> findProjectMemberCountByProjectPk(@Param("projectPkList") List<Long> projectPkList);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ProjectMember pm WHERE pm.project.projectPk IN (:projectPkList)")
+    void deleteByProject_ProjectPkInBulk(List<Long> projectPkList);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ProjectMember pm WHERE pm.user = (:user)")
+    void deleteByUserInBulk(User user);
 }

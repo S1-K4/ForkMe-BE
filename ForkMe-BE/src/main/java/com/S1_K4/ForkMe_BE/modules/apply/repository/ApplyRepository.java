@@ -3,7 +3,9 @@ package com.S1_K4.ForkMe_BE.modules.apply.repository;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.MyApplyListResponseDto;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,5 +57,13 @@ public interface ApplyRepository extends JpaRepository<Apply,Long> {
             "FROM Apply a " +
             "WHERE a.user.userPk = :userPk AND a.deletedYN = 'N' AND a.status IN(:stateList)")
     List<MyApplyListResponseDto> findApplyByUserPkInState(Long userPk, List<String> stateList) ;
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Apply a WHERE a.project.projectPk IN (:projectPkList)")
+    void deleteApplyByApplyByProject_ProjectPkInBulk(List<Long> projectPkList);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Apply a WHERE a.user = (:user)")
+    void deleteApplyByUserInBulk(User user);
 
 }

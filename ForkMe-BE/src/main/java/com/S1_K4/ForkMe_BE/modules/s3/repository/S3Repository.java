@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,4 +33,9 @@ public interface S3Repository extends JpaRepository<S3Image, Long> {
            where i.projectProfile.projectProfilePk = :profilePk
            """)
     List<ProjectImageDTO> findAllImagesByProfilePk(@Param("profilePk") Long profilePk);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM S3Image i WHERE i.projectProfile.projectProfilePk IN (:projectProfilePkList)")
+    void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
+
 }

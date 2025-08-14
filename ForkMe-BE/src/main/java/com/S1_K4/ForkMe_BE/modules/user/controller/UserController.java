@@ -33,14 +33,23 @@ public class UserController {
         if (userDetails == null) {
             return ResponseEntity.ok(new UserInfoResponseDto());
         }
-        Long userPk = userDetails.getUser().getUserPk();
+        Long userPk = userDetails.getUserPk();
         System.out.println("userPk : " + userPk);
 
         return ResponseEntity.ok(userService.getMyProfile(userPk));
     }
 
+    @DeleteMapping("/me")
+    public ResponseEntity<String> withdrawUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        Long userPk = userDetails.getUserPk();
+        userService.withdrawUser(userPk);
+
+        return ResponseEntity.ok("Success to delete my profile.");
+    }
 
     // 사이드바
+    // get /me 에서 기본 정보와 사이드바 정보 같이 반환해서 사용하지 않는 요청
     @GetMapping("/me/sidebar")
     public ResponseEntity<SideBarResponseDto> getSidebarInfo(@AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails == null) {

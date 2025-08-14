@@ -3,6 +3,8 @@ package com.S1_K4.ForkMe_BE.modules.auth.repository;
 import com.S1_K4.ForkMe_BE.modules.auth.entity.Auth;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -21,4 +23,8 @@ public interface AuthRepository extends JpaRepository<Auth, Long> {
     Optional<Auth> findByUser(User user);
 
     Optional<Auth> findByRefreshToken(String refreshToken);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Auth a WHERE a.user = (:user)")
+    void deleteAllByUser(User user);
 }
