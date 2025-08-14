@@ -76,12 +76,18 @@
 </table>
 
 <script>
-    function loadProjectBoards() {
-      const projectPk = document.getElementById("projectInput").value.trim();
+    // URL 파라미터에서 projectPk 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectPkFromUrl = urlParams.get('projectPk');
+
+    function loadProjectBoards(projectPk) {
       if (!projectPk) {
-        alert("Project PK를 입력하세요.");
+        alert("Project PK를 입력하거나 URL에 포함되어야 합니다.");
         return;
       }
+
+      // input 필드에도 반영
+      document.getElementById("projectInput").value = projectPk;
 
       fetch(`/api/on-project/${projectPk}/boards`)
         .then(res => {
@@ -109,14 +115,32 @@
             tbody.appendChild(tr);
           });
 
-          // ✅ "새 글 작성" 링크도 현재 프로젝트 번호로 갱신
-          document.getElementById("createBtn").href = `/board-create.html?projectPk=${projectPk}`;
+          // 새 글 작성 버튼 링크 설정
+          document.getElementById("createBtn").href = `/boardIn/board-create.html?projectPk=${projectPk}`;
         })
         .catch(err => {
           console.error("불러오기 실패:", err);
           const tbody = document.querySelector("#boardTable tbody");
           tbody.innerHTML = `<tr><td colspan="5">게시글 불러오기 실패</td></tr>`;
         });
+    }
+
+    // 수동 불러오기 버튼에 연결된 함수
+    function manualLoadProjectBoards() {
+      const pkInput = document.getElementById("projectInput").value.trim();
+      if (!pkInput) {
+        alert("Project PK를 입력하세요.");
+        return;
+      }
+      loadProjectBoards(pkInput);
+    }
+
+    // 수동 버튼에도 적용
+    document.querySelector("button").onclick = manualLoadProjectBoards;
+
+    // 페이지 로드 시 자동으로 URL 파라미터 기반 로드
+    if (projectPkFromUrl) {
+      loadProjectBoards(projectPkFromUrl);
     }
 </script>
 

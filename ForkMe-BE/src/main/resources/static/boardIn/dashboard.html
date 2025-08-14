@@ -81,6 +81,10 @@
   let calendar;
   let currentProjectPk;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectPk = urlParams.get('projectPk');
+  console.log("받은 projectPk:", projectPk);
+
   const scheduleCreateBtn = document.getElementById('scheduleCreateBtn');
   const boardCreateBtn = document.getElementById('boardCreateBtn');
   const boardList = document.getElementById('board-list');
@@ -96,11 +100,18 @@
         return;
       }
 
-      const firstWorkspace = sidebarData.workSpaceList[0];
-      currentProjectPk = firstWorkspace.projectPk;
+      const matchedWorkspace = sidebarData.workSpaceList.find(ws => ws.projectPk == projectPk);
+
+      if (!matchedWorkspace) {
+        alert("해당 프로젝트에 접근 권한이 없거나 존재하지 않습니다.");
+        return;
+      }
+
+      currentProjectPk = matchedWorkspace.projectPk;
 
       loadCalendar(currentProjectPk);
       loadBoards(currentProjectPk);
+
     } catch (err) {
       console.error("사용자 정보 또는 워크스페이스 정보 불러오기 실패:", err);
       alert("로그인이 필요합니다.");
@@ -137,7 +148,8 @@
 
     axios.get(`/api/on-project/${projectPk}/boards`)
       .then(response => {
-        const boards = response.data.slice(0,5); // 최근 5개
+        console.log('게시글 응답:', response.data);
+        const boards = response.data.slice(0, 5);
 
         if (boards.length === 0) {
           boardList.innerHTML = '<li>게시글이 없습니다.</li>';
