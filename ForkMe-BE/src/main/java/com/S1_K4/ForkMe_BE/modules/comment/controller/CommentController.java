@@ -50,7 +50,7 @@ public class CommentController {
      * 댓글,대댓글 삭제
      */
     @DeleteMapping("/{commentPk}")
-    public ResponseEntity<ApiResponse<Long>> deleteComment(@AuthenticationPrincipal CustomUserDetails userDetails, Long commentPk){
+    public ResponseEntity<ApiResponse<Long>> deleteComment(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long commentPk){
         Long userPk = userDetails.getUserPk();
         commentService.deleteComment(userPk, commentPk);
         return ResponseEntity.ok(ApiResponse.success(commentPk, "댓글 삭제 완료"));

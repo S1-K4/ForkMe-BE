@@ -11,9 +11,16 @@
     input, textarea { width: 300px; padding: 8px; font-size: 14px; }
     #editor { margin-top: 20px; height: 500px; }
     button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #loginStatus { margin-bottom: 20px; }
   </style>
 </head>
 <body>
+
+<div id="loginStatus">
+  <button id="loginBtn" style="display:none;">GitHub 로그인</button>
+  <button id="logoutBtn" style="display:none;">로그아웃</button>
+</div>
+
 <h2>글 작성</h2>
 
 <form id="postForm" enctype="multipart/form-data">
@@ -27,9 +34,9 @@
     <input type="text" id="projectPk" name="projectPk" required />
   </div>
 
-  <div class="form-group">
+  <div class="form-group" style="display:none;">
     <label for="userPk">User PK</label>
-    <input type="text" id="userPk" name="userPk" required />
+    <input type="text" id="userPk" name="userPk" readonly />
   </div>
 
   <div class="form-group">
@@ -73,6 +80,40 @@
     }
   });
 
+  // 로그인 상태 확인 및 UI 처리
+  function checkLoginStatus() {
+    fetch('/api/user/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.userPk) {
+          document.getElementById('userPk').value = data.userPk;
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('logoutBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('loginBtn').style.display = 'inline-block';
+          document.getElementById('logoutBtn').style.display = 'none';
+          alert('로그인이 필요합니다.');
+        }
+      })
+      .catch(() => {
+        alert('로그인 상태 확인 실패');
+        document.getElementById('loginBtn').style.display = 'inline-block';
+        document.getElementById('logoutBtn').style.display = 'none';
+      });
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    location.href = '/login/github'; // 로그인 경로
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    fetch('/logout', { method: 'POST' })
+      .then(() => {
+        alert('로그아웃 되었습니다.');
+        location.reload();
+      });
+  });
+
   document.getElementById('postForm').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -86,11 +127,10 @@
       return;
     }
 
-    // 생성할 JSON 요청 객체
     const requestDto = {
       title: title,
       projectPk: projectPk,
-      userPk: userPk,
+      userPk: Number(userPk),
       content: content,
       imageUrls: [],
       fileUrls: []
@@ -109,7 +149,6 @@
       formData.append("files", files[i]);
     }
 
-    // AJAX 전송
     fetch(`/api/on-project/${projectPk}/boards/create`, {
       method: 'POST',
       body: formData
@@ -127,6 +166,9 @@
         alert('전송 중 오류 발생');
       });
   });
+
+  checkLoginStatus();
 </script>
+
 </body>
 </html>

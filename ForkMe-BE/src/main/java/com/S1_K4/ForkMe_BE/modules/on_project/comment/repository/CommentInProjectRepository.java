@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.comment.repository;
 
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,6 @@ import java.util.List;
 
 @Repository
 public interface CommentInProjectRepository extends JpaRepository<CommentInProject, Long> {
-    List<CommentInProject> findByBoardInProject_BoardInProjectPkOrderByCreatedAtAsc(Long boardInProjectPk);
+    List<CommentInProject> findByBoardInProject_BoardInProjectPkAndDeletedYNOrderByCreatedAtAsc(Long boardInProjectPk, Yn deletedYN);
     List<CommentInProject> findByBoardInProject(BoardInProject boardInProject);
 }

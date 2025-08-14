@@ -12,15 +12,6 @@
       flex-direction: column;
       align-items: center;
     }
-    #top-inputs {
-      margin-bottom: 30px;
-      width: 900px;
-      display: flex;
-      gap: 20px;
-    }
-    #top-inputs label {
-      flex: 1;
-    }
     #calendar {
       max-width: 900px;
       margin-bottom: 40px;
@@ -67,15 +58,7 @@
 </head>
 <body>
 
-<div id="top-inputs">
-  <label>프로젝트 ID:
-    <input type="number" id="projectPk" placeholder="프로젝트 ID 입력" />
-  </label>
-  <label>내 사용자 ID:
-    <input type="number" id="userPk" placeholder="내 사용자 ID 입력" />
-  </label>
-  <button id="loadBtn">불러오기</button>
-</div>
+<h1>프로젝트 대시보드</h1>
 
 <!-- 일정 등록, 게시글 작성 버튼 -->
 <div id="write-buttons">
@@ -88,7 +71,7 @@
 <div id="board-section">
   <h2>최근 게시글 (최대 5개)</h2>
   <ul id="board-list">
-    <li>게시글을 불러오려면 프로젝트 ID를 입력하고 불러오기 버튼을 누르세요.</li>
+    <li>게시글을 불러오는 중...</li>
   </ul>
 </div>
 
@@ -96,34 +79,44 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
   let calendar;
-  let currentProjectPk = null;
+  let currentProjectPk;
 
-  const projectInput = document.getElementById('projectPk');
-  const userInput = document.getElementById('userPk');
-  const loadBtn = document.getElementById('loadBtn');
-  const boardList = document.getElementById('board-list');
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectPk = urlParams.get('projectPk');
+  console.log("받은 projectPk:", projectPk);
 
   const scheduleCreateBtn = document.getElementById('scheduleCreateBtn');
   const boardCreateBtn = document.getElementById('boardCreateBtn');
+  const boardList = document.getElementById('board-list');
 
-  loadBtn.addEventListener('click', () => {
-    const projectPkVal = projectInput.value;
-    const userPkVal = userInput.value;
+  // 로그인한 사용자 정보 & 워크스페이스 정보 불러오기
+  async function initDashboard() {
+    try {
+      const sidebarRes = await fetch('/api/user/me/sidebar');
+      const sidebarData = await sidebarRes.json();
 
-    if (!projectPkVal || !userPkVal) {
-      alert('프로젝트 ID와 사용자 ID를 모두 입력해주세요.');
-      return;
+      if (!sidebarData || !sidebarData.workSpaceList || sidebarData.workSpaceList.length === 0) {
+        alert("가입된 워크스페이스가 없습니다.");
+        return;
+      }
+
+      const matchedWorkspace = sidebarData.workSpaceList.find(ws => ws.projectPk == projectPk);
+
+      if (!matchedWorkspace) {
+        alert("해당 프로젝트에 접근 권한이 없거나 존재하지 않습니다.");
+        return;
+      }
+
+      currentProjectPk = matchedWorkspace.projectPk;
+
+      loadCalendar(currentProjectPk);
+      loadBoards(currentProjectPk);
+
+    } catch (err) {
+      console.error("사용자 정보 또는 워크스페이스 정보 불러오기 실패:", err);
+      alert("로그인이 필요합니다.");
     }
-
-    currentProjectPk = parseInt(projectPkVal);
-
-    if (calendar) {
-      calendar.destroy();
-    }
-
-    loadCalendar(currentProjectPk);
-    loadBoards(currentProjectPk);
-  });
+  }
 
   function loadCalendar(projectPk) {
     const calendarEl = document.getElementById('calendar');
@@ -155,7 +148,8 @@
 
     axios.get(`/api/on-project/${projectPk}/boards`)
       .then(response => {
-        const boards = response.data.slice(0,5); // 최근 5개
+        console.log('게시글 응답:', response.data);
+        const boards = response.data.slice(0, 5);
 
         if (boards.length === 0) {
           boardList.innerHTML = '<li>게시글이 없습니다.</li>';
@@ -167,7 +161,6 @@
         boards.forEach(board => {
           const li = document.createElement('li');
           li.textContent = board.title + ' (' + new Date(board.createdAt).toLocaleDateString() + ')';
-          li.style.cursor = 'pointer';
           li.onclick = () => {
             alert(`게시글 제목: ${board.title}\n작성자: ${board.boardInProjectPk || '알 수 없음'}\n내용 미리보기는 별도 구현 필요`);
           };
@@ -181,21 +174,23 @@
   }
 
   scheduleCreateBtn.addEventListener('click', () => {
-    if (!projectInput.value) {
-      alert('프로젝트 ID를 먼저 입력하세요.');
+    if (!currentProjectPk) {
+      alert('프로젝트 정보를 불러오지 못했습니다.');
       return;
     }
-    window.location.href = `/boardIn/calendar.html?projectPk=${projectInput.value}`;
+    window.location.href = `/boardIn/calendar.html?projectPk=${currentProjectPk}`;
   });
 
   boardCreateBtn.addEventListener('click', () => {
-    if (!projectInput.value) {
-      alert('프로젝트 ID를 먼저 입력하세요.');
+    if (!currentProjectPk) {
+      alert('프로젝트 정보를 불러오지 못했습니다.');
       return;
     }
-    window.location.href = `/boardIn/board-create.html?projectPk=${projectInput.value}`;
+    window.location.href = `/boardIn/board.html?projectPk=${currentProjectPk}`;
   });
 
+  // 대시보드 초기화
+  initDashboard();
 </script>
 
 </body>

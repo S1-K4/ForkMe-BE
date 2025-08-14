@@ -234,7 +234,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         return board;
     }
 
-
+// 삭제
     @Transactional
     public void deleteBoard(Long projectPk, Long boardInProjectPk) {
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
