@@ -20,7 +20,7 @@ import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
  */
 @Component
 @RequiredArgsConstructor
-public class ChatPresenceEventListener {
+public class ChattingPresenceEventListener {
 
     private final ChattingPresenceService presenceService;
     private final ChattingService chattingService;
@@ -31,12 +31,16 @@ public class ChatPresenceEventListener {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         String dest = accessor.getDestination();           // e.g. /topic/chat/123
         String sessionId = accessor.getSessionId();
-        String userPkStr = accessor.getFirstNativeHeader("userPk");
-        if (dest == null || userPkStr == null) return;
+//        String userPkStr = accessor.getFirstNativeHeader("userPk"); //접속중 로그인 제거
+
+        Object userPkObj = accessor.getSessionAttributes().get("userPk");
+
+        if (dest == null || userPkObj == null) return; //접속중 로그인 userPkStr -> userPkObj
         if (!dest.startsWith("/topic/chat/")) return;
 
         Long roomPk = parseRoomPk(dest);
-        Long userPk = Long.valueOf(userPkStr);
+//        Long userPk = Long.valueOf(userPkStr);
+        Long userPk = (Long) userPkObj; //접속중 로그인 추가
 
         // 동일 세션의 이전 구독 흔적 정리(레이스 방지)
         presenceService.onUnsubscribeOrDisconnect(sessionId);

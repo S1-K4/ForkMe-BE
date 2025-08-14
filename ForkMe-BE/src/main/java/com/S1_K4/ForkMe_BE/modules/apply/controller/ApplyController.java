@@ -45,7 +45,7 @@ public class ApplyController {
     public ResponseEntity<ApiResponse<ApplyResponseDTO>> createApply(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody ApplyCreateRequestDTO dto,
-            @PathVariable Long projectPk
+            @PathVariable("projectPk") Long projectPk
     ) {
         Long userPk = userDetails.getUserPk();
         ApplyResponseDTO saved = applyService.createApply(userPk, projectPk, dto);

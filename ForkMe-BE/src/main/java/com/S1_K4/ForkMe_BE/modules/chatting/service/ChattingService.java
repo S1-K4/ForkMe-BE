@@ -50,5 +50,8 @@ public interface ChattingService {
     //프로젝트 삭제 시 연관된 모든 채팅방 삭제
     void softDeleteAllChattingRoomsByProject(Long projectPk, Long userPk);
 
+    //프로젝트에 멤버 추가 시 기존 멤버와 자동으로 개인 채팅방 모두 생성
+    void createAllPrivateRoomsForNewMember(Project project, User newMember, LocalDateTime now);
+
 }
 
