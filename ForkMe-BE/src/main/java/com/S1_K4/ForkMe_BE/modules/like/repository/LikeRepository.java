@@ -2,11 +2,14 @@ package com.S1_K4.ForkMe_BE.modules.like.repository;
 
 import com.S1_K4.ForkMe_BE.modules.like.entity.Likes;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,6 +29,14 @@ public interface LikeRepository extends JpaRepository<Likes, Long> {
 
     // 특정 유저가 특정 프로필을 좋아요 했는지 여부
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Likes i WHERE i.projectProfile.projectProfilePk IN (:projectProfilePkList)")
+    void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Likes i WHERE i.user = (:user)")
+    void deleteByUser(User user);
 
     //특정 profile의 좋아요 여부를 체크하는 쿼리
     @Query("""

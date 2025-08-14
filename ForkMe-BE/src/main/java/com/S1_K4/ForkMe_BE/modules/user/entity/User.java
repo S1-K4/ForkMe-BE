@@ -53,4 +53,14 @@ public class User extends BaseTime {
         this.nickname = nickname;
         this.profileUrl = profileUrl;
     }
+
+    public void withdraw(){
+        this.markDeleted(); // deleted_yn = Y
+
+        // 개인정보 변경
+        this.nickname = "탈퇴한 사용자";
+        this.email = "deleted@deleted.deleted";
+        this.profileUrl = "https://avatars.githubusercontent.com/u/99146600?v=4";
+
+    }
 }

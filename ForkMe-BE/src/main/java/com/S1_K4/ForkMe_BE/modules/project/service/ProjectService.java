@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.project.service;
 
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -86,4 +87,9 @@ public interface ProjectService {
      * 완료된 프로젝트 정보
      */
     List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk);
+
+
+    // 회원 탈퇴하면 프로젝트 삭제
+    void withdrawUser(User user);
+
 }

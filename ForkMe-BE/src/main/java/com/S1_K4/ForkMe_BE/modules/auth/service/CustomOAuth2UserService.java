@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
@@ -59,7 +61,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String email = (String) attributes.get("email");
         String profileUrl = (String) attributes.get("avatar_url");
 
-
         log.info("gitId : " + gitId + " / nickname : " + nickname + " / email : " + email + " / profileUrl : " + profileUrl);
 
         if (email == null) {
@@ -71,6 +72,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         User user = userRepository.findByGitId(gitId)
                 .map(entity -> {
                     entity.updateUser(emailFinal, nickname, profileUrl);
+                    entity.restore();
                     return entity;
                 })
                 .orElseGet(() -> {

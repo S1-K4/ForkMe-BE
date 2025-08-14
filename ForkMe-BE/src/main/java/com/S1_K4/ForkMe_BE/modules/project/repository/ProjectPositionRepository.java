@@ -3,6 +3,7 @@ package com.S1_K4.ForkMe_BE.modules.project.repository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -64,4 +65,8 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
             @Param("projectProfilePk") Long projectProfilePk,
             @Param("positionPk") Long positionPk
     );
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ProjectPosition pp WHERE pp.projectProfile.projectProfilePk IN (:projectProfilePkList)")
+    void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
 }

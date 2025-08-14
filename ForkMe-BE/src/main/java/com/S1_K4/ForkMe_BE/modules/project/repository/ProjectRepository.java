@@ -3,9 +3,11 @@ package com.S1_K4.ForkMe_BE.modules.project.repository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.CompletedProjectSummaryDto;
 import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -61,4 +63,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "WHERE pp.project = p " +
             "AND pm.user.userPk = :userPk AND p.projectStatus = 'COMPLETED' AND p.deletedYN = 'N'")
     List<CompletedProjectSummaryDto> findCompletedProjectsByUserPk(@Param("userPk") Long userPk);
+
+    List<Project> findAllByUser(User user);
+
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Project p SET p.deletedYN = 'Y' WHERE p.projectPk IN (:projectPkList)")
+    void softDeleteByProjectPkInBulk(List<Long> projectPkList);
 }

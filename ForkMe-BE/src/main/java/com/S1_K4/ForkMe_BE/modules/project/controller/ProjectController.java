@@ -4,6 +4,8 @@ import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +14,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -65,9 +66,14 @@ public class ProjectController {
      */
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<String>> createProject(
-            @RequestPart("dto") ProjectCreateRequestDTO dto,
+            @RequestPart("dto") String dtoJson,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @AuthenticationPrincipal CustomUserDetails userDetails){
+            @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules();
+        ProjectCreateRequestDTO dto = mapper.readValue(dtoJson, ProjectCreateRequestDTO.class);
+
         Long userPk = userDetails.getUserPk();
         Long projectPk = projectService.createdProject(dto, images, userPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));

@@ -44,4 +44,10 @@ public abstract class BaseTime {
     public void markDeleted() {
         this.deletedYN = Yn.Y;
     }
+
+    // 재가입 처리 메서드
+    public void restore(){
+        this.deletedYN = Yn.N;
+    }
+
 }
