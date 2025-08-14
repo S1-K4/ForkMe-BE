@@ -52,9 +52,11 @@ public class LikeController {
         return ResponseEntity.ok(ApiResponse.success(likeService.deleteLike(userPk, profilePk), "좋아요 취소 성공"));
     }
 
-    @GetMapping("{profilePk}")
-    public ResponseEntity<ApiResponse<Long>> countLike(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long profilePk){
-        Long userPk = userDetails.getUserPk();
+    /**
+     * 좋아요 수 카운트
+     * */
+    @GetMapping("/{profilePk}")
+    public ResponseEntity<ApiResponse<Long>> countLike(@PathVariable Long profilePk){
         Long count = likeService.countLike(profilePk);
         return ResponseEntity.ok(ApiResponse.success(count, "좋아요 수 조회 성공"));
     }

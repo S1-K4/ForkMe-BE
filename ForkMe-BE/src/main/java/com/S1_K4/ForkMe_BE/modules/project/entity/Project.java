@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
+import com.S1_K4.ForkMe_BE.global.exception.CustomException;
+import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
@@ -70,6 +72,40 @@ public class Project extends BaseTime {
     /*
     * 프로젝트 상태 수정 시 사용하는 메서드
     * */
+    //기획 -> 모집
+    public void recruiting(){
+        if (this.projectStatus != ProjectStatus.PLANNING) {
+            throw new CustomException(CustomException.ErrorCode.PROJECT_STATUS_CHANGE);
+        }
+        this.projectStatus = ProjectStatus.RECRUITING;
+    }
 
+    //모집 -> 진행중
+    public void progress(){
+        if (this.projectStatus != ProjectStatus.RECRUITING) {
+            throw new CustomException(CustomException.ErrorCode.PROJECT_STATUS_CHANGE);
+        }
+        this.projectStatus = ProjectStatus.IN_PROGRESS;
+    }
 
+    //진행중 -> 충원
+    public void adding(){
+        if (this.projectStatus != ProjectStatus.IN_PROGRESS) {
+            throw new CustomException(CustomException.ErrorCode.PROJECT_STATUS_CHANGE);
+        }
+        this.projectStatus = ProjectStatus.ADDING;
+    }
+
+    //진행중 -> 종료
+    public void complete(){
+        if (this.projectStatus != ProjectStatus.IN_PROGRESS) {
+            throw new CustomException(CustomException.ErrorCode.PROJECT_STATUS_CHANGE);
+        }
+        this.projectStatus = ProjectStatus.COMPLETED;
+    }
+
+    //프로젝트 명 변경 메서드
+    public void updateProjectTitle(String projectTitle){
+        this.projectTitle = projectTitle;
+    }
 }

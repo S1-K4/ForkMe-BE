@@ -41,7 +41,7 @@ public class LikeServiceImpl implements LikeService{
     @Override
     @Transactional(readOnly = true)
     public Long countLike(Long profilePk){
-        ProjectProfile projectProfile = projectProfileRepository.findById(profilePk).orElseThrow(()
+        projectProfileRepository.findById(profilePk).orElseThrow(()
                 -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
         return likeRepository.countByProjectProfile_ProjectProfilePk(profilePk);
 

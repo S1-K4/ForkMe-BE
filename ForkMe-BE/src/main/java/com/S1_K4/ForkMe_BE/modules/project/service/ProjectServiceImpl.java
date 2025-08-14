@@ -9,7 +9,9 @@ import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
+import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
+import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.repository.S3Repository;
@@ -18,7 +20,7 @@ import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.position.entity.Position;
-import com.S1_K4.ForkMe_BE.reference.position.repository.PositionRepsitory;
+import com.S1_K4.ForkMe_BE.reference.position.repository.PositionRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
@@ -50,7 +52,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final ProjectPositionRepository projectPositionRepository;
     private final ProjectRepository projectRepository;
     private final StackRepository stackRepository;
-    private final PositionRepsitory positionRepository;
+    private final PositionRepository positionRepository;
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final ProjectMemberRepository projectMemberRepository;
@@ -157,7 +159,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성폼
      * */
     @Transactional(readOnly = true)
-    @PreAuthorize("isAuthenticated()")
     @Override
     public ProjectCreateFormDTO getProjectCreateFormInfo(Long userPk){
 
@@ -198,7 +199,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images, Long userPk) {
@@ -253,7 +253,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 삭제
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public void deleteProject(Long projectPk, Long userPk){
@@ -298,7 +297,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정폼 불러오는 메서드
      * */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional(readOnly = true)
     public ProjectUpdateFormDTO getProjectUpdateForm(Long projectPk, Long userPk) {
@@ -337,7 +335,6 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정
      */
-    @PreAuthorize("isAuthenticated()")
     @Override
     @Transactional
     public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk) {
@@ -354,6 +351,11 @@ public class ProjectServiceImpl implements ProjectService{
         //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생
         if(!project.getUser().getUserPk().equals(userPk)){
             throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+        
+        //프로젝트 상태가 종료일땐 수정 불가
+        if(project.getProjectStatus() == ProjectStatus.COMPLETED){
+            throw new CustomException(CustomException.ErrorCode.PROJECT_NOT_UPDATE);
         }
 
         //프로젝트, 프로젝트 프로필 update(dirty checking) -> 프로젝트명은 프로젝트 프로필명과 동일.
@@ -429,8 +431,6 @@ public class ProjectServiceImpl implements ProjectService{
         }
 
         // 4) 응답: 불필요한 재조회 제거
-        //    - fromEntity가 엔티티 리스트를 요구한다면 오버로드를 만들어 PK 리스트/개수만으로 만들거나,
-        //      최소한 한 번만 조회하도록 변경.
         List<ProjectTechStack> techStacks =
                 techChanged ? projectTechStackRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk())
                         : currentTechPks.stream()
@@ -451,6 +451,142 @@ public class ProjectServiceImpl implements ProjectService{
 
         return ProjectResponseDTO.fromEntity(project, techStacks, positions);
     }
+
+    /**
+    * 프로젝트 상태 변경(모집 -> 진행중)
+    * */
+
+    //기획 -> 모집 상태 변경
+    @Override
+    @Transactional
+    public void toRecruiting(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.recruiting();
+    }
+
+    //모집 -> 진행중 상태 변경
+    @Override
+    @Transactional
+    public void toInProgress(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.progress();
+    }
+
+    //진행중 -> 충원
+    @Override
+    @Transactional
+    public void toAdding(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.adding();
+    }
+
+    //진행중 -> 종료
+    @Override
+    @Transactional
+    public void toCompleted(Long userPk, Long projectPk){
+        Project project = checkValid(userPk, projectPk);
+        project.complete();
+    }
+
+    /**
+     * 프로젝트명 변경
+     */
+    @Override
+    @Transactional
+    public void updateProjectTitle(Long userPk, Long projectPk, String newTitleRaw){
+        Project project = checkValid(userPk, projectPk);
+
+        String newTitle = newTitleRaw == null ? "" : newTitleRaw.trim();
+        if(newTitle.isEmpty()){
+            throw new CustomException(CustomException.ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if(project.getProjectStatus() == ProjectStatus.COMPLETED){
+            throw new CustomException(CustomException.ErrorCode.PROJECT_TITLE_CHANGE);
+        }
+
+        //동일값이면 변경 방지
+        if (newTitle.equals(project.getProjectTitle())) {
+            return;
+        }
+
+
+        project.updateProjectTitle(newTitle);
+    }
+
+    /**
+     * (팀원)프로젝트 탈퇴 메서드
+     */
+    @Override
+    @Transactional
+    public void leaveProject(Long userPk, Long projectPk){
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        ProjectMember member = projectMemberRepository
+                .findByProject_ProjectPkAndUser_UserPk(projectPk, userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND));
+
+        //팀장이면 예외처리
+        if(member.getIsLeader() == IsLeader.LEADER){
+            throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_LEAVE);
+        }
+
+        projectMemberRepository.delete(member);
+    }
+
+    /**
+     * (팀장)프로젝트 강퇴 메서드
+     */
+    @Override
+    @Transactional
+    public void kickMember(Long loginUserPk, Long projectPk, Long targetUserPk){
+        Project project = checkValid(loginUserPk, projectPk);
+
+        //자기 자신을 강퇴하려는 경우 방지
+        if(loginUserPk.equals(targetUserPk)){
+            throw new CustomException(CustomException.ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        //대상 멤버 조회
+        ProjectMember target = projectMemberRepository
+                .findByProject_ProjectPkAndUser_UserPk(projectPk, targetUserPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND));
+
+        //대상이 팀장인 경우 금지
+        if (target.getIsLeader() == IsLeader.LEADER) {
+            throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_LEAVE);
+        }
+
+        //삭제
+        int deleted = projectMemberRepository.deleteByProjectPkAndTargetUserPk(projectPk, targetUserPk);
+        if(deleted == 0){
+            //동시성 방지
+            throw new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND);
+        }
+    }
+
+    //user, project 유효성 체크 및 팀장 여부 확인 메서드
+    public Project checkValid(Long userPk, Long projectPk){
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+        return project;
+    }
+
+
+
 
     @Override
     public List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk){
