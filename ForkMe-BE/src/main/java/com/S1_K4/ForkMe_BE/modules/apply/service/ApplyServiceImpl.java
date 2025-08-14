@@ -7,9 +7,6 @@ import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
-import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
-import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
-import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -28,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +51,6 @@ public class ApplyServiceImpl implements ApplyService{
     private final TechStackRepository techStackRepository;
     private final UserTechStackRepository userTechStackRepository;
     private final ProjectMemberRepository projectMemberRepository;
-
-    private final ChattingService chattingService;
 
     /**
     * 신청서 생성폼 호출하는 메서드(모집분야, 기술스택 List로 호출)
@@ -109,13 +102,13 @@ public class ApplyServiceImpl implements ApplyService{
             throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_APPLY);
         }
 
-        // 모집 포지션 검증 (프로젝트PK 기준)
+        // 모집 포지션 검증
         ProjectPosition selectedPosition = projectPositionRepository
-                .findByProjectPkAndProjectPositionPk(projectPk, dto.getProjectPositionPk())
+                .findByProjectProfilePkAndPositionPk(profilePk, dto.getProjectPositionPk())
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.INVALID_PROJECT_POSITION));
 
-        // 기술스택 검증 (프로젝트PK 기준)
-        List<Long> validTechIds = projectTechStackRepository.findTechStackIdsByProjectPk(projectPk);
+        // 기술스택 검증
+        List<Long> validTechIds = projectTechStackRepository.findTechStackIdsByProjectProfilePk(profilePk);
         Set<Long> validSet = new HashSet<>(validTechIds);
         Set<Long> requestedSet = new HashSet<>(dto.getTechStackPks());
         if (!validSet.containsAll(requestedSet)) {
@@ -140,6 +133,7 @@ public class ApplyServiceImpl implements ApplyService{
                 .toList();
         applyTechStackRepository.saveAll(applyTechStacks);
         apply.getApplyTechStacks().addAll(applyTechStacks);
+
         return ApplyResponseDTO.from(apply);
     }
 
@@ -204,7 +198,7 @@ public class ApplyServiceImpl implements ApplyService{
     @Transactional(readOnly = true)
     public List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk) {
         checkValid(userPk, projectPk);
-
+        
         userRepository.findByIdWithTechStacks(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 

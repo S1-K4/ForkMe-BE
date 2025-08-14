@@ -54,4 +54,14 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
     Optional<ProjectPosition> findByProjectPkAndProjectPositionPk(@Param("projectPk") Long projectPk,
                                                                   @Param("projectPositionPk") Long projectPositionPk);
 
+    @Query("""
+        SELECT p
+        FROM ProjectPosition p
+        WHERE p.projectProfile.projectProfilePk = :projectProfilePk
+          AND p.position.positionPk = :positionPk
+    """)
+    Optional<ProjectPosition> findByProjectProfilePkAndPositionPk(
+            @Param("projectProfilePk") Long projectProfilePk,
+            @Param("positionPk") Long positionPk
+    );
 }

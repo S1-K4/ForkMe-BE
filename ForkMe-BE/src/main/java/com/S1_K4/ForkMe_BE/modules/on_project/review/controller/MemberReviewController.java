@@ -33,11 +33,11 @@ public class MemberReviewController {
     @PostMapping("/create")
     public ResponseEntity<MemberReviewResponse> createReview(
             @PathVariable Long projectPk,
-            @RequestParam Long writerUserPk,
-            //@AuthenticationPrincipal CustomUserDetails userDetails,
+           // @RequestParam Long writerUserPk,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody MemberReviewRequest dto) {
 
-        //Long writerUserPk = userDetails.getUser().getUserPk();
+        Long writerUserPk = userDetails.getUser().getUserPk();
         MemberReviewResponse responseDTO = memberReviewService.createReview(projectPk, writerUserPk, dto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8" />
     <title>멤버 리뷰 작성</title>
@@ -8,8 +8,7 @@
 <h1>📝 멤버 리뷰 작성</h1>
 
 <form id="reviewForm">
-    <label for="writerUserPk">작성자 User PK:</label><br />
-    <input type="number" id="writerUserPk" name="writerUserPk" required /><br /><br />
+    <!-- 작성자 User PK는 로그인 정보로 자동 처리하므로 input 삭제 -->
 
     <label for="targetUserPk">후기 대상자 User PK:</label><br />
     <input type="number" id="targetUserPk" name="targetUserPk" required /><br /><br />
@@ -24,13 +23,41 @@
 </form>
 
 <script>
+    let loggedInUserPk = null;
+
+    // 로그인 유저 정보 받아오기
+    fetch('/api/user/me')
+        .then(res => res.json())
+        .then(data => {
+            if(data && data.userPk) {
+                loggedInUserPk = data.userPk;
+            } else {
+                alert('로그인 상태가 아닙니다. 로그인 후 이용해주세요.');
+                // 필요하면 로그인 페이지로 이동
+                // window.location.href = "/login.html";
+            }
+        })
+        .catch(err => {
+            console.error('유저 정보 로드 실패:', err);
+            alert('유저 정보를 불러오는 데 실패했습니다.');
+        });
+
     document.getElementById('reviewForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const writerUserPk = document.getElementById('writerUserPk').value;
-        const targetUserPk = document.getElementById('targetUserPk').value;
-        const review = document.getElementById('review').value;
-        const projectPk = document.getElementById('projectPk').value;
+        if (!loggedInUserPk) {
+            alert('로그인한 유저가 아닙니다.');
+            return;
+        }
+
+        const targetUserPk = document.getElementById('targetUserPk').value.trim();
+        const review = document.getElementById('review').value.trim();
+        const projectPk = document.getElementById('projectPk').value.trim();
+
+        if (!targetUserPk || !review || !projectPk) {
+            alert('모든 필드를 입력해주세요.');
+            return;
+        }
 
         const body = {
             targetUserPk: Number(targetUserPk),
@@ -38,7 +65,7 @@
         };
 
         try {
-            const response = await fetch(`/api/projects/${projectPk}/member_review/create?writerUserPk=${writerUserPk}`, {
+            const response = await fetch(`/api/projects/${projectPk}/member_review/create?writerUserPk=${loggedInUserPk}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -52,6 +79,11 @@
 
             const data = await response.json();
             alert(`리뷰 작성 성공! ID: ${data.memberReviewPk}`);
+
+            // 작성 후 폼 초기화
+            document.getElementById('targetUserPk').value = '';
+            document.getElementById('review').value = '';
+            document.getElementById('projectPk').value = '';
         } catch (error) {
             alert(error.message);
         }
