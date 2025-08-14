@@ -99,8 +99,8 @@ public class ApplyController {
      */
     @PostMapping("/{projectPk}/applies/{applyPk}/approve")
     public ResponseEntity<ApiResponse<Long>> approveApply(
-            @PathVariable Long projectPk,
-            @PathVariable Long applyPk,
+            @PathVariable("projectPk") Long projectPk,
+            @PathVariable("applyPk") Long applyPk,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         Long userPk = 4L;
