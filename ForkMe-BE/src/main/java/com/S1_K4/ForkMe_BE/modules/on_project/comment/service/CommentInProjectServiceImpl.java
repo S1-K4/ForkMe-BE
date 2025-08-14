@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.comment.service;
 
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.dto.CommentCreateRequest;
@@ -59,7 +60,7 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
     }
 
     public List<CommentResponse> getCommentsByBoardId(Long boardPk) {
-        return commentRepository.findByBoardInProject_BoardInProjectPkOrderByCreatedAtAsc(boardPk)
+        return commentRepository.findByBoardInProject_BoardInProjectPkAndDeletedYNOrderByCreatedAtAsc(boardPk, Yn.N)
                 .stream()
                 .map(CommentResponse::from)
                 .collect(Collectors.toList());
