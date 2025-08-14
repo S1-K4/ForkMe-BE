@@ -11,8 +11,10 @@ import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
+import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectPositionRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
@@ -25,6 +27,7 @@ import com.S1_K4.ForkMe_BE.reference.position.repository.TechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,6 +110,11 @@ public class ApplyServiceImpl implements ApplyService{
 
         if (isLeader) {
             throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_APPLY);
+        }
+
+        //기획 상태의 프로젝트는 신청서 작성 불가
+        if(project.getProjectStatus() == ProjectStatus.PLANNING){
+            throw new CustomException(CustomException.ErrorCode.APPLY_NOT_WRITTEN);
         }
 
         // 모집 포지션 검증
@@ -269,6 +277,25 @@ public class ApplyServiceImpl implements ApplyService{
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         apply.approve();
+
+        //신청서 신청한 유저(팀원)
+        User applicant = apply.getUser();
+        Long applicantUserPk = applicant.getUserPk();
+
+        //이미 멤버면 스킵
+        if (projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, applicantUserPk)) {
+            return;
+        }
+
+        //projectMember 레포지토리 추가
+        ProjectMember newMember = ProjectMember.memberOf(project, applicant);
+        try {
+            projectMemberRepository.save(newMember);
+        } catch (DataIntegrityViolationException e) {
+            if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, applicantUserPk)) {
+                throw e; // 정말 저장 실패라면 전파
+            }
+        }
 
         /** 추가된 멤버와 기존 멤버간 개인 채팅방 자동 생성 및 멤버 추가 **/
         //멤버 추가 시간 가져오기

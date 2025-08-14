@@ -1,6 +1,5 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
-import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;

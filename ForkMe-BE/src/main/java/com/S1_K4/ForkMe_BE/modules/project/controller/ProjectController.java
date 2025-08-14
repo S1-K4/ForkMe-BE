@@ -35,7 +35,7 @@ public class ProjectController {
     /**
     * 프로젝트 상세 정보 조회
     * */
-    @GetMapping("/{projectPk}")
+    @GetMapping("/{projectPk:\\d+}")
     public ResponseEntity<ApiResponse<ProjectDetailResponseDTO>> getProjectDetail(@PathVariable Long projectPk){
         ProjectDetailResponseDTO dto = projectService.getProjectDetail(projectPk);
         return ResponseEntity.ok(ApiResponse.success(dto,"프로젝트 상세 정보 조회 성공"));
@@ -55,7 +55,7 @@ public class ProjectController {
      * 프로젝트 생성폼 조회
      * */
     @GetMapping("/form-info")
-    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(@AuthenticationPrincipal CustomUserDetails userDetails, ProjectCreateFormDTO dto){
+    public ResponseEntity<ApiResponse<ProjectCreateFormDTO>> getCreateFormInfo(@AuthenticationPrincipal CustomUserDetails userDetails){
         Long userPk = userDetails.getUserPk();
         ProjectCreateFormDTO formInfo = projectService.getProjectCreateFormInfo(userPk);
         return ResponseEntity.ok(ApiResponse.success(formInfo,"프로젝트 생성 폼 조회 완료"));
@@ -66,14 +66,9 @@ public class ProjectController {
      */
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<String>> createProject(
-            @RequestPart("dto") String dtoJson,
+            @RequestPart("dto") ProjectCreateRequestDTO dto,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.findAndRegisterModules();
-        ProjectCreateRequestDTO dto = mapper.readValue(dtoJson, ProjectCreateRequestDTO.class);
-
+            @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userPk = userDetails.getUserPk();
         Long projectPk = projectService.createdProject(dto, images, userPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));
@@ -103,7 +98,7 @@ public class ProjectController {
      * 프로젝트 수정
      */
     @PutMapping(
-            value ="/{projectPk}",
+            value ="/{projectPk:\\d+}",
             consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
     )
     public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(

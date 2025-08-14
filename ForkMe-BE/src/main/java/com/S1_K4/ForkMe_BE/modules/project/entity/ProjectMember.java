@@ -35,4 +35,12 @@ public class ProjectMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="project_pk", nullable = false)
     private Project project;
+
+    public static ProjectMember memberOf(Project project, User user) {
+        return ProjectMember.builder()
+                .project(project)
+                .user(user)
+                .isLeader(IsLeader.MEMBER)
+                .build();
+    }
 }

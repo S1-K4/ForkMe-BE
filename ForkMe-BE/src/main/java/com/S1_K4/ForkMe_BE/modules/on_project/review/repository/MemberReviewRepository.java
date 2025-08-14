@@ -1,5 +1,4 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.review.repository;
-
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.entity.MemberReview;
 import org.springframework.data.jpa.repository.JpaRepository;

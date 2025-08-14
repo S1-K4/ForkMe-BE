@@ -60,4 +60,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ProjectMember pm WHERE pm.user = (:user)")
     void deleteByUserInBulk(User user);
+
+    boolean existsByProject_ProjectPkAndUser_UserPk(Long projectPk, Long userPk);
+
 }
