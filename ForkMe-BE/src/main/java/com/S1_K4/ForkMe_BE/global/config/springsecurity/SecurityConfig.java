@@ -46,6 +46,12 @@ public class SecurityConfig {
                                 "/favicon.ico", "login-success.html", "/login-error"
                         ).permitAll()
 
+                        // ====== Projects : 인증 필요 ======
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/projects/form-info",          // 생성폼 조회
+                                "/api/projects/*/update-form")      // 수정폼 조회
+                        .authenticated()
+
                         // ====== Projects : 인증X ======
                         .requestMatchers(HttpMethod.GET,
                                 "/api/projects",                // 프로젝트 목록 조회
@@ -53,10 +59,6 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // ====== Projects : 인증 필요 ======
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/projects/form-info",          // 생성폼 조회
-                                "/api/projects/*/update-form")      // 수정폼 조회
-                        .authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/projects").authenticated()          // 프로젝트 생성
                         .requestMatchers(HttpMethod.PUT, "/api/projects/*").authenticated()         // 프로젝트 수정
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/*").authenticated()      // 프로젝트 삭제

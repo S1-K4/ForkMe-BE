@@ -89,7 +89,7 @@ public class ApplyController {
             @PathVariable Long applyPk,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userPk = 1L;
+        Long userPk = userDetails.getUserPk();
         applyService.cancelApply(userPk, projectPk, applyPk);
         return ResponseEntity.ok(ApiResponse.success(applyPk, "신청서 취소 완료"));
     }
@@ -103,7 +103,7 @@ public class ApplyController {
             @PathVariable("applyPk") Long applyPk,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Long userPk = 4L;
+        Long userPk = userDetails.getUserPk();
         applyService.approveApply(userPk, projectPk, applyPk);
         return ResponseEntity.ok(ApiResponse.success(applyPk, "신청서 수락 완료"));
     }

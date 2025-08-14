@@ -36,6 +36,7 @@ public class CompletedProjectSummaryDto {
 
     private Long memberCount;
     private List<TechStackResponseDTO> techStack;
+    private List<String> review;
 
     public CompletedProjectSummaryDto(Long projectPk, String projectTitle, LocalDate projectStartDate, LocalDate projectEndDate, ProjectStatus projectStatus, Long projectProfilePk, String projectProfileTitle, ProgressType progressType) {
         this.projectPk = projectPk;
