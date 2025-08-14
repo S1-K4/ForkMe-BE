@@ -7,6 +7,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -113,9 +114,11 @@ public class ChattingController {
     @GetMapping("/private")
     public List<ChattingRoomResponse> getMyPrivateChattingRooms(
             @RequestParam("projectPk") Long projectPk,
-            @RequestParam("userPk") Long userPk
+            @AuthenticationPrincipal CustomUserDetails userDetails
+//            @RequestParam("userPk") Long userPk
     ) {
-        return chattingService.getMyPrivateChattingRooms(projectPk, userPk);
+        User loginUser = userDetails.getUser();
+        return chattingService.getMyPrivateChattingRooms(projectPk, loginUser.getUserPk());
     }
 
 
