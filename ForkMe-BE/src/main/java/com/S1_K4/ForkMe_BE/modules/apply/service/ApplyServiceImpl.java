@@ -7,6 +7,9 @@ import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -25,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +56,8 @@ public class ApplyServiceImpl implements ApplyService{
     private final TechStackRepository techStackRepository;
     private final UserTechStackRepository userTechStackRepository;
     private final ProjectMemberRepository projectMemberRepository;
+
+    private final ChattingService chattingService;
 
     /**
     * 신청서 생성폼 호출하는 메서드(모집분야, 기술스택 List로 호출)
@@ -248,7 +255,8 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void approveApply(Long userPk, Long projectPk, Long applyPk){
-        userRepository.findById(userPk)
+        /** 채팅방에서 유저 엔티티로 받기 위해서 반환값 변수로 받았습니다. **/
+        User approvedUser = userRepository.findById(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 
         projectRepository.findById(projectPk)
@@ -265,6 +273,22 @@ public class ApplyServiceImpl implements ApplyService{
         }
 
         apply.approve();
+
+        /** 채팅방에 승인 멤버 추가 및 기존 멤버와 승인 멤버 간 개인 채팅방 자동 생성 로직 추가 from.남이 **/
+
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 채팅방 가져오기
+        ChattingRoom teamChattingRoom = chattingService.getChattingRoom(projectPk, RoomType.T);
+
+        //프로젝트 팀 채팅방에 수락 멤버 추가하기
+        chattingService.addChattingParticipant(teamChattingRoom, userPk, now);
+
+        //프로젝트 팀 채팅방에 수락 멤버 입장 알림 보내기
+        chattingService.noticeJoinChattingRoom(teamChattingRoom, approvedUser, now);
+
+
+
     }
 
     //신청서 거절 메서드(팀장만 가능)
