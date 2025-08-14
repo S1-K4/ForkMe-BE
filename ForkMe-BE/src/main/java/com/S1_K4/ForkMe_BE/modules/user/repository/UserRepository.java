@@ -2,9 +2,10 @@ package com.S1_K4.ForkMe_BE.modules.user.repository;
 
 import com.S1_K4.ForkMe_BE.modules.user.dto.UserProfile;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
-import io.lettuce.core.dynamic.annotation.Param;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -35,5 +36,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "u.userPk, u.email, u.nickname, u.profileUrl)" +
             "FROM User u " +
             "WHERE u.userPk = :userPk")
-    Optional<UserProfile> findByUserPk(Long userPk);
+    Optional<UserProfile> findByUserPk(@Param("userPk") Long userPk);
 }

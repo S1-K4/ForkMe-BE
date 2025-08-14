@@ -20,7 +20,7 @@ import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.position.entity.Position;
-import com.S1_K4.ForkMe_BE.reference.position.repository.PositionRepsitory;
+import com.S1_K4.ForkMe_BE.reference.position.repository.PositionRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
@@ -52,7 +52,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final ProjectPositionRepository projectPositionRepository;
     private final ProjectRepository projectRepository;
     private final StackRepository stackRepository;
-    private final PositionRepsitory positionRepository;
+    private final PositionRepository positionRepository;
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final ProjectMemberRepository projectMemberRepository;

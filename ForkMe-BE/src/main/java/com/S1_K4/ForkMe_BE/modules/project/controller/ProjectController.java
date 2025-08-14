@@ -3,7 +3,6 @@ package com.S1_K4.ForkMe_BE.modules.project.controller;
 import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
-import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -114,7 +113,7 @@ public class ProjectController {
 
 
     /**
-    * 프로젝트 상태 조회(기획 -> 모집)
+    * 프로젝트 상태 수정(기획 -> 모집)
     * */
     @PostMapping("/{projectPk}/status/recruiting")
     public ResponseEntity<ApiResponse<String>> recruiting(
@@ -127,7 +126,7 @@ public class ProjectController {
     }
 
     /**
-     * 프로젝트 상태 조회(모집 -> 진행)
+     * 프로젝트 상태 수정(모집 -> 진행)
      * */
     @PostMapping("/{projectPk}/status/progress")
     public ResponseEntity<ApiResponse<String>> progress(
@@ -140,7 +139,7 @@ public class ProjectController {
     }
 
     /**
-     * 프로젝트 상태 조회(진행 -> 충원)
+     * 프로젝트 상태 수정(진행 -> 충원)
      * */
     @PostMapping("/{projectPk}/status/adding")
     public ResponseEntity<ApiResponse<String>> adding(
@@ -153,7 +152,7 @@ public class ProjectController {
     }
 
     /**
-     * 프로젝트 상태 조회(진행 -> 종료)
+     * 프로젝트 상태 수정(진행 -> 종료)
      * */
     @PostMapping("/{projectPk}/status/complete")
     public ResponseEntity<ApiResponse<String>> complete(
@@ -182,7 +181,7 @@ public class ProjectController {
     /**
      * (팀원)프로젝트 탈퇴
      * */
-    @DeleteMapping("{projectPk}/members/me")
+    @DeleteMapping("/{projectPk}/members/me")
     public ResponseEntity<ApiResponse<Long>> leaveProject(
             @PathVariable Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails){

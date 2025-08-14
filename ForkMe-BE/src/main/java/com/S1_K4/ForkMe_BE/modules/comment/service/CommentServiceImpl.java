@@ -33,6 +33,7 @@ public class CommentServiceImpl implements CommentService{
     /**
      * 댓글 등록 메서드
      */
+    @Override
     @Transactional
     public CommentResponseDTO createProjectComment(Long userPk, Long projectProfilePk, CreateCommentDTO dto){
         User user = userRepository.findById(userPk)
@@ -75,6 +76,7 @@ public class CommentServiceImpl implements CommentService{
     /**
      * 댓글 수정 메서드
      */
+    @Override
     @Transactional
     public UpdateCommentDTO updateComment(Long userPk, Long commentPk, UpdateCommentDTO dto){
         Comment comment = commentRepository.findById(commentPk)
@@ -95,6 +97,7 @@ public class CommentServiceImpl implements CommentService{
     /**
     * 댓글 삭제 메서드
     * */
+    @Override
     @Transactional
     public void deleteComment(Long userPk, Long commentPk){
         System.out.println("================== commentPk : "+ commentPk);

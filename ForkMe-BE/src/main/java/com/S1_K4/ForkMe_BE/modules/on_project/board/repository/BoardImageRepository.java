@@ -2,10 +2,10 @@ package com.S1_K4.ForkMe_BE.modules.on_project.board.repository;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
