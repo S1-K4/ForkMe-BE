@@ -249,12 +249,45 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void approveApply(Long userPk, Long projectPk, Long applyPk){
-        checkValid(userPk, projectPk);
+        //이 부분에서 채팅이 project, user 엔티티를 필요로 해서 어쩔 수 없이 checkValid() 메서드를 사용하는 부분을 변경했습니다.
+        User addedUser = userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+
 
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         apply.approve();
+
+        /** 추가된 멤버와 기존 멤버간 개인 채팅방 자동 생성 및 멤버 추가 **/
+        //멤버 추가 시간 가져오기
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //프로젝트 팀 채팅방 가져오기
+        ChattingRoom teamChattingRoom = chattingService.getChattingRoom(project.getProjectPk(), RoomType.T);
+
+
+        //프로젝트 팀 채팅방에 수락 멤버 추가하기
+        chattingService.addChattingParticipant(teamChattingRoom, userPk, now);
+
+        //프로젝트 팀 채팅방에 수락 멤버 입장 메세지 전송 및 DB 저장
+        chattingService.noticeJoinChattingRoom(teamChattingRoom, addedUser, now);
+
+
+        /**기존 멤버들과 개인 채팅방 자동 생성 로직 **/
+        chattingService.createAllPrivateRoomsForNewMember(project, addedUser, now);
+
+
     }
 
     //신청서 거절 메서드(팀장만 가능)
