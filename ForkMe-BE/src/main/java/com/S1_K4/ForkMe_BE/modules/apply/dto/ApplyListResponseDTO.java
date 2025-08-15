@@ -25,6 +25,8 @@ public class ApplyListResponseDTO {
     private String nickname;
     @Schema(description = "유저 프로필사진 url", example = "https://avatars.githubusercontent.com/u/97264463?v=4")
     private String profileUrl;
+    @Schema(description = "신청서 PK", example = "1")
+    private Long applyPk;
     @Schema(description = "신청서 상태", example = "수락")
     private String status;
     @Schema(description = "작성일자", example = "2025-07-22")

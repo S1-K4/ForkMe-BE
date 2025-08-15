@@ -6,6 +6,7 @@ import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -60,6 +61,9 @@ public class ProjectResponseDTO {
     private List<Long> techPks;
     @Schema(description = "포지션 PK")
     private List<Long> positionPks;
+
+    @Schema(description = "이미지 리스트")
+    private List<ProjectImageDTO> images;
 
     public static ProjectResponseDTO fromEntity(Project project, List<ProjectTechStack> techStacks, List<ProjectPosition> positions) {
         ProjectProfile profile = project.getProjectProfile();

@@ -69,4 +69,8 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ProjectPosition pp WHERE pp.projectProfile.projectProfilePk IN (:projectProfilePkList)")
     void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
+
+    Optional<ProjectPosition> findByProjectProfile_ProjectProfilePkAndPosition_PositionPk(
+            Long projectProfilePk, Long positionPk);
+
 }
