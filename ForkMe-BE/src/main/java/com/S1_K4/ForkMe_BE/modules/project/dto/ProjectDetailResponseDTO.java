@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,58 +22,60 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
+@Schema(description = "프로젝트 상세 조회 DTO")
 public class ProjectDetailResponseDTO {
-    //프로젝트 pk
+    @Schema(description = "프로젝트 PK")
     private Long projectPk;
 
-    //프로젝트 프로필 pk
+    @Schema(description = "프로젝트 프로필 PK")
     private Long projectProfilePk;
 
-    //프로젝트 팀장 pk
+    @Schema(description = "프로젝트 팀장 userPK")
     private Long userPk;
 
-    //프로젝트 팀장닉네임
+    @Schema(description = "프로젝트 팀장 닉네임")
     private String nickname;
 
-    //프로젝트 프로필 제목
+    @Schema(description = "프로젝트 프로필 명")
     private String projectProfileTitle;
 
-    //프로젝트 프로필 본문
+    @Schema(description = "프로젝트 프로필 본문")
     private String projectProfileContent;
 
-    //프로젝트 진행상황
+    @Schema(description = "프로젝트 진행 상황")
     private String projectStatus;
 
-    //프로젝트 진행방식
+    @Schema(description = "프로젝트 진행 방식")
     private String progressType;
 
-    //프로젝트 모집 분야
+    @Schema(description = "프로젝트 모집 분야")
     private List<PositionResponseDTO> positions;
 
-    //프로젝트 기술 스택
+    @Schema(description = "프로젝트 기술 스택")
     private List<TechStackResponseDTO> techStacks;
 
-    //모집 시작일
+    @Schema(description = "프로젝트 모집 시작일")
     private LocalDate recruitmentStartDate;
 
-    //모집 마감일
+    @Schema(description = "프로젝트 모집 마감일")
     private LocalDate recruitmentEndDate;
 
-    //프로젝트 시작 일정
+    @Schema(description = "프로젝트 시작 일정")
     private LocalDate projectStartDate;
 
-    //프로젝트 종료 일정
+    @Schema(description = "프로젝트 종료 일정")
     private LocalDate projectEndDate;
 
-    //예상 모집 인원
+    @Schema(description = "예상 모집 인원")
     private int expectedMembers;
 
-    //좋아요 수
+    @Schema(description = "좋아요 수")
     private Long likeCount;
-    
-    //댓글 리스트
+
+    @Schema(description = "댓글 리스트")
     private List<CommentDTO> comments;
 
+    @Schema(description = "이미지 리스트")
     private List<ProjectImageDTO> images;
 
     @Getter

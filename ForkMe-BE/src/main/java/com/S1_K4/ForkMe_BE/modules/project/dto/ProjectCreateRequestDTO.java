@@ -29,26 +29,40 @@ import java.util.List;
 @NoArgsConstructor
 @Schema(description = "프로젝트 생성 DTO")
 public class ProjectCreateRequestDTO {
+    @Schema(description = "프로젝트 PK")
     private Long projectPk;
+    @Schema(description = "프로젝트 프로필 PK")
     private Long projectProfilePk;
+    @Schema(description = "유저 PK")
     private Long userPk;
 
     // --Project 필드 --
+    @Schema(description = "프로젝트 명")
     private String projectTitle;
-    private LocalDate projectStartDate;     //프로젝트 시작 일정
-    private LocalDate projectEndDate;       //프로젝트 종료 일정
-    private String projectStatus;           //프로젝트 상태
+    @Schema(description = "프로젝트 시작 일정")
+    private LocalDate projectStartDate;
+    @Schema(description = "프로젝트 종료 일정")
+    private LocalDate projectEndDate;
+    @Schema(description = "프로젝트 상태", example = "PLANNING")
+    private String projectStatus;
 
     // --ProjectProfile 필드--
-    private String projectProfileTitle;     //프로젝트 프로필 타이틀
-    private String projectProfileContent;   //프로젝트 프로필 본문
-    private ProgressType progressType;      //진행방식
-    private int expectedMembers;           //모집 예상 인원
-    private LocalDate recruitmentStartDate; //모집 시작일
-    private LocalDate recruitmentEndDate;   //모집 마감일
-
-    private List<Long> techPk;              //기술 스택
-    private List<Long> positionPk;          //모집 분야
+    @Schema(description = "프로젝트 프로필 명")
+    private String projectProfileTitle;
+    @Schema(description = "프로젝트 프로필 본문")
+    private String projectProfileContent;
+    @Schema(description = "진행방식")
+    private ProgressType progressType;
+    @Schema(description = "모집 예상 인원")
+    private int expectedMembers;
+    @Schema(description = "모집 시작일")
+    private LocalDate recruitmentStartDate;
+    @Schema(description = "모집 마감일")
+    private LocalDate recruitmentEndDate;
+    @Schema(description = "기술 스택 PK")
+    private List<Long> techPk;
+    @Schema(description = "모집 분야 PK")
+    private List<Long> positionPk;
 
 
     /*

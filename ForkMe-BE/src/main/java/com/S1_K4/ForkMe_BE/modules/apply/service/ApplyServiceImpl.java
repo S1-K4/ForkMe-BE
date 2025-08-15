@@ -112,8 +112,9 @@ public class ApplyServiceImpl implements ApplyService{
             throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_APPLY);
         }
 
-        //기획 상태의 프로젝트는 신청서 작성 불가
-        if(project.getProjectStatus() == ProjectStatus.PLANNING){
+        //프로젝트 상태가 모집중, 충원중이 아니면 신청서 작성 불가
+        if (!(project.getProjectStatus() == ProjectStatus.RECRUITING
+                || project.getProjectStatus() == ProjectStatus.ADDING)) {
             throw new CustomException(CustomException.ErrorCode.APPLY_NOT_WRITTEN);
         }
 
