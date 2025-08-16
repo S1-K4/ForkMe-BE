@@ -10,6 +10,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,22 @@ public class ChattingController {
      * STOMP로 "/app/chat/message" 경로로 들어오는 메시지 처리
      */
     @MessageMapping("/chat/message")
-    public void sendMessage(ChattingMessageDto chattingMessageDto) {
+    public void sendMessage(
+            ChattingMessageDto chattingMessageDto,
+            SimpMessageHeaderAccessor headerAccessor
+    ) {
+
+        //세션 attribute 에서 userPk를 꺼냄 (핸드쉐이크에서 세팅된 값)
+        Long authenticatedUserPk = (Long) headerAccessor.getSessionAttributes().get("userPk");
+
+        if (authenticatedUserPk == null) {
+            throw new IllegalStateException("WebSocket 세션에 userPk 없음 (인증 실패)");
+        }
+
+        //DTO 의 userPk를 인증된 userPk로 무조건 세팅 (프론트 조작 불가)
+        chattingMessageDto.setUserPk(authenticatedUserPk);
+
+        //서비스 호출
         chattingService.sendMessage(chattingMessageDto);
     }
 
@@ -45,7 +61,9 @@ public class ChattingController {
     //채팅방 참여자 조회(참여자 조회에 권한 체크 필요하면 나중에 추가)
     @GetMapping("/{chattingRoomPk}/participants")
     public List<ChattingUserDto> getChattingRoomParticipants(
-            @PathVariable("chattingRoomPk") Long chattingRoomPk) {
+            @PathVariable("chattingRoomPk") Long chattingRoomPk
+
+    ) {
         return chattingService.getChattingRoomParticipants(chattingRoomPk);
     }
 

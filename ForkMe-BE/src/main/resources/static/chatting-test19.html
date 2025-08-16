@@ -26,7 +26,7 @@
     // ============================
     // [추가] accessToken 하드코딩!
     // ============================
-    sessionStorage.setItem("accessToken", "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyUGsiOjQsImF1dGgiOiJST0xFX1VTRVIiLCJzdWIiOiI3MTkwNTM1OCIsImlhdCI6MTc1NTE1ODgxOSwiZXhwIjoxNzU1MTYyNDE5fQ.tSYE6VBeebh179MTkkQatijF5GYkb6eqWA_py79VhhU"); //여기에 accessToken 값 붙여넣기
+    sessionStorage.setItem("accessToken", "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyUGsiOjQsImF1dGgiOiJST0xFX1VTRVIiLCJzdWIiOiI3MTkwNTM1OCIsImlhdCI6MTc1NTMzOTY3NiwiZXhwIjoxNzU1MzQzMjc2fQ.pYlBN2yWAX2gNKY6adhA6T8UB4blazbuQQ90wKiQsTU"); //여기에 accessToken 값 붙여넣기
     sessionStorage.setItem("userPk", "4"); // 여기서 PK도 맞춰주면 아래 코드랑 자동 연동됨
 
     let stompClient = null;
@@ -57,7 +57,13 @@
         connectedUserPk = myUserPk;
         currentProjectPk = projectPk;
 
-        const res = await fetch(`/api/chatting-room/create?projectPk=${projectPk}&roomType=T`);
+        // [★중요: fetch 요청에 Authorization 헤더 추가★]
+        const accessToken = sessionStorage.getItem("accessToken");
+        const res = await fetch(`/api/chatting-room/create?projectPk=${projectPk}&roomType=T`, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
         const data = await res.json();
 
         teamChattingRoomPk = data.chattingRoomPk;
@@ -107,7 +113,13 @@
             li.addEventListener("click", async () => {
                 if (member.userPk === connectedUserPk) return;
 
-                const res = await fetch(`/api/chatting-room/create?projectPk=${currentProjectPk}&roomType=P&fromUserPk=${connectedUserPk}&toUserPk=${member.userPk}`);
+                // [★중요: fetch 요청에 Authorization 헤더 추가★]
+                const accessToken = sessionStorage.getItem("accessToken");
+                const res = await fetch(`/api/chatting-room/create?projectPk=${currentProjectPk}&roomType=P&fromUserPk=${connectedUserPk}&toUserPk=${member.userPk}`, {
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`
+                    }
+                });
                 const data = await res.json();
 
                 currentChattingRoomPk = data.chattingRoomPk;
@@ -175,7 +187,13 @@
         lastRenderedDate = null;
         document.getElementById("chatMessages").innerHTML = "";
 
-        fetch(`/api/chatting-room/${chattingRoomPk}/messages/${userPk}`)
+        // [★중요: fetch 요청에 Authorization 헤더 추가★]
+        const accessToken = sessionStorage.getItem("accessToken");
+        fetch(`/api/chatting-room/${chattingRoomPk}/messages/${userPk}`, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        })
             .then(res => res.json())
             .then(messages => {
                 allMessages.push(...messages);
