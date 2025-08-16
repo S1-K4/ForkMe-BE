@@ -18,7 +18,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CommentUpdateRequest {
 
-    private Long userPk;
     private String comment;
 
 }

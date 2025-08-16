@@ -21,6 +21,7 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,7 +70,6 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         BoardInProject board = BoardInProject.create(request.getTitle(), pureContent, project, user);
         BoardInProject savedBoard = boardInProjectRepository.save(board);
-        System.out.println("projectProfile : "+projectProfile);
 
         // 이미지 URL 저장 (BoardInProject 관련 이미지)
         if (request.getImageUrls() != null) {
@@ -156,6 +156,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
+        if(!board.getUser().getUserPk().equals(userPk)){
+            throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
+        }
+
         ProjectProfile projectProfile = project.getProjectProfile();
         if (projectProfile == null) {
             throw new IllegalStateException("해당 프로젝트에 연결된 ProjectProfile이 없습니다. projectPk=" + projectPk);
@@ -236,12 +240,17 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 // 삭제
     @Transactional
-    public void deleteBoard(Long projectPk, Long boardInProjectPk) {
+    public void deleteBoard(Long projectPk, Long boardInProjectPk, Long userPk) {
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
 
         if (!board.getProject().getProjectPk().equals(projectPk)) {
             throw new RuntimeException("해당 프로젝트에 속한 게시글이 아닙니다.");
+        }
+
+        // 게시글 작성자 체크
+        if (!board.getUser().getUserPk().equals(userPk)) {
+            throw new AccessDeniedException("게시글 작성자만 삭제할 수 있습니다.");
         }
 
         // 이미지 하드 삭제

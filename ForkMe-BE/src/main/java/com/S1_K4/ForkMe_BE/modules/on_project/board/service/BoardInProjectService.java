@@ -29,11 +29,12 @@ public interface BoardInProjectService {
                                List<MultipartFile> newImages, List<MultipartFile> newFiles, Long userPk);
 
     // 게시글 삭제
-    void deleteBoard(Long projectPk, Long boardInProjectPk);
+    void deleteBoard(Long projectPk, Long boardInProjectPk, Long userPk);
 
 
     // 게시글 파일삭제
     void removeFileFromBoard(Long boardPk, String key);
 
+    // 작성자 확인
     Long getAuthorUserPk(Long boardInProjectPk);
 }

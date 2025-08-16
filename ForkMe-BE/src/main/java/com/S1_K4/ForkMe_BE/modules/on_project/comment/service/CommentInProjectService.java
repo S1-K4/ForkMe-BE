@@ -15,11 +15,14 @@ import java.util.List;
  */
 public interface CommentInProjectService {
 
-    CommentResponse createComment(CommentCreateRequest request);
+    CommentResponse createComment(CommentCreateRequest request, Long userPk, Long boardInProjectPk);
 
     List<CommentResponse> getCommentsByBoardId(Long boardPk);
 
-    CommentResponse updateComment(Long commentInProjectPk, CommentUpdateRequest request);
+    CommentResponse updateComment(CommentUpdateRequest request, Long userPk,Long commentInProjectPk);
 
-    void deleteComment(Long commentPk);
+    void deleteComment(Long commentPk, Long userPk);
+
+    //작성자 확인
+    Long getAuthorUserPk(Long commentInProjectPk);
 }

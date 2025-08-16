@@ -37,13 +37,13 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
     private final UserRepository userRepository;
 
     @Transactional
-    public CommentResponse createComment(CommentCreateRequest request) {
+    public CommentResponse createComment(CommentCreateRequest request, Long userPk, Long boardInProjectPk) {
         // 1. 게시판 조회
-        BoardInProject board = boardRepository.findById(request.getBoardInProjectPk())
+        BoardInProject board = boardRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
 
         // 2. 사용자 조회
-        User user = userRepository.findById(request.getUserPk())
+        User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
 
         // 3. 댓글 생성
@@ -67,11 +67,11 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentInProjectPk, CommentUpdateRequest request){
+    public CommentResponse updateComment(CommentUpdateRequest request, Long userPk, Long commentInProjectPk){
         CommentInProject comment = commentRepository.findById(commentInProjectPk)
                 .orElseThrow(()->new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        if(!comment.getUser().getUserPk().equals(request.getUserPk())){
+        if(!comment.getUser().getUserPk().equals(userPk)){
             throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
         }
 
@@ -81,12 +81,26 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
 
 
     @Transactional
-    public void deleteComment(Long commentPk) {
+    public void deleteComment(Long commentPk, Long userPk) {
 
         // 0814 softdelete 로 변경
         CommentInProject comment = commentRepository.findById(commentPk)
                 .orElseThrow(() -> new EntityNotFoundException("댓글이 존재하지 않습니다."));
 
+        // 작성자 확인
+        if(!comment.getUser().getUserPk().equals(userPk)){
+            throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
+        }
+
         comment.markDeleted(); // deletedYN = Y로 변경
+    }
+
+    @Transactional
+    public Long getAuthorUserPk(Long commentInProjectPk){
+        CommentInProject comment = commentRepository.findById(commentInProjectPk)
+                .orElseThrow(() -> new RuntimeException("댓글이 존재하지 않습니다."));
+
+        return comment.getUser().getUserPk();
+
     }
 }
