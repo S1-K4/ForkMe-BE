@@ -120,7 +120,7 @@ public class ApplyServiceImpl implements ApplyService{
 
         // 모집 포지션 검증
         ProjectPosition selectedPosition = projectPositionRepository
-                .findByProjectProfilePkAndPositionPk(profilePk, dto.getProjectPositionPk())
+                .findByProjectProfile_ProjectProfilePkAndPosition_PositionPk(profilePk, dto.getPositionPk())
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.INVALID_PROJECT_POSITION));
 
         // 기술스택 검증
@@ -231,6 +231,7 @@ public class ApplyServiceImpl implements ApplyService{
         //신청서 목록 조회
         return applyRepository.findAllByProjectPk(projectPk).stream()
                 .map(a -> ApplyListResponseDTO.builder()
+                        .applyPk(a.getApplyPk())
                         .nickname(a.getUser().getNickname())
                         .profileUrl(a.getUser().getProfileUrl())
                         .userPk(a.getUser().getUserPk())

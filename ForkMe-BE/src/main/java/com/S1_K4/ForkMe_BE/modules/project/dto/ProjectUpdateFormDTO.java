@@ -2,6 +2,8 @@ package com.S1_K4.ForkMe_BE.modules.project.dto;
 
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
+import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
+import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,6 +61,12 @@ public class ProjectUpdateFormDTO {
     private List<Long> techPks;         
     @Schema(description = "모집 분야 PK")
     private List<Long> positionPks;
+
+    @Schema(description = "기술 스택 목록")
+    private List<TechStackResponseDTO> techStacks;
+
+    @Schema(description = "모집 분야 목록")
+    private List<PositionResponseDTO> positions;
 
     @Schema(description = "이미지 리스트")
     private List<ProjectImageDTO> images;

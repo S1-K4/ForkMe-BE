@@ -320,12 +320,24 @@ public class ProjectServiceImpl implements ProjectService{
         Project project = projectRepository.findByIdWithProfile(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
+        //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생
+        if(!project.getUser().getUserPk().equals(userPk)){
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+
         ProjectProfile profile = project.getProjectProfile();
         Long profilePk = profile.getProjectProfilePk();
 
-        // 연관된 기술 스택 및 포지션 pk 저장
+        //기술스택, 포지션 : pk+이름까지 조회
+        List<TechStackResponseDTO> techStacks = projectTechStackRepository.findTechStacksByProfilePk(profilePk);
+        List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profilePk);
+
+        // 연관된 기술 스택 및 포지션 pk 조회
         List<Long> techPks = projectTechStackRepository.findTechPksByProfilePk(profilePk);
         List<Long> positionPks = projectPositionRepository.findPositionPksByProfilePk(profilePk);
+
+        //연관된 이미지 조회
+        List<ProjectImageDTO> images = s3Repository.findAllImagesByProfilePk(profilePk);
 
         return ProjectUpdateFormDTO.builder()
                 .projectPk(projectPk)
@@ -340,8 +352,9 @@ public class ProjectServiceImpl implements ProjectService{
                 .recruitmentEndDate(profile.getRecruitmentEndDate())
                 .expectedMembers(profile.getExpectedMembers())
                 .progressType(profile.getProgressType())
-                .techPks(techPks)
-                .positionPks(positionPks)
+                .techStacks(techStacks)
+                .positions(positions)
+                .images(images)
                 .build();
     }
 
