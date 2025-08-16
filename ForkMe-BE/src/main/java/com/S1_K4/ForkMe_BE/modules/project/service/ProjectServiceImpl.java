@@ -295,6 +295,10 @@ public class ProjectServiceImpl implements ProjectService{
         for(Comment comment : projectProfile.getComments()){
             comment.markDeleted();
         }
+
+        /** 프로젝트 삭제 시 연관된 채팅방 모두 Soft Delete **/
+        chattingService.softDeleteAllChattingRoomsByProject(projectPk, userPk);
+        /***********************************************/
         
         //hard Delete : 워크스페이스 관련 엔티티는 추후 삭제 추가예정(board_in_project,comment_in_project,github_timeline,s3_file,chatting_room,chatting_message,chatting_participant)
         s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
@@ -571,6 +575,12 @@ public class ProjectServiceImpl implements ProjectService{
         }
 
         projectMemberRepository.delete(member);
+
+        /** 팀을 떠나려는 멤버가 속한 모든 채팅방에서 해당 멤버 탈퇴 처리 (팀/개인)**/
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //채팅방에서도 해당 멤버 퇴장 처리
+        chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), member.getUser().getUserPk(), now);
     }
 
     /**
@@ -602,6 +612,12 @@ public class ProjectServiceImpl implements ProjectService{
             //동시성 방지
             throw new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND);
         }
+
+        /** target 멤버가 속한 모든 채팅방에서 해당 멤버 탈퇴 처리 (팀/개인)**/
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //채팅방에서도 해당 멤버 퇴장 처리
+        chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), target.getUser().getUserPk(), now);
     }
 
     //user, project 유효성 체크 및 팀장 여부 확인 메서드

@@ -92,7 +92,7 @@ public class ProjectController {
     @DeleteMapping("/{projectPk}")
     public ResponseEntity<ApiResponse<String>> deleteProject(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userPk = userDetails.getUserPk();
         projectService.deleteProject(projectPk, userPk);
@@ -111,26 +111,26 @@ public class ProjectController {
         Long userPk = userDetails.getUserPk();
         return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk, userPk), "프로젝트 수정폼 호출 성공"));
     }
-
-    /**
-     * 프로젝트 수정
-     */
-    @Operation(summary = "프로젝트 수정")
-    @PutMapping(
-            value ="/{projectPk:\\d+}",
-            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
-    )
-    public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
-            @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
-            @RequestPart ProjectUpdateFormDTO dto,
-            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
-            @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userPk = userDetails.getUserPk();
-        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages, userPk);
-        return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
-
-    }
+//
+//    /**
+//     * 프로젝트 수정
+//     */
+//    @Operation(summary = "프로젝트 수정")
+//    @PutMapping(
+//            value ="/{projectPk:\\d+}",
+//            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
+//    )
+//    public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
+//            @Parameter(description = "프로젝트 PK", example = "1")
+//            @PathVariable Long projectPk,
+//            @RequestPart ProjectUpdateFormDTO dto,
+//            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
+//            @AuthenticationPrincipal CustomUserDetails userDetails){
+//        Long userPk = userDetails.getUserPk();
+//        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages, userPk);
+//        return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
+//
+//    }
 
 
     /**
@@ -231,8 +231,8 @@ public class ProjectController {
     @DeleteMapping("/{projectPk}/members/{targetUserPk}")
     public ResponseEntity<ApiResponse<String>> kickMember(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
-            @PathVariable Long targetUserPk,
+            @PathVariable("projectPk") Long projectPk,
+            @PathVariable("targetUserPk") Long targetUserPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long actingUserPk = userDetails.getUserPk();
