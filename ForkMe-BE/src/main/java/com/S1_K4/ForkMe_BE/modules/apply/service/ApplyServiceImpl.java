@@ -261,7 +261,7 @@ public class ApplyServiceImpl implements ApplyService{
     @Transactional
     public void approveApply(Long userPk, Long projectPk, Long applyPk){
         //이 부분에서 채팅이 project, user 엔티티를 필요로 해서 어쩔 수 없이 checkValid() 메서드를 사용하는 부분을 변경했습니다.
-        User addedUser = userRepository.findByIdWithTechStacks(userPk)
+        userRepository.findByIdWithTechStacks(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
 
         Project project = projectRepository.findById(projectPk)
@@ -306,16 +306,15 @@ public class ApplyServiceImpl implements ApplyService{
         //프로젝트 팀 채팅방 가져오기
         ChattingRoom teamChattingRoom = chattingService.getChattingRoom(project.getProjectPk(), RoomType.T);
 
-
         //프로젝트 팀 채팅방에 수락 멤버 추가하기
-        chattingService.addChattingParticipant(teamChattingRoom, userPk, now);
+        chattingService.addChattingParticipant(teamChattingRoom, applicantUserPk, now);
 
         //프로젝트 팀 채팅방에 수락 멤버 입장 메세지 전송 및 DB 저장
-        chattingService.noticeJoinChattingRoom(teamChattingRoom, addedUser, now);
+        chattingService.noticeJoinChattingRoom(teamChattingRoom, applicant, now);
 
 
         /**기존 멤버들과 개인 채팅방 자동 생성 로직 **/
-        chattingService.createAllPrivateRoomsForNewMember(project, addedUser, now);
+        chattingService.createAllPrivateRoomsForNewMember(project, applicant, now);
 
 
     }
