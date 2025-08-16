@@ -6,6 +6,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.service.BoardInProjectService;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,7 +44,7 @@ public class BoardInProjectController {
     public ResponseEntity<InBoardDetailResponse> createBoard(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectPk,
-            @RequestPart("request") InBoardCreateRequest request,
+            @RequestPart("request")InBoardCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
@@ -101,7 +102,7 @@ public class BoardInProjectController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{boardInProjectPk}/edit")
+    @PutMapping(value = "/{boardInProjectPk}/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateBoard(
             @PathVariable Long projectPk,
             @PathVariable Long boardInProjectPk,

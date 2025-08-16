@@ -17,7 +17,7 @@ public interface CommentInProjectService {
 
     CommentResponse createComment(CommentCreateRequest request, Long userPk, Long boardInProjectPk);
 
-    List<CommentResponse> getCommentsByBoardId(Long boardPk);
+    List<CommentResponse> getCommentsByBoardId(Long boardPk, Long userPk);
 
     CommentResponse updateComment(CommentUpdateRequest request, Long userPk,Long commentInProjectPk);
 

@@ -27,14 +27,14 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/on-project/comments")
+@RequestMapping("/api/on-project/comments/{boardInProjectPk}")
 public class CommentInProjectController {
 
 
     private final CommentInProjectService commentInProjectService;
 
     // 댓글 생성
-    @PostMapping("/{boardInProjectPk}")
+    @PostMapping
     public ResponseEntity<CommentResponse> createComment(
             @PathVariable Long boardInProjectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -43,16 +43,19 @@ public class CommentInProjectController {
         // 현재 로그인 유저 pk
         Long userPk = userDetails.getUserPk();
 
-        log.info("댓글 생성 요청: boardInProjectPk={}, userPk={}, comment={}",
-                boardInProjectPk,userPk, request.getComment());
         CommentResponse response = commentInProjectService.createComment(request, userPk, boardInProjectPk);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // 댓글 목록 조회 (게시판 기준)
     @GetMapping
-    public ResponseEntity<List<CommentResponse>> getCommentsByBoard(@RequestParam Long boardInProjectPk) {
-        List<CommentResponse> comments = commentInProjectService.getCommentsByBoardId(boardInProjectPk);
+    public ResponseEntity<List<CommentResponse>> getCommentsByBoard(@PathVariable Long boardInProjectPk,
+                                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
+        // 현재 로그인 유저 pk
+        Long userPk = userDetails.getUserPk();
+
+
+        List<CommentResponse> comments = commentInProjectService.getCommentsByBoardId(boardInProjectPk, userPk);
         return ResponseEntity.ok(comments);
     }
 

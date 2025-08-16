@@ -23,6 +23,10 @@ public class InBoardCreateRequest {
     private String title;
     private String content;
 
+    // 실제 파일을 받는 필드들
+    private List<MultipartFile> images; // 업로드된 이미지 파일
+    private List<MultipartFile> files;  // 업로드된 일반 파일들
+
     private List<String> imageUrls; // 기존 이미지 URL (빈칸 포함 가능)
     private List<String> fileUrls;  // 기존 첨부파일 URL (빈칸 포함 가능)
 

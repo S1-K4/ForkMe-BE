@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewResponse;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.entity.MemberReview;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
@@ -37,7 +38,9 @@ public class MemberReviewServiceImpl implements MemberReviewService {
    public MemberReviewResponse createReview(Long projectPk, Long writerUserPk, MemberReviewRequest dto){
        Project project = projectRepository.findById(projectPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
-
+       if (project.getProjectStatus() == ProjectStatus.COMPLETED) {
+           throw new IllegalArgumentException("완료된 프로젝트에는 후기를 작성할 수 없습니다.");
+       }
        User writer = userRepository.findById(writerUserPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 작성자입니다."));
 
