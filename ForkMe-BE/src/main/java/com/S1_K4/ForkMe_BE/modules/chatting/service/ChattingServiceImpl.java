@@ -407,11 +407,11 @@ public class ChattingServiceImpl implements ChattingService{
                 .orElseThrow(() -> new IllegalStateException("프로젝트 리더만 삭제할 수 있습니다."));
 
         // 해당 프로젝트의 모든 채팅방 조회
-        List<ChattingRoom> rooms = chattingRoomRepository.findByProjectPk(project);
+        List<ChattingRoom> chattingRooms = chattingRoomRepository.findByProjectPk(project);
 
-        for (ChattingRoom room : rooms) {
-            room.markAsDeleted(); // [추가] 엔티티 메서드 활용
-            chattingRoomRepository.save(room);
+        for (ChattingRoom chattingRoom : chattingRooms) {
+            chattingRoom.markAsDeleted(); // [추가] 엔티티 메서드 활용
+            chattingRoomRepository.save(chattingRoom);
         }
     }
 
