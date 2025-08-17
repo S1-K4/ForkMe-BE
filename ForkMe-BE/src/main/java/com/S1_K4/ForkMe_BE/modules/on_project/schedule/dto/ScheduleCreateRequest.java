@@ -23,8 +23,6 @@ public class ScheduleCreateRequest {
     private LocalDateTime start;
     private LocalDateTime end;
 
-    private Long projectPk;   // 연관된 프로젝트 ID
-    private Long userPk;      // 작성자(등록자) 유저 ID
 
     private List<Long> scheduleMentionPk;
 }

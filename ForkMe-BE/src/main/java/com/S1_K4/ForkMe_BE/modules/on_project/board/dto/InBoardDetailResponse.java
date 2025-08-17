@@ -22,7 +22,7 @@ public class InBoardDetailResponse {
     private Long boardInProjectPk;
     private Long projectPk;
     private Long userPk;
-    private String userNickname;   // 유저 닉네임 추가 가능하면 좋음
+    private String userNickname;
 
     private String title;
     private String content;
@@ -38,6 +38,7 @@ public class InBoardDetailResponse {
                 .boardInProjectPk(board.getBoardInProjectPk())
                 .projectPk(board.getProject().getProjectPk())
                 .userPk(board.getUser().getUserPk())
+                .userNickname(board.getUser().getNickname())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .createdAt(board.getCreatedAt())

@@ -6,10 +6,12 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.service.BoardInProjectService;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,23 +42,16 @@ public class BoardInProjectController {
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<InBoardDetailResponse> createBoard(
-            //@AuthenticationPrincipal CustomUserDetails userDetails,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectPk,
-            @RequestPart("request") InBoardCreateRequest request,
+            @RequestPart("request")InBoardCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
+        System.out.println("board controller 작동");
 
-        //Long userPk = userDetails.getUserPk();
-        Long userPk = request.getUserPk();
+        Long userPk = userDetails.getUserPk();
 
-        System.out.println("=== InBoardCreateRequest 확인 ===");
-        System.out.println("title: " + request.getTitle());
-        System.out.println("projectPk: " + request.getProjectPk());
-        System.out.println("userPk: " + userPk);
-        System.out.println("content: " + request.getContent());
-        System.out.println("imageUrls: " + request.getImageUrls());
-        System.out.println("fileUrls: " + request.getFileUrls());
 
         // S3에 이미지 업로드
         List<String> uploadedImageUrls = (images != null && !images.isEmpty())
@@ -107,17 +102,17 @@ public class BoardInProjectController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{boardInProjectPk}/edit")
+    @PutMapping(value = "/{boardInProjectPk}/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateBoard(
             @PathVariable Long projectPk,
             @PathVariable Long boardInProjectPk,
-           // @AuthenticationPrincipal CustomUserDetails userDetails,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestPart("request") InBoardUpdateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        //Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
-        Long loggedInUserPk = request.getUserPk();
+        Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
+
         // 2. 게시글 작성자 userPk 가져오기 (서비스에서)
         Long authorUserPk = boardInProjectService.getAuthorUserPk(boardInProjectPk);
 
@@ -132,8 +127,13 @@ public class BoardInProjectController {
     }
 
     @DeleteMapping("/{boardInProjectPk}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable Long projectPk, @PathVariable Long boardInProjectPk) {
-        boardInProjectService.deleteBoard(projectPk, boardInProjectPk);
+    public ResponseEntity<Void> deleteBoard(@PathVariable Long projectPk,
+                                            @PathVariable Long boardInProjectPk,
+                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        // 현재 로그인한 유저pk 가져오기
+        Long loggedInUserPk = userDetails.getUserPk();
+
+        boardInProjectService.deleteBoard(projectPk, boardInProjectPk, loggedInUserPk);
         return ResponseEntity.noContent().build(); // 204 No Content
     }
 

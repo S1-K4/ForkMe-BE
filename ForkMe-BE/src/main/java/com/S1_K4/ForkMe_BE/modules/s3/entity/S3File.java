@@ -23,7 +23,7 @@ public class S3File {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "file_pk")
+    @Column(name = "s3_file_pk")
     private Long filePk;
 
     @Column(name = "url", length = 255, nullable = false)

@@ -20,16 +20,15 @@ import java.util.List;
 @Builder
 public class InBoardCreateRequest {
 
-    private Long projectPk;
     private String title;
     private String content;
-    private Long userPk;
+
+    // 실제 파일을 받는 필드들
+    private List<MultipartFile> images; // 업로드된 이미지 파일
+    private List<MultipartFile> files;  // 업로드된 일반 파일들
 
     private List<String> imageUrls; // 기존 이미지 URL (빈칸 포함 가능)
     private List<String> fileUrls;  // 기존 첨부파일 URL (빈칸 포함 가능)
-
-    private List<MultipartFile> images; // 새로 업로드할 이미지 파일
-    private List<MultipartFile> files;  // 새로 업로드할 첨부파일
 
     private List<FileInfoResponse> fileInfos; // 추가
 }

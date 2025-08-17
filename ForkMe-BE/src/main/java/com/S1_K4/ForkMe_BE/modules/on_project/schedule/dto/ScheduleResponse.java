@@ -18,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class ScheduleResponse {
-    private Long id;
+    private Long schedulePk;
     private String title;
     private LocalDateTime start;
     private LocalDateTime end;
