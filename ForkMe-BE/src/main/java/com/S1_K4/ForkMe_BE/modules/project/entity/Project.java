@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.modules.project.entity;
 
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
-import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
@@ -10,11 +9,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author : 선순주
@@ -80,9 +75,9 @@ public class Project extends BaseTime {
         this.projectStatus = ProjectStatus.RECRUITING;
     }
 
-    //모집 -> 진행중
+    //모집 or 충원 -> 진행중
     public void progress(){
-        if (this.projectStatus != ProjectStatus.RECRUITING) {
+        if (this.projectStatus != ProjectStatus.RECRUITING && this.projectStatus != ProjectStatus.ADDING) {
             throw new CustomException(CustomException.ErrorCode.PROJECT_STATUS_CHANGE);
         }
         this.projectStatus = ProjectStatus.IN_PROGRESS;

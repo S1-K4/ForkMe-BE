@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.global.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 /**
  * @author : 선순주

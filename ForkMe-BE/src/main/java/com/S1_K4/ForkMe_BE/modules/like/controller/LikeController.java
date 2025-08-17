@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
  * @date : 2025-08-11
  * @description : LikeController
  */
-@Tag(name="좋아요", description = "좋아요 관련 API")
+@Tag(name="Project:Like", description = "프로젝트의 좋아요 관련 API")
 @RestController
 @RequestMapping("/api/likes")
 @RequiredArgsConstructor

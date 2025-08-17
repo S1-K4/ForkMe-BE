@@ -12,7 +12,12 @@ import com.S1_K4.ForkMe_BE.modules.comment.dto.UpdateCommentDTO;
  * @description : CommentService
  */
 public interface CommentService {
+    //댓글 작성
     CommentResponseDTO createProjectComment(Long userPk, Long projectProfilePk, CreateCommentDTO dto);
+    
+    //댓글 수정
     UpdateCommentDTO updateComment(Long userPk, Long commentPk, UpdateCommentDTO dto);
+    
+    //댓글 삭제
     void deleteComment(Long userPk, Long commentPk);
 }

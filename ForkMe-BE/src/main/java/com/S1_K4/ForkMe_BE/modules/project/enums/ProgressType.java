@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.modules.project.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 /**
  * @author : 선순주

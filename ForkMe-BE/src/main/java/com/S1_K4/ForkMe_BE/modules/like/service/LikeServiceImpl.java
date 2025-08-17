@@ -71,7 +71,7 @@ public class LikeServiceImpl implements LikeService{
         likeRepository.save(like);
         return LikeDTO.builder()
                 .isLiked(true)
-                .likeCount(likeRepository.countByProjectProfile(profile))
+                .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk()))
                 .build();
     }
 

@@ -4,8 +4,6 @@ import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +27,7 @@ import java.util.List;
  * @date : 2025-08-05
  * @description : Project Controller
  */
-@Tag(name="프로젝트", description = "프로젝트 관련 API")
+@Tag(name="Project", description = "프로젝트 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/projects")
@@ -111,26 +109,26 @@ public class ProjectController {
         Long userPk = userDetails.getUserPk();
         return ResponseEntity.ok(ApiResponse.success(projectService.getProjectUpdateForm(projectPk, userPk), "프로젝트 수정폼 호출 성공"));
     }
-//
-//    /**
-//     * 프로젝트 수정
-//     */
-//    @Operation(summary = "프로젝트 수정")
-//    @PutMapping(
-//            value ="/{projectPk:\\d+}",
-//            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
-//    )
-//    public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
-//            @Parameter(description = "프로젝트 PK", example = "1")
-//            @PathVariable Long projectPk,
-//            @RequestPart ProjectUpdateFormDTO dto,
-//            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
-//            @AuthenticationPrincipal CustomUserDetails userDetails){
-//        Long userPk = userDetails.getUserPk();
-//        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages, userPk);
-//        return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
-//
-//    }
+
+    /**
+     * 프로젝트 수정
+     */
+    @Operation(summary = "프로젝트 수정")
+    @PutMapping(
+            value ="/{projectPk:\\d+}",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
+    )
+    public ResponseEntity<ApiResponse<ProjectResponseDTO>> updateProject(
+            @Parameter(description = "프로젝트 PK", example = "1")
+            @PathVariable Long projectPk,
+            @RequestPart ProjectUpdateFormDTO dto,
+            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userPk = userDetails.getUserPk();
+        ProjectResponseDTO responseDTO = projectService.updatedProject(projectPk, dto,newImages, userPk);
+        return ResponseEntity.ok(ApiResponse.success(responseDTO,"프로젝트 수정 완료"));
+
+    }
 
 
     /**

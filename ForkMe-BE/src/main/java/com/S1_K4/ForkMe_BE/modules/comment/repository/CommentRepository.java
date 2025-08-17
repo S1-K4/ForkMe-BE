@@ -18,6 +18,7 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+    //특정 프로젝트 프로필에 달린 댓글 전부 조회
     List<Comment> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
     @Modifying(clearAutomatically = true)
