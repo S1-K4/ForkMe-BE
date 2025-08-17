@@ -4,10 +4,13 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springdoc.core.models.GroupedOpenApi;
+import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springdoc.core.customizers.OpenApiCustomizer;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -18,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
  * http://localhost:8080/swagger-ui/index.html
  */
 @Configuration
-public class SwaggerConfig {
+public class SwaggerConfig<OpenApiCustomiser> {
     // API 메타정보
     @Bean
     public OpenAPI openAPI() {
@@ -76,7 +79,25 @@ public class SwaggerConfig {
     public GroupedOpenApi projectApi() {
         return GroupedOpenApi.builder()
                 .group("\uD83D\uDCBB 프로젝트 API")
-                .pathsToMatch("/api/project/**")
+                .pathsToMatch(
+                        "/api/projects/**",
+                        "/api/comments/**",
+                        "/api/likes/**"
+                )
+                .addOpenApiCustomizer(jwtSecurityCustomizer())
+                .pathsToExclude(
+                        "/api/projects/*/applies/**",           //신청서 api 경로 제외
+                        "/api/projects/*/member_review/**"      //멤버리뷰 api 경로 제외
+                )
+                .build();
+    }
+
+    // 신청서 API 그룹
+    @Bean
+    public GroupedOpenApi applyApi() {
+        return GroupedOpenApi.builder()
+                .group("\uD83D\uDCCB 신청서 API")
+                .pathsToMatch("/api/projects/*/applies/**")
                 .addOpenApiCustomizer(jwtSecurityCustomizer())
                 .build();
     }

@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Getter;
 
 /**
  * @author : 선순주

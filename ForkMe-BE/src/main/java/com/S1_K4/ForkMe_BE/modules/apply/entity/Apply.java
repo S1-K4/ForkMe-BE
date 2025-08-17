@@ -5,7 +5,6 @@ import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
-import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -79,5 +78,12 @@ public class Apply extends BaseTime {
         }
         this.applyTechStacks.clear();   //db에서 해당 신청서 기술스택 삭제
         this.status = ApplyStatus.REJECTED;
+    }
+
+    //신청서 모두 거절
+    public void allReject() {
+        if (this.status == ApplyStatus.PENDING) {
+            this.status = ApplyStatus.REJECTED;
+        }
     }
 }

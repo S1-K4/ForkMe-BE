@@ -1,8 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.s3.repository;
 
-import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
-import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
+import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -25,8 +24,9 @@ public interface S3Repository extends JpaRepository<S3Image, Long> {
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
     //해당 프로필의 이미지필드 조회
-    List<S3Image> findByProjectProfile(ProjectProfile projectProfile);
+    List<S3Image> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
+    //해당 프로필의 이미지 필드를 dto로 반환
     @Query("""
            select new com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO(i.s3ImagePk, i.url)
            from S3Image i

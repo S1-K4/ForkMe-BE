@@ -6,14 +6,12 @@ import com.S1_K4.ForkMe_BE.modules.comment.dto.CommentResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.CreateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.UpdateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.service.CommentService;
-import com.S1_K4.ForkMe_BE.modules.comment.service.CommentServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -24,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  * @description : 댓글 Controller
  */
 
-@Tag(name="댓글", description = "댓글 관련 API")
+@Tag(name="Project:Comment", description = "프로젝트의 댓글 관련 API")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/comments")

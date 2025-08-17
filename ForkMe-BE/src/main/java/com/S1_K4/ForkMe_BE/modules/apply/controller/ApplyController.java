@@ -5,7 +5,6 @@ import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyCreateRequestDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyListResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyResponseDTO;
-import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.service.ApplyService;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;

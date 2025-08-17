@@ -46,6 +46,14 @@ public class SecurityConfig {
                                 "/favicon.ico", "login-success.html", "/login-error"
                         ).permitAll()
 
+                        // ====== Swagger 관련 경로 ======
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+
                         // ====== Projects : 인증 필요 ======
                         .requestMatchers(HttpMethod.GET,
                                 "/api/projects/form-info",          // 생성폼 조회

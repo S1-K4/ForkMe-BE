@@ -1,6 +1,5 @@
 package com.S1_K4.ForkMe_BE.modules.comment.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;

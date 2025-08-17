@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.modules.apply.repository;
 
 import com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyTechStackDto;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
-import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -10,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author : 선순주
@@ -21,6 +19,7 @@ import java.util.Optional;
  */
 @Repository
 public interface ApplyTechStackRepository extends JpaRepository<ApplyTechStack, Long> {
+    //해당 projectPk를 가지는 신청서 기술스택 삭제
     void deleteByApply_Project_ProjectPk(Long projectPk);
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyTechStackDto(ats.apply.applyPk, ats.techStack.techPk, ats.techStack.techName) " +

@@ -3,14 +3,15 @@ package com.S1_K4.ForkMe_BE.modules.project.service;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
+import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
+import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
-import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
@@ -19,9 +20,9 @@ import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.repository.S3Repository;
-import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
@@ -34,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -124,7 +124,6 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-
     /*
      * 프로젝트 목록 조회
      * */
@@ -133,39 +132,82 @@ public class ProjectServiceImpl implements ProjectService{
     public Page<ProjectListResponseDTO> getProjectList(Pageable pageable) {
         Page<Project> projectPage = projectRepository.findProjectsWithUserAndProfile(pageable);
 
+        /**현재 페이지에 포함된 profilePk들만 추출 -> 연관된 컬렉션(포지션/기술스택)을 벌크로 가져오기 위함*/
+        List<Long> profilePks = projectPage.getContent().stream()   //현재 페이지의 엔티티 리스트를 스트림으로 순회
+                .map(p -> p.getProjectProfile().getProjectProfilePk()) //각 Project가 가진 ProjectProfile의 PK만 추출
+                .toList();  //리스트로 변환
+
+        //만약 페이지가 비어있다면(데이터가 없다면) 빈리스트 반환 -> IN() 쿼리때문에 SQL 에러가 날 수 있으므로 SQL에러방지용
+        if (profilePks.isEmpty()) {
+            return projectPage.map(p -> ProjectListResponseDTO.builder()
+                .projectPk(p.getProjectPk())
+                .projectProfilePk(p.getProjectProfile().getProjectProfilePk())
+                .userPk(p.getUser().getUserPk())
+                .nickname(p.getUser().getNickname())
+                .projectProfileTitle(p.getProjectProfile().getProjectProfileTitle())
+                .projectStatus(p.getProjectStatus().name())
+                .positions(List.of())
+                .techStacks(List.of())
+                .recruitmentStartDate(p.getProjectProfile().getRecruitmentStartDate())
+                .recruitmentEndDate(p.getProjectProfile().getRecruitmentEndDate())
+                .expectedMembers(p.getProjectProfile().getExpectedMembers())
+                .build());
+            }
+
+        //포지션, 기술스택 벌크 조회(n+1방지)
+        List<ProjectPosition> posEntities =
+                projectPositionRepository.findAllByProfilePksFetchPosition(profilePks);
+        List<ProjectTechStack> techEntities =
+                projectTechStackRepository.findAllByProfilePksFetchTech(profilePks);
+
+        /** 포지션 그룹핑 */
+        //포지션 DTO 리스트로 매핑할 Map
+        Map<Long, List<PositionResponseDTO>> posMap = new HashMap<>();
+        
+        //DB에서 벌크로 가져온 proiectPosition(posEntities)를 하나씩 처리
+        for (ProjectPosition pp : posEntities) {
+            //projectPosition이 속한 projectProfile의 PK추출
+            Long key = pp.getProjectProfile().getProjectProfilePk();
+            //해당 ProfilePk키가 없으면 List 새로 생성 / 키가 있으면 기존 리스트 반환
+            //-> profilePk에 해당하는 리스트가 있든 없든 항상 append할 수 있는 List<PositionResponseDTO>를 얻을 수 있음
+            posMap.computeIfAbsent(key, k -> new ArrayList<>())
+                    //반환된 리스트에 새로운 positionResponseDTO 추가
+                    //엔티티에서 필요한 값만 꺼내서 dto로 변환
+                    .add(new PositionResponseDTO(
+                            pp.getPosition().getPositionPk(),
+                            pp.getPosition().getPositionName()
+                    ));
+        }
+        /** 기술스택 그룹핑 */
+        Map<Long, List<TechStackResponseDTO>> techMap = new HashMap<>();
+        for (ProjectTechStack pts : techEntities) {
+            Long key = pts.getProjectProfile().getProjectProfilePk();
+            techMap.computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(new TechStackResponseDTO(
+                            pts.getTechStack().getTechPk(),
+                            pts.getTechStack().getTechName()
+                    ));
+        }
+
         return projectPage.map(project -> {
             ProjectProfile profile = project.getProjectProfile();
-
-            List<PositionResponseDTO> positions = projectPositionRepository
-                    .findPositionsByProfilePk(profile.getProjectProfilePk());
-
-            List<TechStackResponseDTO> techStacks = projectTechStackRepository
-                    .findTechStacksByProfilePk(profile.getProjectProfilePk());
-
-            Long projectPk = project.getProjectPk();
-            Long projectProfilePk = profile.getProjectProfilePk();
-            Long userPk = project.getUser().getUserPk();
-            String nickname = project.getUser().getNickname();
-            String projectProfileTitle = profile.getProjectProfileTitle();
-            String projectStatus = project.getProjectStatus().name();
-            LocalDate recruitmentStartDate = profile.getRecruitmentStartDate();
-            LocalDate recruitmentEndDate = profile.getRecruitmentEndDate();
-            int expectedMembers = profile.getExpectedMembers();
+            Long profilePk = profile.getProjectProfilePk();
 
             return ProjectListResponseDTO.builder()
-                    .projectPk(projectPk)
-                    .projectProfilePk(projectProfilePk)
-                    .userPk(userPk)
-                    .nickname(nickname)
-                    .projectProfileTitle(projectProfileTitle)
-                    .projectStatus(projectStatus)
-                    .positions(positions)
-                    .techStacks(techStacks)
-                    .recruitmentStartDate(recruitmentStartDate)
-                    .recruitmentEndDate(recruitmentEndDate)
-                    .expectedMembers(expectedMembers)
+                    .projectPk(project.getProjectPk())
+                    .projectProfilePk(profilePk)
+                    .userPk(project.getUser().getUserPk())
+                    .nickname(project.getUser().getNickname())
+                    .projectProfileTitle(profile.getProjectProfileTitle())
+                    .projectStatus(project.getProjectStatus().name())
+                    .positions(posMap.getOrDefault(profilePk, List.of()))       // 그룹핑한 값 주입
+                    .techStacks(techMap.getOrDefault(profilePk, List.of()))     // 그룹핑한 값 주입
+                    .recruitmentStartDate(profile.getRecruitmentStartDate())
+                    .recruitmentEndDate(profile.getRecruitmentEndDate())
+                    .expectedMembers(profile.getExpectedMembers())
                     .build();
         });
+
     }
 
     /*
@@ -361,6 +403,8 @@ public class ProjectServiceImpl implements ProjectService{
                 .recruitmentEndDate(profile.getRecruitmentEndDate())
                 .expectedMembers(profile.getExpectedMembers())
                 .progressType(profile.getProgressType())
+//                .techPks(techPks)
+//                .positionPks(positionPks)
                 .techStacks(techStacks)
                 .positions(positions)
                 .images(images)
@@ -401,7 +445,7 @@ public class ProjectServiceImpl implements ProjectService{
         * 이미지 수정 로직
         * */
         //현재 DB에 저장된 이미지를 List형태로 existingImages에 저장
-        List<S3Image> existingImages = s3Repository.findByProjectProfile(projectProfile);
+        List<S3Image> existingImages = s3Repository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
 
         //DTO에서 넘어온 유지할 이미지 PK 목록을 SET형식으로 저장
         Set<Long> remainImageIds = dto.getImages() == null ?
@@ -465,7 +509,7 @@ public class ProjectServiceImpl implements ProjectService{
             currentPositionPks = dto.getPositionPks();
         }
 
-        // 4) 응답: 불필요한 재조회 제거
+        // 응답: 불필요한 재조회 제거
         List<ProjectTechStack> techStacks =
                 techChanged ? projectTechStackRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk())
                         : currentTechPks.stream()
@@ -514,7 +558,15 @@ public class ProjectServiceImpl implements ProjectService{
     @Transactional
     public void toInProgress(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
+
+        //프로젝트 상태 진행중으로 변경
         project.progress();
+
+        //대기중인 신청서 모두 조회 -> 모든 신청서를 거절
+        List<Apply> pendingApplies = applyRepository.findPendingAppliesByProjectPk(projectPk);
+        for (Apply apply : pendingApplies) {
+            apply.reject();
+        }
     }
 
     //진행중 -> 충원

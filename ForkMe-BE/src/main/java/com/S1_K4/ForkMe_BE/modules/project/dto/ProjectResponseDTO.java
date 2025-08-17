@@ -4,8 +4,6 @@ import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectTechStack;
-import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
-import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -13,7 +11,6 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author : 선순주

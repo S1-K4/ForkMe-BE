@@ -22,31 +22,60 @@ import java.util.Optional;
  */
 @Repository
 public interface ApplyRepository extends JpaRepository<Apply,Long> {
+    //해당 projectPk를 가지는 신청서 삭제
     void deleteByProject_ProjectPk(Long projectPk);
 
-    //유저&프로젝트 기준 신청서 조회
+    //해당 유저가 해당 프로젝트에 대해 상태가 PENDING 또는 APPROVED인 신청서가 있다면 조회
     @Query("""
     SELECT a FROM Apply a
     WHERE a.user.userPk = :userPk
       AND a.project.projectPk = :projectPk
       AND a.status IN (:statuses)
-""")
+    """)
     List<Apply> findBlockingApplies(
             @Param("userPk") Long userPk,
             @Param("projectPk") Long projectPk,
             @Param("statuses") List<ApplyStatus> statuses
     );
 
-    //applyPk와 projectPk를 조건으로 프로젝트 신청서 조회
+    //특정 프로젝트pk를 가진 신청서중 PENDING(대기)상태인 신청서 모두 조회
+    @Query("""
+        select a 
+        from Apply a
+        where a.project.projectPk = :projectPk
+          and a.status = com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus.PENDING
+    """)
+    List<Apply> findPendingAppliesByProjectPk(@Param("projectPk") Long projectPk);
+
+
+    //특정 프로젝트(projectPk)안에서 특정 신청서(applyPk)조회
     Optional<Apply> findByApplyPkAndProject_ProjectPk(Long applyPk, Long projectPk);
 
-    //projectPk를 조건으로 모든 신청서 조회
+    //프로젝트의 신청서 단건 상세조회(JOIN FETCH: User/Project/ProjectProfile/Position/ApplyTechStacks/TechStack  한번에 조회)
+    @Query("""
+        select distinct a
+        from Apply a
+        join fetch a.user u
+        join fetch a.project p
+        left join fetch a.projectPosition pp
+        left join fetch pp.position pos
+        left join fetch a.applyTechStacks ats
+        left join fetch ats.techStack ts
+        left join fetch a.project.projectProfile pf
+        where a.applyPk = :applyPk
+          and p.projectPk = :projectPk
+    """)
+        Optional<Apply> findDetailById(@Param("applyPk") Long applyPk,
+                                       @Param("projectPk") Long projectPk);
+
+    //projectPk를 조건으로 모든 신청서 조회 단, status가 'CANCEL'인 (취소된 신청서) 신청서는 제외
     @Query("""
         SELECT a
         FROM Apply a
         JOIN FETCH a.user u
         JOIN FETCH a.project p
         WHERE p.projectPk = :projectPk
+        AND a.status <> 'CANCEL'
         ORDER BY a.createdAt DESC
     """)
     List<Apply> findAllByProjectPk(@Param("projectPk") Long projectPk);
