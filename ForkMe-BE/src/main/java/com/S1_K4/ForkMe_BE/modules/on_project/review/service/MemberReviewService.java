@@ -16,5 +16,9 @@ public interface MemberReviewService {
 
     MemberReviewResponse createReview(Long projectPk, Long writerUserPk, MemberReviewRequest dto);
     List<MemberReviewResponse> getMyWrittenReviews(Long userPk, Long projectPk); //내가 작성한 리뷰
+    List<MemberReviewResponse> getMyWrittenAllReviews(Long userPk);
     List<MemberReviewResponse> getMyReceivedReviews(Long userPk, Long projectPk); //내가 받은 리뷰
+    List<MemberReviewResponse> getMyReceivedAllReviews(Long userPk);
+
+
 }
