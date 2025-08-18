@@ -10,6 +10,7 @@ import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +28,11 @@ public class LikeServiceImpl implements LikeService{
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final LikeRepository likeRepository;
+    private final CacheManager cacheManager;
 
     /**
     * 특정 profile의 좋아요 유무 확인하는 메서드
     * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional(readOnly = true)
     public boolean hasUserLikeProfile(Long userPk, Long profilePk){
@@ -41,7 +42,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 해당 프로젝트의 좋아요 수 카운트하는 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional(readOnly = true)
     public Long countLike(Long profilePk){
@@ -54,7 +54,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 특정 profile에 좋아요 추가하는 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional
     public LikeDTO createLike(Long userPk, Long profilePk){
@@ -74,6 +73,10 @@ public class LikeServiceImpl implements LikeService{
                 .build();
 
         likeRepository.save(like);
+
+        // ✅ 캐시 무효화
+        evictDetailAndList(profilePk);
+
         return LikeDTO.builder()
                 .isLiked(true)
                 .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk()))
@@ -83,7 +86,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 좋아요 삭제 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional
     public LikeDTO deleteLike(Long userPk, Long profilePk){
@@ -95,10 +97,19 @@ public class LikeServiceImpl implements LikeService{
 
         likeRepository.delete(like);
 
+        Long projectPk = like.getProjectProfile().getProject().getProjectPk();
+        // ✅ 캐시 무효화
+        evictDetailAndList(projectPk);
+
         return LikeDTO.builder()
                 .isLiked(false)
                 .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profilePk))
                 .build();
+    }
+
+    private void evictDetailAndList(Long projectPk) {
+        cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC).evict(projectPk);
+        cacheManager.getCache(CacheNames.PROJECT_LIST).clear(); // 목록 전체 무효화(간단/안전)
     }
 
 }

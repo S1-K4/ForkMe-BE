@@ -82,15 +82,13 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 상세 조회
      * */
-
     @Override
-    @Cacheable(
-            cacheNames = CacheNames.PROJECT_DETAIL,             //캐시이름
-            key = "#projectPK",                                 //키
-            sync = true                                         //스탬피드 방지
-    )
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.PROJECT_DETAIL_STATIC, key = "#p0", sync = true)
     public ProjectDetailResponseDTO getProjectDetail(Long projectPK){
+
+//        //정적 파트(캐시됨)
+//        StaticPart staticPart = getStaticPart(projectPK);
 
         Optional<Project> projectOpt = projectRepository.findWithProfileAndUserByProjectPk(projectPK);
         Project project = projectOpt.orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
@@ -105,7 +103,7 @@ public class ProjectServiceImpl implements ProjectService{
 
         //좋아요 수 조회
         Long likeCount = likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk());
-        
+
         //포지션, 기술스택 조회
         List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profile.getProjectProfilePk());
         List<TechStackResponseDTO> teckStacks = projectTechStackRepository.findTechStacksByProfilePk(profile.getProjectProfilePk());
@@ -134,7 +132,70 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-    /*
+    /**
+     * 정적 파트 : 캐시
+     * */
+    @Cacheable(cacheNames = CacheNames.PROJECT_DETAIL_STATIC, key = "#projectPk", sync = true)
+    @Transactional(readOnly = true)
+    public StaticPart getStaticPart(Long projectPk) {
+
+        //프로젝트 조회
+        Project project = projectRepository.findWithProfileAndUserByProjectPk(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        ProjectProfile profile = project.getProjectProfile();
+        Long profilePk = profile.getProjectProfilePk();
+
+        //해당 프로젝트의 포지션 조회
+        List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profilePk);
+        
+        //해당 프로젝트의 기술스택 조회
+        List<TechStackResponseDTO> techStacks = projectTechStackRepository.findTechStacksByProfilePk(profilePk);
+        
+
+        List<ProjectImageDTO> images = s3Repository.findAllImagesByProfilePk(profilePk);
+
+        return new StaticPart(
+                profilePk,
+                project.getUser().getUserPk(),
+                project.getUser().getNickname(),
+                profile.getProjectProfileTitle(),
+                profile.getProjectProfileContent(),
+                project.getProjectStatus().getDescription(),
+                profile.getProgressType().getDescription(),
+                positions,
+                techStacks,
+                profile.getRecruitmentStartDate(),
+                profile.getRecruitmentEndDate(),
+                project.getProjectStartDate(),
+                project.getProjectEndDate(),
+                profile.getExpectedMembers(),
+                images
+        );
+    }
+
+    // 응답 조립 편의를 위한 record
+    public record StaticPart(
+            Long projectProfilePk,
+            Long userPk,
+            String nickname,
+            String title,
+            String content,
+            String projectStatus,
+            String progressType,
+            List<PositionResponseDTO> positions,
+            List<TechStackResponseDTO> techStacks,
+            LocalDate recruitmentStartDate,
+            LocalDate recruitmentEndDate,
+            LocalDate projectStart,
+            LocalDate projectEnd,
+            int expectedMembers,
+            List<ProjectImageDTO> images
+    ){}
+
+
+
+    /**
      * 프로젝트 목록 조회
      * */
     @Override
@@ -217,10 +278,9 @@ public class ProjectServiceImpl implements ProjectService{
 
 
         return PageResponse.from(dtoPage);
-
     }
 
-    /*
+    /**
      * 프로젝트 생성폼
      * */
     @Transactional(readOnly = true)
@@ -260,7 +320,7 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-    /*
+    /**
      * 프로젝트 생성(생성 순서 : 프로젝트 -> 프로젝트 프로필 -> 이미지 ->프로젝트 모집인원 -> 프로젝트 기술스택 -> 프로젝트 포지션 )
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
@@ -318,12 +378,11 @@ public class ProjectServiceImpl implements ProjectService{
     }
 
 
-    /*
+    /**
      * 프로젝트 삭제
      * */
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -369,13 +428,11 @@ public class ProjectServiceImpl implements ProjectService{
         s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
 
 
-
-
         applyRepository.deleteByProject_ProjectPk(projectPk);
     }
 
 
-    /*
+    /**
      * 프로젝트 수정폼 불러오는 메서드
      * */
     @Override
@@ -428,12 +485,11 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-    /*
+    /**
      * 프로젝트 수정
      */
     @Override           //프로젝트 수정 시 캐시 무효회
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -559,7 +615,6 @@ public class ProjectServiceImpl implements ProjectService{
     //기획 -> 모집 상태 변경
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -581,7 +636,6 @@ public class ProjectServiceImpl implements ProjectService{
     //모집 -> 진행중 상태 변경
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -601,7 +655,6 @@ public class ProjectServiceImpl implements ProjectService{
     //진행중 -> 충원
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -613,7 +666,6 @@ public class ProjectServiceImpl implements ProjectService{
     //진행중 -> 종료
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -627,7 +679,6 @@ public class ProjectServiceImpl implements ProjectService{
      */
     @Override
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional

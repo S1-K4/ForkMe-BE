@@ -1,9 +1,11 @@
 package com.S1_K4.ForkMe_BE.modules.comment.repository;
 
+import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,6 +22,17 @@ import java.util.List;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     //특정 프로젝트 프로필에 달린 댓글 전부 조회
     List<Comment> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
+
+    @Query("""
+    SELECT c
+    FROM Comment c
+    JOIN FETCH c.user u
+    WHERE c.projectProfile.projectProfilePk = :profilePk
+      AND c.deletedYN = :yn
+    ORDER BY c.createdAt DESC
+""")
+    List<Comment> findByProjectProfilePkAndDeletedYNOrderByCreatedAtDesc(@Param("profilePk") Long profilePk,
+                                                                         @Param("yn") Yn yn);
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Comment c SET c.deletedYN='Y' WHERE c.projectProfile.projectProfilePk IN (:projectProfilePkList)")

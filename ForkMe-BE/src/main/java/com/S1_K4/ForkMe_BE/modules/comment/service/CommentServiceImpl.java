@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.comment.service;
 
+import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.CommentResponseDTO;
@@ -7,13 +8,18 @@ import com.S1_K4.ForkMe_BE.modules.comment.dto.CreateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.UpdateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -29,6 +35,7 @@ public class CommentServiceImpl implements CommentService{
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
+    private final CacheManager cacheManager;
 
     /**
      * 댓글 등록 메서드
@@ -66,6 +73,9 @@ public class CommentServiceImpl implements CommentService{
 
         Comment saved = commentRepository.save(comment);
 
+        //캐시 무효화
+        evictDetailAndList(profile.getProject().getProjectPk());
+
         return CommentResponseDTO.builder()
                 .comment(saved.getComment())
                 .commentPk(saved.getCommentPk())
@@ -88,6 +98,9 @@ public class CommentServiceImpl implements CommentService{
         }
 
         comment.updateComment(dto.getComment());
+
+        //캐시 무효화
+        evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
 
         return UpdateCommentDTO.builder()
                 .comment(comment.getComment())
@@ -112,6 +125,14 @@ public class CommentServiceImpl implements CommentService{
         }
 
         comment.markDeleted();
+
+        //캐시 무효화
+        evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+    }
+
+    private void evictDetailAndList(Long projectPk) {
+        cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC).evict(projectPk);
+        cacheManager.getCache(CacheNames.PROJECT_LIST).clear();
     }
 
 
