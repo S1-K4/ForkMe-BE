@@ -22,7 +22,7 @@ public interface ProjectService {
     ProjectDetailResponseDTO getProjectDetail(Long projectPk);
 
      //프로젝트 목록 조회
-    Page<ProjectListResponseDTO> getProjectList(Pageable pageable);
+    PageResponse<ProjectListResponseDTO> getProjectList(Pageable pageable);
 
 
     //프로젝트 생성폼

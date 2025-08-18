@@ -2,6 +2,8 @@ package com.S1_K4.ForkMe_BE.reference.position.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author : 선순주
@@ -10,7 +12,8 @@ import lombok.Getter;
  * @date : 2025-08-05
  * @description : Position 응답 DTO
  */
-@Getter
+@Getter @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class PositionResponseDTO {
     private Long positionPk;

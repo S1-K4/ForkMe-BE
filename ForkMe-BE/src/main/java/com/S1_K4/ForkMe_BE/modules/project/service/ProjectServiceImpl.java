@@ -143,10 +143,10 @@ public class ProjectServiceImpl implements ProjectService{
             key = "T(java.util.Objects)" +
                     ".hash(#pageable.pageNumber, " +                    //현재 페이지 번호
                     "#pageable.pageSize, #pageable.sort.toString())",   //페이지 크기, 정렬 기준
-            unless = "#result == null || !#result.hasContent()"         //결과가 NULL이거나 비어있으면 캐싱x
+            unless = "#result == null || #result.content == null || #result.content.isEmpty()"      //결과가 NULL이거나 비어있으면 캐싱x
     )
     @Transactional(readOnly = true)
-    public Page<ProjectListResponseDTO> getProjectList(Pageable pageable) {
+    public PageResponse<ProjectListResponseDTO> getProjectList(Pageable pageable) {
         Page<Project> projectPage = projectRepository.findProjectsWithUserAndProfile(pageable);
 
         /**현재 페이지에 포함된 profilePk들만 추출 -> 연관된 컬렉션(포지션/기술스택)을 벌크로 가져오기 위함*/
@@ -154,22 +154,11 @@ public class ProjectServiceImpl implements ProjectService{
                 .map(p -> p.getProjectProfile().getProjectProfilePk()) //각 Project가 가진 ProjectProfile의 PK만 추출
                 .toList();  //리스트로 변환
 
-        //만약 페이지가 비어있다면(데이터가 없다면) 빈리스트 반환 -> IN() 쿼리때문에 SQL 에러가 날 수 있으므로 SQL에러방지용
-        if (profilePks.isEmpty()) {
-            return projectPage.map(p -> ProjectListResponseDTO.builder()
-                .projectPk(p.getProjectPk())
-                .projectProfilePk(p.getProjectProfile().getProjectProfilePk())
-                .userPk(p.getUser().getUserPk())
-                .nickname(p.getUser().getNickname())
-                .projectProfileTitle(p.getProjectProfile().getProjectProfileTitle())
-                .projectStatus(p.getProjectStatus().name())
-                .positions(List.of())
-                .techStacks(List.of())
-                .recruitmentStartDate(p.getProjectProfile().getRecruitmentStartDate())
-                .recruitmentEndDate(p.getProjectProfile().getRecruitmentEndDate())
-                .expectedMembers(p.getProjectProfile().getExpectedMembers())
-                .build());
-            }
+        //만약 페이지가 비어있다면(데이터가 없다면) 빈 pageResopnse반환
+        if (projectPage.isEmpty()) {
+            Page<ProjectListResponseDTO> empty = projectPage.map(p -> ProjectListResponseDTO.builder().build());
+            return PageResponse.from(empty);
+        }
 
         //포지션, 기술스택 벌크 조회(n+1방지)
         List<ProjectPosition> posEntities =
@@ -206,7 +195,8 @@ public class ProjectServiceImpl implements ProjectService{
                     ));
         }
 
-        return projectPage.map(project -> {
+        //페이지의 각 project를 dto로 변환
+        Page<ProjectListResponseDTO> dtoPage = projectPage.map(project -> {
             ProjectProfile profile = project.getProjectProfile();
             Long profilePk = profile.getProjectProfilePk();
 
@@ -224,6 +214,9 @@ public class ProjectServiceImpl implements ProjectService{
                     .expectedMembers(profile.getExpectedMembers())
                     .build();
         });
+
+
+        return PageResponse.from(dtoPage);
 
     }
 
