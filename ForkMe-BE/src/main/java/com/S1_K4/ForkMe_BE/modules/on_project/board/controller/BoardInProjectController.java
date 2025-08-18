@@ -97,7 +97,13 @@ public class BoardInProjectController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
-        Long loggedInUserPk = userDetails.getUserPk();  // 로그인한 유저의 PK
+        Long loggedInUserPk = userDetails.getUserPk();  // 1. 로그인한 유저의 PK
+
+        // 이미지 갯수 제한 (현재 : 5개)
+        if (images != null && images.size() > 5) {
+            ApiResponse<?> errorResponse = ApiResponse.error(400, "이미지는 최대 5장까지만 업로드할 수 있습니다.");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
 
         // 2. 게시글 작성자 userPk 가져오기 (서비스에서)
         Long authorUserPk = boardInProjectService.getAuthorUserPk(boardInProjectPk);
@@ -109,7 +115,7 @@ public class BoardInProjectController {
 
 
         boardInProjectService.updateBoard(projectPk, boardInProjectPk, request, images, files, loggedInUserPk);
-        return ResponseEntity.ok("게시글이 수정되었습니다.");
+        return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 수정 완료"));
     }
 
     @DeleteMapping("/{boardInProjectPk}")
