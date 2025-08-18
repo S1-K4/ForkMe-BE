@@ -10,6 +10,9 @@ import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -74,8 +77,12 @@ public class BoardInProjectController {
 
     //전체 조회
     @GetMapping
-    public ResponseEntity<List<InBoardSimpleResponse>> getBoardsInProject(@PathVariable Long projectPk) {
-        List<InBoardSimpleResponse> responses = boardInProjectService.getAllBoardsInProject(projectPk);
+    public ResponseEntity<Page<InBoardSimpleResponse>> getBoardsInProject(@PathVariable Long projectPk,
+                                                                          @RequestParam(defaultValue = "0") int page,
+                                                                          @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InBoardSimpleResponse> responses = boardInProjectService.getAllBoardsInProject(projectPk, pageable);
         return ResponseEntity.ok(responses);
     }
 

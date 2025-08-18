@@ -5,6 +5,8 @@ import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.InBoardDetailResponse;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.InBoardSimpleResponse;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.InBoardUpdateRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,19 +20,17 @@ import java.util.List;
  */
 public interface BoardInProjectService {
 
+    // 게시글 생성
     BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files);
-    //게시글 불러오기
-    List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk);
-    //상세보기
+    //게시글 전체 조회
+    Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable);
+    //게시글 상세조회
     InBoardDetailResponse getBoardDetail(Long boardInProjectPk);
-
     // 게시글 수정
     BoardInProject updateBoard(Long projectPk, Long boardInProjectPk, InBoardUpdateRequest request,
                                List<MultipartFile> newImages, List<MultipartFile> newFiles, Long userPk);
-
     // 게시글 삭제
     void deleteBoard(Long projectPk, Long boardInProjectPk, Long userPk);
-
 
     // 게시글 파일삭제
     void removeFileFromBoard(Long boardPk, String key);

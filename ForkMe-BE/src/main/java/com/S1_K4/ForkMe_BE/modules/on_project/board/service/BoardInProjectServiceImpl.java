@@ -21,6 +21,8 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,19 +100,17 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         return savedBoard;
     }
 
-
+    //image 마크다운 제거
     private String removeImageMarkdown(String markdown) {
         if (markdown == null) return null;
         return markdown.replaceAll("!\\[[^\\]]*\\]\\([^\\)]*\\)", "");
     }
 
 
-    public List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk) {
-        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N);
-
-        return boards.stream()
-                .map(InBoardSimpleResponse::from)
-                .collect(Collectors.toList());
+    // 게시글 전체조회(페이징)
+    public Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable) {
+        Page<BoardInProject> boardsPage = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N, pageable);
+        return boardsPage.map(InBoardSimpleResponse::from);
     }
 
 
