@@ -4,6 +4,8 @@ import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -74,9 +76,18 @@ public class ProjectController {
     @Operation(summary = "프로젝트 생성")
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<String>> createProject(
-            @RequestPart("dto") ProjectCreateRequestDTO dto,
+            @RequestPart("dto") String dtoString,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @AuthenticationPrincipal CustomUserDetails userDetails){
+            @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
+
+        // 1. dtoString이 잘 들어오는지 로그 찍기
+        System.out.println("dtoString = " + dtoString);
+
+        // 2. ObjectMapper로 수동 파싱
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.findAndRegisterModules(); // LocalDate, Enum 등 자동 등록
+        ProjectCreateRequestDTO dto = mapper.readValue(dtoString, ProjectCreateRequestDTO.class);
+
         Long userPk = userDetails.getUserPk();
         Long projectPk = projectService.createdProject(dto, images, userPk);
         return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));
