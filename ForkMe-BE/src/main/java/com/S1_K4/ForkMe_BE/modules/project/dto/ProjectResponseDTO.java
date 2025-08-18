@@ -8,6 +8,7 @@ import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
  */
 @Getter
 @Builder
+@Jacksonized
 @Schema(description = "프로젝트 Response DTO")
 public class ProjectResponseDTO {
     @Schema(description = "프로젝트 PK")

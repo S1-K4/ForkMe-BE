@@ -3,6 +3,7 @@ package com.S1_K4.ForkMe_BE.modules.project.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * @author : 선순주
