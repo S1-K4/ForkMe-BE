@@ -1,11 +1,13 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.controller;
 
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
+import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.dto.*;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.service.BoardInProjectService;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
+import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,7 +43,7 @@ public class BoardInProjectController {
     // 게시글 생성 (첨부파일 포함 가능)
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<InBoardDetailResponse> createBoard(
+    public ResponseEntity<ApiResponse<?>> createBoard(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long projectPk,
             @RequestPart("request")InBoardCreateRequest request,
@@ -51,38 +53,22 @@ public class BoardInProjectController {
         System.out.println("board controller 작동");
 
         Long userPk = userDetails.getUserPk();
+        if (images != null && images.size() > 5) {
+            ApiResponse<?> errorResponse = ApiResponse.error(400, "이미지는 최대 5장까지만 업로드할 수 있습니다.");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
 
+        BoardInProject savedBoard = boardInProjectService.createBoard(projectPk, userPk, request,images, files);
+        List<String> imageUrls=  savedBoard.getImages().stream()
+                .map(S3Image::getUrl)
+                .collect(Collectors.toList());
 
-        // S3에 이미지 업로드
-        List<String> uploadedImageUrls = (images != null && !images.isEmpty())
-                ? s3Service.uploadFileIn(images, "images").stream()
-                .map(FileInfoResponse::getFileUrl)
-                .collect(Collectors.toList())
-                : List.of();
+        List<FileInfoResponse> fileInfos = savedBoard.getFiles().stream()
+                .map(file -> new FileInfoResponse(file.getUrl(), file.getOriginalFileName()))
+                .collect(Collectors.toList());
 
-        //S3에 파일업로드
-        List<FileInfoResponse> uploadedFileInfos = (files != null && !files.isEmpty())
-                ? s3Service.uploadFileIn(files, "downloads/" + projectPk)
-                : List.of();
-
-        // 기존 + 새로 업로드한 이미지 URL 합치기
-        List<String> allImageUrls = new ArrayList<>();
-        if (request.getImageUrls() != null) allImageUrls.addAll(request.getImageUrls());
-        allImageUrls.addAll(uploadedImageUrls);
-
-        // 기존 + 새로 업로드한 파일 URL 합치기
-        List<FileInfoResponse> allFileInfos = new ArrayList<>();
-        if (request.getFileInfos() != null) allFileInfos.addAll(request.getFileInfos());
-        allFileInfos.addAll(uploadedFileInfos);
-
-        // DTO에 세팅
-        request.setImageUrls(allImageUrls);
-        request.setFileInfos(allFileInfos);
-
-        BoardInProject savedBoard = boardInProjectService.createBoard(projectPk, userPk, request);
-
-        InBoardDetailResponse response = InBoardDetailResponse.from(savedBoard, allImageUrls, allFileInfos);
-        return ResponseEntity.ok(response);
+        InBoardDetailResponse response = InBoardDetailResponse.from(savedBoard, imageUrls, fileInfos);
+        return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 생성 완료"));
     }
 
 

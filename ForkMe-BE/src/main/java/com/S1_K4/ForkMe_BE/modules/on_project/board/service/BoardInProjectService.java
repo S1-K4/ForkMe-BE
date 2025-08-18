@@ -18,7 +18,7 @@ import java.util.List;
  */
 public interface BoardInProjectService {
 
-    BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request);
+    BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files);
     //게시글 불러오기
     List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk);
     //상세보기

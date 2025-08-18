@@ -55,12 +55,20 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
     // 게시판 생성
     @Transactional
-    public BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request) {
+    public BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files) {
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다. userPk=" + userPk));
 
         Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다. projectPk=" + projectPk));
+
+        List<FileInfoResponse> uploadedImageInfos = (images != null && !images.isEmpty())
+                ? s3Service.uploadFileIn(images, "images")
+                : List.of();
+
+        List<FileInfoResponse> uploadedFileInfos = (files != null && !files.isEmpty())
+                ? s3Service.uploadFileIn(files, "downloads/" + projectPk)
+                : List.of();
 
         // ❗ projectProfile이 null인지 먼저 확인
         ProjectProfile projectProfile = project.getProjectProfile();
@@ -71,21 +79,17 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         BoardInProject board = BoardInProject.create(request.getTitle(), pureContent, project, user);
         BoardInProject savedBoard = boardInProjectRepository.save(board);
 
-        // 이미지 URL 저장 (BoardInProject 관련 이미지)
-        if (request.getImageUrls() != null) {
-            for (String url : request.getImageUrls()) {
-                S3Image image = projectProfile != null
-                        ? S3Image.create(url, projectProfile, board)
-                        : S3Image.create(url, null, board);
+// 업로드한 이미지 정보로 이미지 저장
+        if (uploadedImageInfos != null && !uploadedImageInfos.isEmpty()) {
+            for (FileInfoResponse imageInfo : uploadedImageInfos) {
+                S3Image image = S3Image.create(imageInfo.getFileUrl(), projectProfile, board);
                 boardImageRepository.save(image);
             }
-        } else {
-            log.info("이미지 URL 리스트가 비어있음");
         }
 
-        // 파일 URL 저장
-        if (request.getFileInfos() != null) {
-            for (FileInfoResponse fileInfo : request.getFileInfos()) {
+// 업로드한 파일 정보로 파일 저장
+        if (uploadedFileInfos != null && !uploadedFileInfos.isEmpty()) {
+            for (FileInfoResponse fileInfo : uploadedFileInfos) {
                 S3File boardFile = S3File.create(fileInfo.getFileUrl(), fileInfo.getOriginalFileName(), savedBoard);
                 boardFileRepository.save(boardFile);
             }
@@ -271,7 +275,6 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     }
 
     private String extractS3Key(String url) {
-        // 예: https://bucket.s3.amazonaws.com/images/foo.jpg → images/foo.jpg
         int index = url.indexOf(".amazonaws.com/");
         if (index != -1) {
             return url.substring(index + ".amazonaws.com/".length());
