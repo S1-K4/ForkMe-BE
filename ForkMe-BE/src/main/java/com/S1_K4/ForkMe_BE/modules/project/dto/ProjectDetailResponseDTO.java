@@ -5,9 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
@@ -24,6 +22,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @Jacksonized
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Schema(description = "프로젝트 상세 조회 DTO")
 public class ProjectDetailResponseDTO {
     @Schema(description = "프로젝트 PK")
@@ -81,6 +80,9 @@ public class ProjectDetailResponseDTO {
     private List<ProjectImageDTO> images;
 
     @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     public static class CommentDTO {
         private Long commentPk;
         private String comment;
