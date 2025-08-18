@@ -19,6 +19,7 @@ import java.util.List;
  */
 @Repository
 public interface ApplyTechStackRepository extends JpaRepository<ApplyTechStack, Long> {
+    //해당 projectPk를 가지는 신청서 기술스택 삭제
     void deleteByApply_Project_ProjectPk(Long projectPk);
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.apply.dto.ApplyTechStackDto(ats.apply.applyPk, ats.techStack.techPk, ats.techStack.techName) " +

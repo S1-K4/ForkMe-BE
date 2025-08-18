@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.dto;
 
-import lombok.Getter;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * @author : 선순주
@@ -9,6 +9,6 @@ import lombok.Getter;
  * @date : 2025-08-13
  * @description :ProjectTitleUpdateDTO
  */
-
+@Schema(description = "프로젝트 명 변경 DTO")
 public record ProjectTitleUpdateDTO (String projectTitle){
 }

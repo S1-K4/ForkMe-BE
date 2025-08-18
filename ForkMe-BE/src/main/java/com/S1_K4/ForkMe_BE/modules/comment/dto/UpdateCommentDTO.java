@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.comment.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,5 +15,6 @@ import lombok.Getter;
 @Getter
 @Builder
 public class UpdateCommentDTO {
+    @Schema(description = "댓글 내용", example = "좋은 주제네요!")
     private String comment;
 }

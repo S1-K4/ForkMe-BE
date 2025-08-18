@@ -24,44 +24,63 @@ import java.util.List;
  */
 
 @RequiredArgsConstructor
-@RequestMapping("/api/projects/{projectPk}/member_review")
+@RequestMapping("/api/member_review")
 @RestController
 public class MemberReviewController {
 
     private final MemberReviewService memberReviewService;
     // 리뷰 작성
-    @PostMapping("/create")
+    @PostMapping("/projects/{projectPk}/create")
     public ResponseEntity<MemberReviewResponse> createReview(
             @PathVariable Long projectPk,
-           // @RequestParam Long writerUserPk,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody MemberReviewRequest dto) {
 
-        Long writerUserPk = userDetails.getUser().getUserPk();
+        Long writerUserPk = userDetails.getUserPk();
         MemberReviewResponse responseDTO = memberReviewService.createReview(projectPk, writerUserPk, dto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
-    @GetMapping("/written")
+    // 특정 프로젝트 내가작성한 리뷰 조회
+    @GetMapping("/written/projects/{projectPk}")
     public ResponseEntity<?> getMyWrittenReviews(
             @PathVariable Long projectPk,
-            //@AuthenticationPrincipal CustomUserDetails userDetails
-            @RequestParam Long userPk
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<MemberReviewResponse> reviews = memberReviewService.getMyWrittenReviews(userPk, projectPk);
-        //List<MemberReviewResponse> reviews = memberReviewService.getMyWrittenReviews(userDetails.getUserPk(), projectPk);
+        Long writerUserPk = userDetails.getUserPk();
+        List<MemberReviewResponse> reviews = memberReviewService.getMyWrittenReviews(writerUserPk, projectPk);
         return ResponseEntity.ok(reviews);
     }
 
-    @GetMapping("/received")
+    // 내가 작성한 모든 리뷰 조회
+    @GetMapping("/written")
+    public ResponseEntity<?> getMyWrittenAllReviews(@AuthenticationPrincipal CustomUserDetails userDetails){
+        Long writerUserPk= userDetails.getUserPk();
+
+        List<MemberReviewResponse> reviews = memberReviewService.getMyWrittenAllReviews(writerUserPk);
+
+        return  ResponseEntity.ok(reviews);
+    }
+
+    // 특정 프로젝트에서 내가 받은 리뷰
+    @GetMapping("/received/projects/{projectPk}")
     public ResponseEntity<?> getMyReceivedReviews(
             @PathVariable Long projectPk,
-            //@AuthenticationPrincipal CustomUserDetails userDetails
-            @RequestParam Long userPk
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        List<MemberReviewResponse> reviews = memberReviewService.getMyReceivedReviews(userPk, projectPk);
-       // List<MemberReviewResponse> reviews = memberReviewService.getMyReceivedReviews(userDetails.getUserPk(), projectPk);
+        Long receiveUserPk = userDetails.getUserPk();
+        List<MemberReviewResponse> reviews = memberReviewService.getMyReceivedReviews(receiveUserPk, projectPk);
+        return ResponseEntity.ok(reviews);
+    }
+
+    // 내가 받은 모든 리뷰
+    @GetMapping("/received")
+    public ResponseEntity<?> getMyReceivedAllReviews(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long receiveUserPk = userDetails.getUserPk();
+        List<MemberReviewResponse> reviews = memberReviewService.getMyReceivedAllReviews(receiveUserPk);
         return ResponseEntity.ok(reviews);
     }
 

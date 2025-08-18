@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author : 김남이
@@ -218,6 +219,45 @@ public class ChattingServiceImpl implements ChattingService{
         redisPublisher.publishParticipantList(chattingRoom.getChattingRoomPk(), participants); //
     }
 
+
+    /** 프로젝트에 멤버 추가 시 새로운 멤버와 기존 멤버간 개인 채팅방 모두 생성 **/
+    @Override
+    @Transactional
+    public void createAllPrivateRoomsForNewMember(Project project, User newMember, LocalDateTime now) {
+        ChattingRoom teamChattingRoom = getChattingRoom(project.getProjectPk(), RoomType.T);
+        List<ChattingParticipant> currentParticipants =
+                chattingParticipantRepository.findByChattingRoomPk(teamChattingRoom);
+
+        for (ChattingParticipant participant : currentParticipants) {
+            User existingUser = participant.getUserPk();
+
+            if (existingUser.getUserPk().equals(newMember.getUserPk())) continue;
+
+            Optional<ChattingRoom> existingRoomOpt =
+                    chattingRoomRepository.findByProjectPkAndRoomTypeAndParticipants(
+                            project.getProjectPk(),
+                            RoomType.P,
+                            existingUser.getUserPk(),
+                            newMember.getUserPk()
+                    );
+
+            if (existingRoomOpt.isPresent()) {
+                ChattingRoom existingRoom = existingRoomOpt.get();
+                addChattingParticipant(existingRoom, existingUser.getUserPk(), now); // 내부에서 중복 무시
+                addChattingParticipant(existingRoom, newMember.getUserPk(), now);
+                continue;
+            }
+
+            ChattingRoom privateRoom = createPrivateChattingRoom(
+                    project.getProjectPk(), RoomType.P,
+                    existingUser.getUserPk(), newMember.getUserPk(), now
+            );
+            addChattingParticipant(privateRoom, existingUser.getUserPk(), now);
+            addChattingParticipant(privateRoom, newMember.getUserPk(), now);
+        }
+    }
+
+
     /** 멤버를 삭제해야할 채팅방 조회 및 삭제 메서드 호출 **/
     // CHANGE: "프로젝트 내 모든 채팅방(T/P)에서 해당 유저 제거" 메서드 추가
     @Transactional
@@ -367,11 +407,11 @@ public class ChattingServiceImpl implements ChattingService{
                 .orElseThrow(() -> new IllegalStateException("프로젝트 리더만 삭제할 수 있습니다."));
 
         // 해당 프로젝트의 모든 채팅방 조회
-        List<ChattingRoom> rooms = chattingRoomRepository.findByProjectPk(project);
+        List<ChattingRoom> chattingRooms = chattingRoomRepository.findByProjectPk(project);
 
-        for (ChattingRoom room : rooms) {
-            room.markAsDeleted(); // [추가] 엔티티 메서드 활용
-            chattingRoomRepository.save(room);
+        for (ChattingRoom chattingRoom : chattingRooms) {
+            chattingRoom.markAsDeleted(); // [추가] 엔티티 메서드 활용
+            chattingRoomRepository.save(chattingRoom);
         }
     }
 

@@ -24,24 +24,28 @@ import java.util.Optional;
  */
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
-
-
+    //특정 프로젝트(projectPk) 한건 + 속해있는 유저 + 프로필까지 조회(단건 조회)
     @Query("""
             SELECT p FROM Project p
             JOIN FETCH p.user
             LEFT JOIN FETCH p.projectProfile
-            WHERE p.projectPk = :projectPk
+            WHERE p.projectPk = :projectPk AND p.deletedYN = 'N'
             """)
     Optional<Project> findWithProfileAndUserByProjectPk(@Param("projectPk") Long projectPk);
 
-    //프로젝트 목록 조회
+    //프로젝트 목록 조회(유저, 프로필 즉시로딩 & 페이징 처리)
     @Query(
             value = "SELECT p FROM Project p JOIN FETCH p.user u JOIN FETCH p.projectProfile pf WHERE p.deletedYN = 'N'",
-            countQuery = "SELECT COUNT(p) FROM Project p"
+            countQuery = "SELECT COUNT(p) FROM Project p WHERE p.deletedYN='N'"
     )
     Page<Project> findProjectsWithUserAndProfile(Pageable pageable);
 
-    @Query("SELECT p FROM Project p JOIN FETCH p.projectProfile WHERE p.projectPk = :projectPk AND p.deletedYN = 'N'")
+    //특정 프로젝트+프로필 조회(단건)
+    @Query("""
+        SELECT p FROM Project p 
+        JOIN FETCH p.projectProfile 
+        WHERE p.projectPk = :projectPk AND p.deletedYN = 'N'
+    """)
     Optional<Project> findByIdWithProfile(@Param("projectPk") Long projectPk);
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto(p.projectPk, p.projectTitle, p.projectStatus) " +

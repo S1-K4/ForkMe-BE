@@ -21,6 +21,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+
+    private final JwtHandshakeInterceptor jwtHandshakeInterceptor; // 접속중 로그인 추가
+
+    //접속중 로그인 추가
+    public WebSocketConfig(JwtHandshakeInterceptor jwtHandshakeInterceptor) {
+        this.jwtHandshakeInterceptor = jwtHandshakeInterceptor;
+    }
+
+
     //하트비트용 스케줄러 빈 (이름 충돌 피하려고 커스텀 이름 사용) : 빠른 접속/퇴장 확인용
     @Bean
     public TaskScheduler wsTaskScheduler() {
@@ -47,10 +56,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
+//                .addInterceptors(jwtHandshakeInterceptor) // 추가!
                 .setAllowedOriginPatterns("*") //CORS 허용
                 .withSockJS();
 
         registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
+                .addInterceptors(jwtHandshakeInterceptor) // 접속중 로그인 추가
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
     }

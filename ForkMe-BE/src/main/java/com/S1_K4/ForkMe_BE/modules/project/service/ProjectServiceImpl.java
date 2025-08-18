@@ -3,20 +3,26 @@ package com.S1_K4.ForkMe_BE.modules.project.service;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
+import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
+import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
-import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
+import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
+import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
+import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.repository.S3Repository;
-import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
@@ -29,12 +35,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,7 +70,10 @@ public class ProjectServiceImpl implements ProjectService{
     private final ApplyTechStackRepository applyTechStackRepository;
     private final S3Service s3Service;
     private final S3Repository s3Repository;
+    private final MemberReviewRepository memberReviewRepository;
     private final CommentRepository commentRepository;
+
+    private final ChattingService chattingService;
 
     /*
      * 프로젝트 상세 조회
@@ -114,7 +124,6 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-
     /*
      * 프로젝트 목록 조회
      * */
@@ -123,39 +132,82 @@ public class ProjectServiceImpl implements ProjectService{
     public Page<ProjectListResponseDTO> getProjectList(Pageable pageable) {
         Page<Project> projectPage = projectRepository.findProjectsWithUserAndProfile(pageable);
 
+        /**현재 페이지에 포함된 profilePk들만 추출 -> 연관된 컬렉션(포지션/기술스택)을 벌크로 가져오기 위함*/
+        List<Long> profilePks = projectPage.getContent().stream()   //현재 페이지의 엔티티 리스트를 스트림으로 순회
+                .map(p -> p.getProjectProfile().getProjectProfilePk()) //각 Project가 가진 ProjectProfile의 PK만 추출
+                .toList();  //리스트로 변환
+
+        //만약 페이지가 비어있다면(데이터가 없다면) 빈리스트 반환 -> IN() 쿼리때문에 SQL 에러가 날 수 있으므로 SQL에러방지용
+        if (profilePks.isEmpty()) {
+            return projectPage.map(p -> ProjectListResponseDTO.builder()
+                .projectPk(p.getProjectPk())
+                .projectProfilePk(p.getProjectProfile().getProjectProfilePk())
+                .userPk(p.getUser().getUserPk())
+                .nickname(p.getUser().getNickname())
+                .projectProfileTitle(p.getProjectProfile().getProjectProfileTitle())
+                .projectStatus(p.getProjectStatus().name())
+                .positions(List.of())
+                .techStacks(List.of())
+                .recruitmentStartDate(p.getProjectProfile().getRecruitmentStartDate())
+                .recruitmentEndDate(p.getProjectProfile().getRecruitmentEndDate())
+                .expectedMembers(p.getProjectProfile().getExpectedMembers())
+                .build());
+            }
+
+        //포지션, 기술스택 벌크 조회(n+1방지)
+        List<ProjectPosition> posEntities =
+                projectPositionRepository.findAllByProfilePksFetchPosition(profilePks);
+        List<ProjectTechStack> techEntities =
+                projectTechStackRepository.findAllByProfilePksFetchTech(profilePks);
+
+        /** 포지션 그룹핑 */
+        //포지션 DTO 리스트로 매핑할 Map
+        Map<Long, List<PositionResponseDTO>> posMap = new HashMap<>();
+        
+        //DB에서 벌크로 가져온 proiectPosition(posEntities)를 하나씩 처리
+        for (ProjectPosition pp : posEntities) {
+            //projectPosition이 속한 projectProfile의 PK추출
+            Long key = pp.getProjectProfile().getProjectProfilePk();
+            //해당 ProfilePk키가 없으면 List 새로 생성 / 키가 있으면 기존 리스트 반환
+            //-> profilePk에 해당하는 리스트가 있든 없든 항상 append할 수 있는 List<PositionResponseDTO>를 얻을 수 있음
+            posMap.computeIfAbsent(key, k -> new ArrayList<>())
+                    //반환된 리스트에 새로운 positionResponseDTO 추가
+                    //엔티티에서 필요한 값만 꺼내서 dto로 변환
+                    .add(new PositionResponseDTO(
+                            pp.getPosition().getPositionPk(),
+                            pp.getPosition().getPositionName()
+                    ));
+        }
+        /** 기술스택 그룹핑 */
+        Map<Long, List<TechStackResponseDTO>> techMap = new HashMap<>();
+        for (ProjectTechStack pts : techEntities) {
+            Long key = pts.getProjectProfile().getProjectProfilePk();
+            techMap.computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(new TechStackResponseDTO(
+                            pts.getTechStack().getTechPk(),
+                            pts.getTechStack().getTechName()
+                    ));
+        }
+
         return projectPage.map(project -> {
             ProjectProfile profile = project.getProjectProfile();
-
-            List<PositionResponseDTO> positions = projectPositionRepository
-                    .findPositionsByProfilePk(profile.getProjectProfilePk());
-
-            List<TechStackResponseDTO> techStacks = projectTechStackRepository
-                    .findTechStacksByProfilePk(profile.getProjectProfilePk());
-
-            Long projectPk = project.getProjectPk();
-            Long projectProfilePk = profile.getProjectProfilePk();
-            Long userPk = project.getUser().getUserPk();
-            String nickname = project.getUser().getNickname();
-            String projectProfileTitle = profile.getProjectProfileTitle();
-            String projectStatus = project.getProjectStatus().name();
-            LocalDate recruitmentStartDate = profile.getRecruitmentStartDate();
-            LocalDate recruitmentEndDate = profile.getRecruitmentEndDate();
-            int expectedMembers = profile.getExpectedMembers();
+            Long profilePk = profile.getProjectProfilePk();
 
             return ProjectListResponseDTO.builder()
-                    .projectPk(projectPk)
-                    .projectProfilePk(projectProfilePk)
-                    .userPk(userPk)
-                    .nickname(nickname)
-                    .projectProfileTitle(projectProfileTitle)
-                    .projectStatus(projectStatus)
-                    .positions(positions)
-                    .techStacks(techStacks)
-                    .recruitmentStartDate(recruitmentStartDate)
-                    .recruitmentEndDate(recruitmentEndDate)
-                    .expectedMembers(expectedMembers)
+                    .projectPk(project.getProjectPk())
+                    .projectProfilePk(profilePk)
+                    .userPk(project.getUser().getUserPk())
+                    .nickname(project.getUser().getNickname())
+                    .projectProfileTitle(profile.getProjectProfileTitle())
+                    .projectStatus(project.getProjectStatus().name())
+                    .positions(posMap.getOrDefault(profilePk, List.of()))       // 그룹핑한 값 주입
+                    .techStacks(techMap.getOrDefault(profilePk, List.of()))     // 그룹핑한 값 주입
+                    .recruitmentStartDate(profile.getRecruitmentStartDate())
+                    .recruitmentEndDate(profile.getRecruitmentEndDate())
+                    .expectedMembers(profile.getExpectedMembers())
                     .build();
         });
+
     }
 
     /*
@@ -285,15 +337,24 @@ public class ProjectServiceImpl implements ProjectService{
         for(Comment comment : projectProfile.getComments()){
             comment.markDeleted();
         }
+
+        /** 프로젝트 삭제 시 연관된 채팅방 모두 Soft Delete **/
+        chattingService.softDeleteAllChattingRoomsByProject(projectPk, userPk);
+        /***********************************************/
         
         //hard Delete : 워크스페이스 관련 엔티티는 추후 삭제 추가예정(board_in_project,comment_in_project,github_timeline,s3_file,chatting_room,chatting_message,chatting_participant)
-        s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
-        likeRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());               //좋아요
-        projectTechStackRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());   //프로젝트 기술스택  
-        projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());    //프로젝트 모집분야
-        projectMemberRepository.deleteByProject_ProjectPk(projectPk);                                               //프로젝트 인원
         applyTechStackRepository.deleteByApply_Project_ProjectPk(projectPk);                                        //신청서 기술 스택
         applyRepository.deleteByProject_ProjectPk(projectPk);                                                       //신청서
+        projectMemberRepository.deleteByProject_ProjectPk(projectPk);                                               //프로젝트 인원
+        likeRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());               //좋아요
+        projectTechStackRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());   //프로젝트 기술스택
+        projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());    //프로젝트 모집분야
+        s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
+
+
+
+
+        applyRepository.deleteByProject_ProjectPk(projectPk);
     }
 
 
@@ -310,12 +371,24 @@ public class ProjectServiceImpl implements ProjectService{
         Project project = projectRepository.findByIdWithProfile(projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
+        //작성자와 로그인한 사용자 일치 여부 -> 같지않으면 예외 발생
+        if(!project.getUser().getUserPk().equals(userPk)){
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+
         ProjectProfile profile = project.getProjectProfile();
         Long profilePk = profile.getProjectProfilePk();
 
-        // 연관된 기술 스택 및 포지션 pk 저장
+        //기술스택, 포지션 : pk+이름까지 조회
+        List<TechStackResponseDTO> techStacks = projectTechStackRepository.findTechStacksByProfilePk(profilePk);
+        List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profilePk);
+
+        // 연관된 기술 스택 및 포지션 pk 조회
         List<Long> techPks = projectTechStackRepository.findTechPksByProfilePk(profilePk);
         List<Long> positionPks = projectPositionRepository.findPositionPksByProfilePk(profilePk);
+
+        //연관된 이미지 조회
+        List<ProjectImageDTO> images = s3Repository.findAllImagesByProfilePk(profilePk);
 
         return ProjectUpdateFormDTO.builder()
                 .projectPk(projectPk)
@@ -330,8 +403,11 @@ public class ProjectServiceImpl implements ProjectService{
                 .recruitmentEndDate(profile.getRecruitmentEndDate())
                 .expectedMembers(profile.getExpectedMembers())
                 .progressType(profile.getProgressType())
-                .techPks(techPks)
-                .positionPks(positionPks)
+//                .techPks(techPks)
+//                .positionPks(positionPks)
+                .techStacks(techStacks)
+                .positions(positions)
+                .images(images)
                 .build();
     }
 
@@ -369,7 +445,7 @@ public class ProjectServiceImpl implements ProjectService{
         * 이미지 수정 로직
         * */
         //현재 DB에 저장된 이미지를 List형태로 existingImages에 저장
-        List<S3Image> existingImages = s3Repository.findByProjectProfile(projectProfile);
+        List<S3Image> existingImages = s3Repository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());
 
         //DTO에서 넘어온 유지할 이미지 PK 목록을 SET형식으로 저장
         Set<Long> remainImageIds = dto.getImages() == null ?
@@ -433,7 +509,7 @@ public class ProjectServiceImpl implements ProjectService{
             currentPositionPks = dto.getPositionPks();
         }
 
-        // 4) 응답: 불필요한 재조회 제거
+        // 응답: 불필요한 재조회 제거
         List<ProjectTechStack> techStacks =
                 techChanged ? projectTechStackRepository.findByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk())
                         : currentTechPks.stream()
@@ -465,6 +541,16 @@ public class ProjectServiceImpl implements ProjectService{
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
         project.recruiting();
+
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 채팅방 생성
+        ChattingRoom teamChattingRoom = chattingService.createTeamChattingRoom(project, RoomType.T, now);
+
+        // 팀장 자동 채팅방 참여
+        ProjectMember leader = projectMemberRepository.findLeaderByProjectPk(project)
+                .orElseThrow(() -> new IllegalStateException("리더가 없습니다."));
+        chattingService.addChattingParticipant(teamChattingRoom, leader.getUser().getUserPk(), now);
     }
 
     //모집 -> 진행중 상태 변경
@@ -472,7 +558,15 @@ public class ProjectServiceImpl implements ProjectService{
     @Transactional
     public void toInProgress(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
+
+        //프로젝트 상태 진행중으로 변경
         project.progress();
+
+        //대기중인 신청서 모두 조회 -> 모든 신청서를 거절
+        List<Apply> pendingApplies = applyRepository.findPendingAppliesByProjectPk(projectPk);
+        for (Apply apply : pendingApplies) {
+            apply.reject();
+        }
     }
 
     //진행중 -> 충원
@@ -538,6 +632,12 @@ public class ProjectServiceImpl implements ProjectService{
         }
 
         projectMemberRepository.delete(member);
+
+        /** 팀을 떠나려는 멤버가 속한 모든 채팅방에서 해당 멤버 탈퇴 처리 (팀/개인)**/
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //채팅방에서도 해당 멤버 퇴장 처리
+        chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), member.getUser().getUserPk(), now);
     }
 
     /**
@@ -569,6 +669,12 @@ public class ProjectServiceImpl implements ProjectService{
             //동시성 방지
             throw new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND);
         }
+
+        /** target 멤버가 속한 모든 채팅방에서 해당 멤버 탈퇴 처리 (팀/개인)**/
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //채팅방에서도 해당 멤버 퇴장 처리
+        chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), target.getUser().getUserPk(), now);
     }
 
     //user, project 유효성 체크 및 팀장 여부 확인 메서드
@@ -616,11 +722,23 @@ public class ProjectServiceImpl implements ProjectService{
                         )
                 ));
 
+        // 멤버 리뷰
+        List<MemberReviewMypageDto> memberReviewList = memberReviewRepository.findMemberReviewByProjectPkIn(userPk, projectPkList);
+        Map<Long, List<String>> reviewMap = memberReviewList.stream()
+                .collect(Collectors.groupingBy(
+                        MemberReviewMypageDto::getProjectPk,
+                        Collectors.mapping(
+                                MemberReviewMypageDto::getReview,
+                                Collectors.toList()
+                        )
+                ));
+
         for (CompletedProjectSummaryDto dto : completedProjectSummaryList) {
             dto.setMemberCount(projectMemberCountMap.get(dto.getProjectPk()));
             dto.setTechStack(projectTechStackMap.get(dto.getProjectProfilePk()));
+            dto.setReview(reviewMap.get(dto.getProjectPk()));
         }
-
+        log.info("get project summary list completed :");
         return completedProjectSummaryList;
     }
 

@@ -23,19 +23,22 @@ import java.util.Optional;
  */
 @Repository
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
+    //해당 projectPk를 가지는 ProjectMember 필드 삭제
     void deleteByProject_ProjectPk(Long projectPk);
 
-    //팀장 여부 확인
+    //해당 user가 특정 프로젝트(projectPk)의 팀장인지 확인
     boolean existsByProject_ProjectPkAndUser_UserPkAndIsLeader(
             Long projectPk, Long userPk, IsLeader isLeader
     );
+
     // 프로젝트 + 유저로 멤버 조회
     @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.user = :user")
     Optional<ProjectMember> findByProjectPkAndUserPk(@Param("project") Project project, @Param("user") User user);
 
-    //해당 프로젝트에 속한 특정 사용자의 ProjectMember 엔티티를 조회
+    //해당 프로젝트에 속한 특정 사용자의 ProjectMember 엔티티를 조회 -> 즉, 해당 프로젝트에 사용자가 속해 있는지 확인
     Optional<ProjectMember> findByProject_ProjectPkAndUser_UserPk(Long projectPk, Long userPk);
 
+    //특정 프로젝트에서 특정 사용자를 멤버 목록에서 제거 -> 강퇴
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         DELETE FROM ProjectMember pm
@@ -60,4 +63,12 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ProjectMember pm WHERE pm.user = (:user)")
     void deleteByUserInBulk(User user);
+
+    //특정 유저가 특정 프로젝트에 속해있는지(존재하는지) 확인
+    boolean existsByProject_ProjectPkAndUser_UserPk(Long projectPk, Long userPk);
+
+
+    // 특정 프로젝트의 리더 찾기
+    @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.isLeader = 'LEADER'")
+    Optional<ProjectMember> findLeaderByProjectPk(@Param("project") Project project);
 }

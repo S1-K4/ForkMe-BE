@@ -2,7 +2,6 @@ package com.S1_K4.ForkMe_BE.global.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 /**
  * @author : 선순주
@@ -59,7 +58,8 @@ public class CustomException extends RuntimeException {
         ALREADY_APPLIED(400, "이미 신청한 프로젝트입니다."),
         APPLY_NOT_FOUND(404,"신청서를 찾을 수 없습니다."),
         LEADER_CANNOT_APPLY(403,"팀장은 신청이 불가합니다."),
-        INVALID_STATUS_CHANGE(403, "이미 처리된 신청서는 취소가 불가능합니다.");
+        INVALID_STATUS_CHANGE(403, "이미 처리된 신청서는 취소가 불가능합니다."),
+        APPLY_NOT_WRITTEN(403,"기획상태에서는 신청서 작성이 불가합니다.");
 
         private final int code;
         private final String message;

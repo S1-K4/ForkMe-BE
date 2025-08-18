@@ -46,10 +46,12 @@ public class SecurityConfig {
                                 "/favicon.ico", "login-success.html", "/login-error"
                         ).permitAll()
 
-                        // ====== Projects : 인증X ======
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/projects",                // 프로젝트 목록 조회
-                                "/api/projects/*"               // 프로젝트 상세 조회
+                        // ====== Swagger 관련 경로 ======
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
                         ).permitAll()
 
                         // ====== Projects : 인증 필요 ======
@@ -57,6 +59,14 @@ public class SecurityConfig {
                                 "/api/projects/form-info",          // 생성폼 조회
                                 "/api/projects/*/update-form")      // 수정폼 조회
                         .authenticated()
+
+                        // ====== Projects : 인증X ======
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/projects",                // 프로젝트 목록 조회
+                                "/api/projects/*"               // 프로젝트 상세 조회
+                        ).permitAll()
+
+                        // ====== Projects : 인증 필요 ======
                         .requestMatchers(HttpMethod.POST, "/api/projects").authenticated()          // 프로젝트 생성
                         .requestMatchers(HttpMethod.PUT, "/api/projects/*").authenticated()         // 프로젝트 수정
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/*").authenticated()      // 프로젝트 삭제
@@ -107,6 +117,17 @@ public class SecurityConfig {
                                 "/api/on-project/**", "boardIn/**",
                                 "/api/schedules/**", "/api/on-project/comments/**"
                         ).permitAll() // 0812 김송이 추가
+
+                        // ====== 채팅 : 인증X ======
+                        .requestMatchers(HttpMethod.GET, "api/chatting-room/*/participants").permitAll() // 채팅 참여자 리스트 조회
+
+                        // ====== 채팅 : 인증 필요 ======
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/chatting-room/create", //채팅방 생성
+                                "api/chatting-room/private", //로그인 유저의 프로젝트 내 개인채팅방 리스트 조회
+                                "api/chatting-room/*/messages/*" //로그인한 유저 기준 채팅방 이전 대화 조회
+                                ).authenticated()
+
 
                         // 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/user/me/**").authenticated()

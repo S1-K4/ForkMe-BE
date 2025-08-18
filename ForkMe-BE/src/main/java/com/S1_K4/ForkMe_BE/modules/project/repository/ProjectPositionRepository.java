@@ -20,25 +20,29 @@ import java.util.Optional;
  */
 @Repository
 public interface ProjectPositionRepository extends JpaRepository<ProjectPosition,Long> {
+    
+    //특정 프로젝트 프로필에 연결된 포지션(positionPk, positionName) 조회
     @Query("SELECT new com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO(p.position.positionPk, p.position.positionName) " +
             "FROM ProjectPosition p " +
             "WHERE p.projectProfile.projectProfilePk = :profilePk")
     List<PositionResponseDTO> findPositionsByProfilePk(@Param("profilePk") Long profilePk);
 
-    //포지션 삭제
+    //해당 프로필의 모든 ProjectPosition 삭제
     void deleteByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
     //pk 포지션 조회용
     List<ProjectPosition> findByProjectProfile_ProjectProfilePk(Long projectProfilePk);
 
+    //특정 프로필에 연결된 포지션 PK목록 조회
     @Query("select pp.position.positionPk " +
             "from ProjectPosition pp " +
             "where pp.projectProfile.projectProfilePk = :profilePk")
     List<Long> findPositionPksByProfilePk(@Param("profilePk") Long profilePk);
 
+    //해당 프로필에 연결된 포지션을 DTO로 바로 내려줌 -> projectPositionPk, projectPositionName
     @Query("""
         SELECT new com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO(
-            p.projectPositionPk,
+            p.position.positionPk,
             p.position.positionName
         )
         FROM ProjectPosition p
@@ -46,27 +50,20 @@ public interface ProjectPositionRepository extends JpaRepository<ProjectPosition
     """)
     List<PositionResponseDTO> findAllPositionDTOByProfilePk(@Param("profilePk") Long profilePk);
 
+    //여러 프로필 PK에 연결된 ProjectPosition을 Position까지 fetch join으로 한 번에 조회 -> 목록 조회시 N+1 방지용
     @Query("""
-        SELECT p
-        FROM ProjectPosition p
-        WHERE p.projectProfile.project.projectPk = :projectPk
-          AND p.projectPositionPk = :projectPositionPk
+        SELECT pp
+        FROM ProjectPosition pp
+        JOIN FETCH pp.position pos
+        WHERE pp.projectProfile.projectProfilePk IN :profilePks
     """)
-    Optional<ProjectPosition> findByProjectPkAndProjectPositionPk(@Param("projectPk") Long projectPk,
-                                                                  @Param("projectPositionPk") Long projectPositionPk);
-
-    @Query("""
-        SELECT p
-        FROM ProjectPosition p
-        WHERE p.projectProfile.projectProfilePk = :projectProfilePk
-          AND p.position.positionPk = :positionPk
-    """)
-    Optional<ProjectPosition> findByProjectProfilePkAndPositionPk(
-            @Param("projectProfilePk") Long projectProfilePk,
-            @Param("positionPk") Long positionPk
-    );
+    List<ProjectPosition> findAllByProfilePksFetchPosition(@Param("profilePks") List<Long> profilePks);
 
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ProjectPosition pp WHERE pp.projectProfile.projectProfilePk IN (:projectProfilePkList)")
     void deleteByProjectProfile_ProjectProfilePkInBulk(List<Long> projectProfilePkList);
+    
+    //해당 프로필에 특정 포지션(positionPk)가 연결되어 있는지 확인
+    Optional<ProjectPosition> findByProjectProfile_ProjectProfilePkAndPosition_PositionPk(
+            Long projectProfilePk, Long positionPk);
 }

@@ -7,9 +7,14 @@ import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
 import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectPosition;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
+import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectPositionRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
@@ -22,9 +27,12 @@ import com.S1_K4.ForkMe_BE.reference.position.repository.TechStackRepository;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +60,8 @@ public class ApplyServiceImpl implements ApplyService{
     private final UserTechStackRepository userTechStackRepository;
     private final ProjectMemberRepository projectMemberRepository;
 
+    private final ChattingService chattingService;
+
     /**
     * 신청서 생성폼 호출하는 메서드(모집분야, 기술스택 List로 호출)
     * */
@@ -64,7 +74,7 @@ public class ApplyServiceImpl implements ApplyService{
                 projectPositionRepository.findAllPositionDTOByProfilePk(projectPk);
 
         List<TechStackResponseDTO> techStacks =
-                projectTechStackRepository.findAllTechStackDTOByProfilePk(projectPk);
+                projectTechStackRepository.findTechStacksByProfilePk(projectPk);
 
         return ApplyCreateFormDTO.builder()
                 .projectPk(projectPk)
@@ -102,13 +112,19 @@ public class ApplyServiceImpl implements ApplyService{
             throw new CustomException(CustomException.ErrorCode.LEADER_CANNOT_APPLY);
         }
 
+        //프로젝트 상태가 모집중, 충원중이 아니면 신청서 작성 불가
+        if (!(project.getProjectStatus() == ProjectStatus.RECRUITING
+                || project.getProjectStatus() == ProjectStatus.ADDING)) {
+            throw new CustomException(CustomException.ErrorCode.APPLY_NOT_WRITTEN);
+        }
+
         // 모집 포지션 검증
         ProjectPosition selectedPosition = projectPositionRepository
-                .findByProjectProfilePkAndPositionPk(profilePk, dto.getProjectPositionPk())
+                .findByProjectProfile_ProjectProfilePkAndPosition_PositionPk(profilePk, dto.getPositionPk())
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.INVALID_PROJECT_POSITION));
 
         // 기술스택 검증
-        List<Long> validTechIds = projectTechStackRepository.findTechStackIdsByProjectProfilePk(profilePk);
+        List<Long> validTechIds = projectTechStackRepository.findTechPksByProfilePk(profilePk);
         Set<Long> validSet = new HashSet<>(validTechIds);
         Set<Long> requestedSet = new HashSet<>(dto.getTechStackPks());
         if (!validSet.containsAll(requestedSet)) {
@@ -145,7 +161,7 @@ public class ApplyServiceImpl implements ApplyService{
     public ApplyResponseDTO getApply(Long userPk, Long projectPk, Long applyPk) {
 
         // 1) 신청서 본문 조회
-        Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
+        Apply apply = applyRepository.findDetailById(applyPk, projectPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         // 권한 체크 - 신청자 본인 또는 해당 프로젝트의 팀장만 허용
@@ -198,23 +214,11 @@ public class ApplyServiceImpl implements ApplyService{
     @Transactional(readOnly = true)
     public List<ApplyListResponseDTO> getProjectApplies(Long userPk, Long projectPk) {
         checkValid(userPk, projectPk);
-        
-        userRepository.findByIdWithTechStacks(userPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
-
-        projectRepository.findById(projectPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
-
-        //팀장 권한 검증
-        boolean isLeader = projectMemberRepository
-                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
-        if (!isLeader) {
-            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
-        }
 
         //신청서 목록 조회
         return applyRepository.findAllByProjectPk(projectPk).stream()
                 .map(a -> ApplyListResponseDTO.builder()
+                        .applyPk(a.getApplyPk())
                         .nickname(a.getUser().getNickname())
                         .profileUrl(a.getUser().getProfileUrl())
                         .userPk(a.getUser().getUserPk())
@@ -232,26 +236,86 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void cancelApply(Long userPk, Long projectPk, Long applyPk){
-        checkValid(userPk, projectPk);
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         apply.cancel();
     }
 
-    //신청서 수락 메서드(팀장만 가능)
+    /**
+     * 신청서 수락 메서드(팀장만 가능)
+     * */
     @Override
     @Transactional
     public void approveApply(Long userPk, Long projectPk, Long applyPk){
-        checkValid(userPk, projectPk);
+        //이 부분에서 채팅이 project, user 엔티티를 필요로 해서 어쩔 수 없이 checkValid() 메서드를 사용하는 부분을 변경했습니다.
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
+
 
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         apply.approve();
+
+        //신청서 신청한 유저(팀원)
+        User applicant = apply.getUser();
+        Long applicantUserPk = applicant.getUserPk();
+
+        //이미 멤버면 스킵
+        if (projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, applicantUserPk)) {
+            return;
+        }
+
+        //projectMember 레포지토리 추가
+        ProjectMember newMember = ProjectMember.memberOf(project, applicant);
+        try {
+            projectMemberRepository.save(newMember);
+        } catch (DataIntegrityViolationException e) {
+            if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, applicantUserPk)) {
+                throw e; // 정말 저장 실패라면 전파
+            }
+        }
+
+        /** 추가된 멤버와 기존 멤버간 개인 채팅방 자동 생성 및 멤버 추가 **/
+        //멤버 추가 시간 가져오기
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //프로젝트 팀 채팅방 가져오기
+        ChattingRoom teamChattingRoom = chattingService.getChattingRoom(project.getProjectPk(), RoomType.T);
+
+        //프로젝트 팀 채팅방에 수락 멤버 추가하기
+        chattingService.addChattingParticipant(teamChattingRoom, applicantUserPk, now);
+
+        //프로젝트 팀 채팅방에 수락 멤버 입장 메세지 전송 및 DB 저장
+        chattingService.noticeJoinChattingRoom(teamChattingRoom, applicant, now);
+
+
+        /**기존 멤버들과 개인 채팅방 자동 생성 로직 **/
+        chattingService.createAllPrivateRoomsForNewMember(project, applicant, now);
+
+
     }
 
-    //신청서 거절 메서드(팀장만 가능)
+    /**
+    * 신청서 거절 메서드(팀장만 가능)
+    * */
     @Override
     @Transactional
     public void rejectedApply(Long userPk, Long projectPk, Long applyPk){
@@ -263,7 +327,9 @@ public class ApplyServiceImpl implements ApplyService{
         apply.reject();
     }
 
-
+    /**
+     * user, project, 팀장 검증 메서드
+     * */
     public void checkValid(Long userPk, Long projectPk){
         userRepository.findByIdWithTechStacks(userPk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));

@@ -11,15 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
  * @description :LikeService
  */
 public interface LikeService {
-    @Transactional(readOnly = true)
+    //좋아요 여부 조회
     boolean hasUserLikeProfile(Long userPk, Long profilePk);
-
-    @Transactional(readOnly = true)
+    
+    //좋아요 수 COUNT
     Long countLike(Long profilePk);
-
-    @Transactional
+    
+    //좋아요 추가
     LikeDTO createLike(Long userPk, Long profilePk);
-
-    @Transactional
+    
+    //좋아요 삭제
     LikeDTO deleteLike(Long userPk, Long profilePk);
 }

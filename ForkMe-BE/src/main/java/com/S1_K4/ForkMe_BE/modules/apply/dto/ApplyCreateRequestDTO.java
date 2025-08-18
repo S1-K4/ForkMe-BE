@@ -1,7 +1,10 @@
 package com.S1_K4.ForkMe_BE.modules.apply.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -14,9 +17,14 @@ import java.util.List;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ApplyCreateRequestDTO {
-    private Long projectPk;
-    private Long projectPositionPk;
+
+    @Schema(description = "포지션 Pk", example = "1")
+    private Long positionPk;
+    @Schema(description = "기술 스택 목록")
     private List<Long> techStackPks;
+    @Schema(description = "프로젝트 Pk", example = "2")
     private String content;
 }

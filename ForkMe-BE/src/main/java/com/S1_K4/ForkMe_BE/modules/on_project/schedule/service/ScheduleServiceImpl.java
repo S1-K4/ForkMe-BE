@@ -6,17 +6,15 @@ import com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity.Schedule;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity.ScheduleMention;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.repository.ScheduleRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,11 +36,25 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final ScheduleRepository scheduleRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberRepository projectMemberRepository;
     /**
      * 프로젝트별 일정 + 멘션된 사용자 ID 목록 조회
      */
-    public List<ScheduleResponse> getSchedulesByProject(Long projectPk) {
+    public List<ScheduleResponse> getSchedulesByProject(Long projectPk, Long userPk) {
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
         List<Schedule> schedules = scheduleRepository.findAllByProject_ProjectPk(projectPk);
+
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)) {
+            throw new AccessDeniedException("해당 프로젝트의 멤버만 일정을 조회할 수 있습니다.");
+        }
+
+
 
         return schedules.stream().map(schedule -> {
             List<Long> mentionedUserIds = schedule.getScheduleMentions().stream()
@@ -50,11 +62,11 @@ public class ScheduleServiceImpl implements ScheduleService{
                     .collect(Collectors.toList());
 
             return ScheduleResponse.builder()
-                    .id(schedule.getSchedulePk())
+                    .schedulePk(schedule.getSchedulePk())
                     .title(schedule.getTitle())
                     .start(schedule.getStartDate())
                     .end(schedule.getEndDate())
-                    .userPk(schedule.getUser().getUserPk())
+                    .userPk(userPk)
                     .scheduleMentionPk(mentionedUserIds)
                     .build();
         }).collect(Collectors.toList());
@@ -64,11 +76,11 @@ public class ScheduleServiceImpl implements ScheduleService{
      * 일정 저장 + 멘션 정보 저장 예시
      */
     @Transactional
-    public ScheduleResponse createSchedule(ScheduleCreateRequest dto) {
-        Project project = projectRepository.findById(dto.getProjectPk())
+    public ScheduleResponse createSchedule(ScheduleCreateRequest dto, Long projectPk, Long userPk) {
+        Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
-        User writer = userRepository.findById(dto.getUserPk())
+        User writer = userRepository.findById(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         Schedule schedule = Schedule.create(
@@ -85,6 +97,11 @@ public class ScheduleServiceImpl implements ScheduleService{
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new IllegalArgumentException("멘션 대상 사용자를 찾을 수 없습니다. ID: " + userId));
 
+                // 멘션된 사용자가 해당 프로젝트의 멤버인지 확인
+                if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userId)) {
+                    throw new IllegalArgumentException("멘션 대상 사용자는 해당 프로젝트의 멤버여야 합니다. ID: " + userId);
+                }
+
                 ScheduleMention mention = ScheduleMention.createMention(schedule, user);
                 schedule.addScheduleMention(mention);  // ✅ 핵심
             });
@@ -97,19 +114,27 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .collect(Collectors.toList());
 
         return ScheduleResponse.builder()
-                .id(savedSchedule.getSchedulePk())
+                .schedulePk(savedSchedule.getSchedulePk())
                 .title(savedSchedule.getTitle())
                 .start(savedSchedule.getStartDate())
                 .end(savedSchedule.getEndDate())
-                .userPk(savedSchedule.getUser().getUserPk())
+                .userPk(userPk)
                 .scheduleMentionPk(scheduleMentionPks)
                 .build();
     }
 
     @Transactional
-    public ScheduleResponse updateSchedule(Long scheduleId, ScheduleCreateRequest dto) {
-        Schedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다. ID: " + scheduleId));
+    public ScheduleResponse updateSchedule(Long schedulePk, ScheduleCreateRequest dto,Long projectPk, Long userPk) throws AccessDeniedException {
+        Schedule schedule = scheduleRepository.findById(schedulePk)
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다. ID: " + schedulePk));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        User writer = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+
 
         schedule.setTitle(dto.getTitle());
         schedule.setStartDate(dto.getStart());
@@ -147,6 +172,11 @@ public class ScheduleServiceImpl implements ScheduleService{
         toAdd.forEach(userId -> {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("멘션 대상 사용자를 찾을 수 없습니다. ID: " + userId));
+
+            // 멘션된 사용자가 해당 프로젝트의 멤버인지 확인
+            if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userId)) {
+                throw new IllegalArgumentException("멘션 대상 사용자는 해당 프로젝트의 멤버여야 합니다. ID: " + userId);
+            }
             ScheduleMention mention = ScheduleMention.createMention(schedule, user);
             schedule.addScheduleMention(mention);
         });
@@ -158,21 +188,27 @@ public class ScheduleServiceImpl implements ScheduleService{
                 .collect(Collectors.toList());
 
         return ScheduleResponse.builder()
-                .id(saved.getSchedulePk())
+                .schedulePk(saved.getSchedulePk())
                 .title(saved.getTitle())
                 .start(saved.getStartDate())
                 .end(saved.getEndDate())
-                .userPk(saved.getUser().getUserPk())
+                .userPk(userPk)
                 .scheduleMentionPk(mentionUserIds)
                 .build();
     }
 
 
     @Transactional
-    public void deleteSchedule(Long schedulePk) {
+    public void deleteSchedule(Long schedulePk, Long userPk) {
         Schedule schedule = scheduleRepository.findById(schedulePk)
                 .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
 
+        User writer = userRepository.findById(userPk)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if(!schedule.getUser().getUserPk().equals(userPk)){
+            throw new AccessDeniedException("일정 작성자가 아닙니다.");
+        }
 
         scheduleRepository.deleteById(schedulePk);
     }

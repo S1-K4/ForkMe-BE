@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.apply.dto;
 
-import com.S1_K4.ForkMe_BE.modules.apply.enums.ApplyStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,10 +16,18 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class ApplyListResponseDTO {
+    @Schema(description = "프로젝트 Pk", example = "2")
     private Long projectPk;
+    @Schema(description = "유저 Pk", example = "1")
     private Long userPk;
+    @Schema(description = "유저 닉네임", example = "test3")
     private String nickname;
+    @Schema(description = "유저 프로필사진 url", example = "https://avatars.githubusercontent.com/u/97264463?v=4")
     private String profileUrl;
+    @Schema(description = "신청서 PK", example = "1")
+    private Long applyPk;
+    @Schema(description = "신청서 상태", example = "수락")
     private String status;
+    @Schema(description = "작성일자", example = "2025-07-22")
     private LocalDateTime createdAt;
 }

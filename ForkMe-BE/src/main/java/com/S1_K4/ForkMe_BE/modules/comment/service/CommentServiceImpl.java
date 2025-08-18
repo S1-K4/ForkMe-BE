@@ -100,8 +100,6 @@ public class CommentServiceImpl implements CommentService{
     @Override
     @Transactional
     public void deleteComment(Long userPk, Long commentPk){
-        System.out.println("================== commentPk : "+ commentPk);
-        System.out.println("================== userPk : "+ userPk);
         Comment comment = commentRepository.findById(commentPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.COMMENT_NOT_FOUND));
 

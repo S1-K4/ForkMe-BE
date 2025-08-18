@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.project.dto;
 
 import com.S1_K4.ForkMe_BE.reference.position.dto.PositionResponseDTO;
 import com.S1_K4.ForkMe_BE.reference.stack.dto.TechStackResponseDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,37 +20,38 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
+@Schema(description = "프로젝트 목록 조회 DTO")
 public class ProjectListResponseDTO {
-    //프로젝트 pk
+    @Schema(description = "프로젝트 PK")
     private Long projectPk;
 
-    //프로젝트 프로필 pk
+    @Schema(description = "프로젝트 프로필 PK")
     private Long projectProfilePk;
 
-    //프로젝트 팀장 pk
+    @Schema(description = "프로젝트 팀장 userPK")
     private Long userPk;
 
-    //프로젝트 팀장닉네임
+    @Schema(description = "프로젝트 팀장 닉네임")
     private String nickname;
 
-    //프로젝트 프로필 제목
+    @Schema(description = "프로젝트 프로필 명")
     private String projectProfileTitle;
 
-    //프로젝트 진행상황
+    @Schema(description = "프로젝트 진행 상황")
     private String projectStatus;
 
-    //프로젝트 모집 분야
+    @Schema(description = "프로젝트 모집 분야")
     private List<PositionResponseDTO> positions;
 
-    //프로젝트 기술 스택
+    @Schema(description = "프로젝트 기술 스택")
     private List<TechStackResponseDTO> techStacks;
 
-    //모집 시작일
+    @Schema(description = "프로젝트 모집 시작일")
     private LocalDate recruitmentStartDate;
 
-    //모집 마감일
+    @Schema(description = "프로젝트 모집 마감일")
     private LocalDate recruitmentEndDate;
 
-    //예상 모집 인원
+    @Schema(description = "예상 모집 인원")
     private int expectedMembers;
 }

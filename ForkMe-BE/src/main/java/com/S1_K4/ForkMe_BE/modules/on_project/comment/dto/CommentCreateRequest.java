@@ -19,8 +19,5 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CommentCreateRequest {
 
-
-    private Long boardInProjectPk;
-    private Long userPk;
     private String comment;
 }
