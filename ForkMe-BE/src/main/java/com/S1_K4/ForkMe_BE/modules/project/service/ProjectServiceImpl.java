@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.project.service;
 
+import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
@@ -33,6 +34,9 @@ import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import com.S1_K4.ForkMe_BE.reference.stack.repository.StackRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -78,7 +82,13 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 상세 조회
      * */
+
     @Override
+    @Cacheable(
+            cacheNames = CacheNames.PROJECT_DETAIL,             //캐시이름
+            key = "#projectPK",                                 //키
+            sync = true                                         //스탬피드 방지
+    )
     @Transactional(readOnly = true)
     public ProjectDetailResponseDTO getProjectDetail(Long projectPK){
 
@@ -128,8 +138,15 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 목록 조회
      * */
     @Override
+    @Cacheable(
+            cacheNames = CacheNames.PROJECT_LIST,                       //캐시이름
+            key = "T(java.util.Objects)" +
+                    ".hash(#pageable.pageNumber, " +                    //현재 페이지 번호
+                    "#pageable.pageSize, #pageable.sort.toString())",   //페이지 크기, 정렬 기준
+            unless = "#result == null || #result.content == null || #result.content.isEmpty()"      //결과가 NULL이거나 비어있으면 캐싱x
+    )
     @Transactional(readOnly = true)
-    public Page<ProjectListResponseDTO> getProjectList(Pageable pageable) {
+    public PageResponse<ProjectListResponseDTO> getProjectList(Pageable pageable) {
         Page<Project> projectPage = projectRepository.findProjectsWithUserAndProfile(pageable);
 
         /**현재 페이지에 포함된 profilePk들만 추출 -> 연관된 컬렉션(포지션/기술스택)을 벌크로 가져오기 위함*/
@@ -137,22 +154,11 @@ public class ProjectServiceImpl implements ProjectService{
                 .map(p -> p.getProjectProfile().getProjectProfilePk()) //각 Project가 가진 ProjectProfile의 PK만 추출
                 .toList();  //리스트로 변환
 
-        //만약 페이지가 비어있다면(데이터가 없다면) 빈리스트 반환 -> IN() 쿼리때문에 SQL 에러가 날 수 있으므로 SQL에러방지용
-        if (profilePks.isEmpty()) {
-            return projectPage.map(p -> ProjectListResponseDTO.builder()
-                .projectPk(p.getProjectPk())
-                .projectProfilePk(p.getProjectProfile().getProjectProfilePk())
-                .userPk(p.getUser().getUserPk())
-                .nickname(p.getUser().getNickname())
-                .projectProfileTitle(p.getProjectProfile().getProjectProfileTitle())
-                .projectStatus(p.getProjectStatus().name())
-                .positions(List.of())
-                .techStacks(List.of())
-                .recruitmentStartDate(p.getProjectProfile().getRecruitmentStartDate())
-                .recruitmentEndDate(p.getProjectProfile().getRecruitmentEndDate())
-                .expectedMembers(p.getProjectProfile().getExpectedMembers())
-                .build());
-            }
+        //만약 페이지가 비어있다면(데이터가 없다면) 빈 pageResopnse반환
+        if (projectPage.isEmpty()) {
+            Page<ProjectListResponseDTO> empty = projectPage.map(p -> ProjectListResponseDTO.builder().build());
+            return PageResponse.from(empty);
+        }
 
         //포지션, 기술스택 벌크 조회(n+1방지)
         List<ProjectPosition> posEntities =
@@ -189,7 +195,8 @@ public class ProjectServiceImpl implements ProjectService{
                     ));
         }
 
-        return projectPage.map(project -> {
+        //페이지의 각 project를 dto로 변환
+        Page<ProjectListResponseDTO> dtoPage = projectPage.map(project -> {
             ProjectProfile profile = project.getProjectProfile();
             Long profilePk = profile.getProjectProfilePk();
 
@@ -207,6 +214,9 @@ public class ProjectServiceImpl implements ProjectService{
                     .expectedMembers(profile.getExpectedMembers())
                     .build();
         });
+
+
+        return PageResponse.from(dtoPage);
 
     }
 
@@ -255,6 +265,9 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images, Long userPk) {
 
@@ -309,6 +322,10 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 삭제
      * */
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void deleteProject(Long projectPk, Long userPk){
 
@@ -321,7 +338,7 @@ public class ProjectServiceImpl implements ProjectService{
               .orElseThrow(()-> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
 
       //삭제 여부 확인
-      if("N".equals(project.getDeletedYN())){
+      if("Y".equals(project.getDeletedYN())){
           throw new CustomException(CustomException.ErrorCode.PROJECT_ALREDAY_DELETE);
       }
 
@@ -414,7 +431,11 @@ public class ProjectServiceImpl implements ProjectService{
     /*
      * 프로젝트 수정
      */
-    @Override
+    @Override           //프로젝트 수정 시 캐시 무효회
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk) {
 
@@ -537,6 +558,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //기획 -> 모집 상태 변경
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -555,6 +580,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //모집 -> 진행중 상태 변경
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void toInProgress(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -571,6 +600,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //진행중 -> 충원
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void toAdding(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -579,6 +612,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //진행중 -> 종료
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void toCompleted(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -589,6 +626,10 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트명 변경
      */
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
     @Transactional
     public void updateProjectTitle(Long userPk, Long projectPk, String newTitleRaw){
         Project project = checkValid(userPk, projectPk);
