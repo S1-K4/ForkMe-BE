@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.global.common.cache;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
@@ -8,6 +9,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -30,37 +32,42 @@ import java.util.Map;
 @EnableCaching(proxyTargetClass = true)
 public class CacheConfig {
     @Bean
-    public ObjectMapper cacheObjectMapper(){
-        ObjectMapper om = new ObjectMapper()
+    public RedisCacheConfiguration defaultRedisCacheConfiguration() {
+        //캐시에 들어갈 object->json 직렬화 시 사용할 전용 objectMapper
+        ObjectMapper cacheOm = new ObjectMapper()
+                //LocalDate, LocalDateTime같은 dateTime 지원
                 .registerModule(new JavaTimeModule())
+                //날짜를 숫자(timestamp)로 쓰지않고 문자열로 직렬화
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // ★ 타입 정보 포함 (캐시 전용)
-        om.activateDefaultTyping(
+        //redis에서 역직렬화 시 DTO 타입을 알 수 있도록 타입 정보 포함 -> 안하면 LinkedHashMap으로만 읽혀서 에러 발생
+        cacheOm.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
         );
-        return om;
-    }
 
-    //기본 캐시 설정
-    @Bean
-    public RedisCacheConfiguration defaultRedisCacheConfiguration(ObjectMapper cacheObjectMapper) {
+        //redis value serializer(값 직렬화기)
+        //object -> json 문자열 -> redis 저장
+        GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer(cacheOm);
+
+        //redis 캐시 전역 설정 반환
         return RedisCacheConfiguration.defaultCacheConfig()
-                //키는 문자열 그대로 저장
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                // value(값)은 JSON 형태로 직렬화. GenericJackson2JsonRedisSerializer를 쓰면 타입정보까지 같이 넣어줌.
-                // -> REDIS 안에 값이 사람이 읽을 수 있는 json으로 저장
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
-                        new GenericJackson2JsonRedisSerializer(cacheObjectMapper)
-                ))
+                //key 직렬화 -> 문자열(forkme:project:list:123)
+                .serializeKeysWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new StringRedisSerializer()))
+                //value 직렬화 -> json(타입 정보 포함)
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(valueSerializer))
+                //null값은 캐싱하지 않는다.
                 .disableCachingNullValues()
-                .prefixCacheNameWith("forkme:")    // 키 접두사
-                .entryTtl(Duration.ofMinutes(5));  // 기본 TTL(유효시간) : 5분
+                .prefixCacheNameWith("forkme:") //접두어
+                .entryTtl(Duration.ofMinutes(5));   //기본 TTL : 5분
     }
 
     // 캐시 이름별 TTL 분리
-    @Bean                           //redis를 캐시저장소로 쓰는 RedisCacheManager를 만든다.
+    @Bean
+    @Primary                        //redis를 캐시저장소로 쓰는 RedisCacheManager를 만든다.
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory,
                                      RedisCacheConfiguration defaultConf) {
 

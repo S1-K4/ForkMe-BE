@@ -2,6 +2,8 @@ package com.S1_K4.ForkMe_BE.reference.stack.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author : 선순주
@@ -10,7 +12,8 @@ import lombok.Getter;
  * @date : 2025-08-05
  * @description : 기술스택 응답 DTO
  */
-@Getter
+@Getter @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class TechStackResponseDTO {
     private Long techPk;
