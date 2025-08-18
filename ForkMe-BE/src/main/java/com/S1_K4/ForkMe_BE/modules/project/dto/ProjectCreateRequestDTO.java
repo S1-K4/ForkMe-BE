@@ -9,6 +9,7 @@ import com.S1_K4.ForkMe_BE.reference.position.entity.Position;
 import com.S1_K4.ForkMe_BE.reference.stack.entity.TechStack;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 import java.util.List;
