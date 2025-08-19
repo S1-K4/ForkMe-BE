@@ -15,10 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -37,9 +35,9 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    /**
-     * 프로젝트별 일정 + 멘션된 사용자 ID 목록 조회
-     */
+
+
+    // 프로젝트 일정 조회
     public List<ScheduleResponse> getSchedulesByProject(Long projectPk, Long userPk) {
 
         Project project = projectRepository.findById(projectPk)
@@ -91,9 +89,16 @@ public class ScheduleServiceImpl implements ScheduleService{
                 writer
         );
 
-        // 멘션 생성
+        //멘션(멤버들) 생성
         if (dto.getScheduleMentionPk() != null) {
-            dto.getScheduleMentionPk().forEach(userId -> {
+            Set<Long> uniqueUserIds = new HashSet<>();
+            for (Long userId : dto.getScheduleMentionPk()) {
+                // 중복 체크
+                if (!uniqueUserIds.add(userId)) {
+                    System.out.println("중복된 멘션 대상 id 가 있습니다.");
+                    throw new IllegalArgumentException("중복된 멘션 대상 ID가 있습니다. ID: " + userId);
+                }
+
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new IllegalArgumentException("멘션 대상 사용자를 찾을 수 없습니다. ID: " + userId));
 
@@ -103,11 +108,13 @@ public class ScheduleServiceImpl implements ScheduleService{
                 }
 
                 ScheduleMention mention = ScheduleMention.createMention(schedule, user);
-                schedule.addScheduleMention(mention);  // ✅ 핵심
-            });
+                schedule.addScheduleMention(mention);
+            }
         }
 
         Schedule savedSchedule = scheduleRepository.save(schedule);
+        System.out.println("Saved schedulePk: " + savedSchedule.getSchedulePk());
+        System.out.println("Mentions: " + savedSchedule.getScheduleMentions().size());
 
         List<Long> scheduleMentionPks = savedSchedule.getScheduleMentions().stream()
                 .map(mention -> mention.getUser().getUserPk())
@@ -141,6 +148,14 @@ public class ScheduleServiceImpl implements ScheduleService{
         schedule.setEndDate(dto.getEnd());
 
         List<Long> newMentionUserIds = Optional.ofNullable(dto.getScheduleMentionPk()).orElse(Collections.emptyList());
+
+        // 중복 멘션 체크
+        Set<Long> uniqueCheck = new HashSet<>();
+        for (Long id : newMentionUserIds) {
+            if (!uniqueCheck.add(id)) {
+                throw new IllegalArgumentException("중복된 멘션 대상 ID가 있습니다. ID: " + id);
+            }
+        }
 
         // 현재 멘션된 사용자 ID 목록
         List<ScheduleMention> existingMentions = new ArrayList<>(schedule.getScheduleMentions());

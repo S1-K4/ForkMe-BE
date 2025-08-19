@@ -4,11 +4,13 @@ import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
+import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,11 +53,19 @@ public class BoardInProject extends BaseTime {
     @JoinColumn(name = "user_pk")
     private User user;
 
-    @OneToMany(mappedBy = "boardInProject", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<S3File> files;
 
-    @OneToMany(mappedBy ="boardInProject", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<CommentInProject> comments;
+    // images, file 등이 null 값일 수 있으니 배열 선언
+    @OneToMany(mappedBy = "boardInProject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<S3Image> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "boardInProject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<S3File> files = new ArrayList<>();
+
+    @OneToMany(mappedBy = "boardInProject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<CommentInProject> comments = new ArrayList<>();
 
     //정적 팩토리 메소드 추가
     public static BoardInProject create(String title, String content, Project project, User user){

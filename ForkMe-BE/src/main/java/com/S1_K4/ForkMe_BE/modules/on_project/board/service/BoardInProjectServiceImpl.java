@@ -12,6 +12,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
@@ -21,6 +22,8 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,15 +55,29 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final CommentInProjectRepository commentInProjectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     // 게시판 생성
     @Transactional
-    public BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request) {
+    public BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files) {
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다. userPk=" + userPk));
 
         Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다. projectPk=" + projectPk));
+
+        // 해당 유저 프로젝트 멤버인지 조회
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
+
+        List<FileInfoResponse> uploadedImageInfos = (images != null && !images.isEmpty())
+                ? s3Service.uploadFileIn(images, "images")
+                : List.of();
+
+        List<FileInfoResponse> uploadedFileInfos = (files != null && !files.isEmpty())
+                ? s3Service.uploadFileIn(files, "downloads/" + projectPk)
+                : List.of();
 
         // ❗ projectProfile이 null인지 먼저 확인
         ProjectProfile projectProfile = project.getProjectProfile();
@@ -71,21 +88,17 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         BoardInProject board = BoardInProject.create(request.getTitle(), pureContent, project, user);
         BoardInProject savedBoard = boardInProjectRepository.save(board);
 
-        // 이미지 URL 저장 (BoardInProject 관련 이미지)
-        if (request.getImageUrls() != null) {
-            for (String url : request.getImageUrls()) {
-                S3Image image = projectProfile != null
-                        ? S3Image.create(url, projectProfile, board)
-                        : S3Image.create(url, null, board);
+// 업로드한 이미지 정보로 이미지 저장
+        if (uploadedImageInfos != null && !uploadedImageInfos.isEmpty()) {
+            for (FileInfoResponse imageInfo : uploadedImageInfos) {
+                S3Image image = S3Image.create(imageInfo.getFileUrl(), projectProfile, board);
                 boardImageRepository.save(image);
             }
-        } else {
-            log.info("이미지 URL 리스트가 비어있음");
         }
 
-        // 파일 URL 저장
-        if (request.getFileInfos() != null) {
-            for (FileInfoResponse fileInfo : request.getFileInfos()) {
+// 업로드한 파일 정보로 파일 저장
+        if (uploadedFileInfos != null && !uploadedFileInfos.isEmpty()) {
+            for (FileInfoResponse fileInfo : uploadedFileInfos) {
                 S3File boardFile = S3File.create(fileInfo.getFileUrl(), fileInfo.getOriginalFileName(), savedBoard);
                 boardFileRepository.save(boardFile);
             }
@@ -94,27 +107,39 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         return savedBoard;
     }
 
-
+    //image 마크다운 제거
     private String removeImageMarkdown(String markdown) {
         if (markdown == null) return null;
         return markdown.replaceAll("!\\[[^\\]]*\\]\\([^\\)]*\\)", "");
     }
 
 
-    public List<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk) {
-        List<BoardInProject> boards = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N);
+    // 게시글 전체조회(페이징)
+    public Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable, Long userPk) {
+        // 해당 유저 프로젝트 멤버인지 조회
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
 
-        return boards.stream()
-                .map(InBoardSimpleResponse::from)
-                .collect(Collectors.toList());
+        Page<BoardInProject> boardsPage = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N, pageable);
+        return boardsPage.map(InBoardSimpleResponse::from);
     }
 
 
     // 게시글 상세보기
     @Transactional(readOnly = true)
-    public InBoardDetailResponse getBoardDetail(Long boardInProjectPk) {
+    public InBoardDetailResponse getBoardDetail(Long boardInProjectPk, Long userPk) {
+
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다. ID=" + boardInProjectPk));
+
+        if (board.getDeletedYN() == Yn.Y) {
+            throw new RuntimeException("해당 게시글은 삭제되었습니다.");
+        }
+
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
 
         List<S3Image> boardImages = boardImageRepository.findByBoardInProject(board);
         List<String> imageUrls = boardImages.stream()
@@ -155,6 +180,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
 
         if(!board.getUser().getUserPk().equals(userPk)){
             throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
@@ -247,6 +276,14 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         if (!board.getProject().getProjectPk().equals(projectPk)) {
             throw new RuntimeException("해당 프로젝트에 속한 게시글이 아닙니다.");
         }
+        if(board.getDeletedYN() == Yn.Y){
+            throw new RuntimeException("이미 삭제된 게시글 입니다.");
+        }
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         // 게시글 작성자 체크
         if (!board.getUser().getUserPk().equals(userPk)) {
@@ -271,7 +308,6 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     }
 
     private String extractS3Key(String url) {
-        // 예: https://bucket.s3.amazonaws.com/images/foo.jpg → images/foo.jpg
         int index = url.indexOf(".amazonaws.com/");
         if (index != -1) {
             return url.substring(index + ".amazonaws.com/".length());
