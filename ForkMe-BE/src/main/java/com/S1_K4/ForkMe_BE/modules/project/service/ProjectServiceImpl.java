@@ -132,70 +132,7 @@ public class ProjectServiceImpl implements ProjectService{
                 .build();
     }
 
-    /**
-     * 정적 파트 : 캐시
-     * */
-    @Cacheable(cacheNames = CacheNames.PROJECT_DETAIL_STATIC, key = "#projectPk", sync = true)
-    @Transactional(readOnly = true)
-    public StaticPart getStaticPart(Long projectPk) {
-
-        //프로젝트 조회
-        Project project = projectRepository.findWithProfileAndUserByProjectPk(projectPk)
-                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
-
-        ProjectProfile profile = project.getProjectProfile();
-        Long profilePk = profile.getProjectProfilePk();
-
-        //해당 프로젝트의 포지션 조회
-        List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profilePk);
-        
-        //해당 프로젝트의 기술스택 조회
-        List<TechStackResponseDTO> techStacks = projectTechStackRepository.findTechStacksByProfilePk(profilePk);
-        
-
-        List<ProjectImageDTO> images = s3Repository.findAllImagesByProfilePk(profilePk);
-
-        return new StaticPart(
-                profilePk,
-                project.getUser().getUserPk(),
-                project.getUser().getNickname(),
-                profile.getProjectProfileTitle(),
-                profile.getProjectProfileContent(),
-                project.getProjectStatus().getDescription(),
-                profile.getProgressType().getDescription(),
-                positions,
-                techStacks,
-                profile.getRecruitmentStartDate(),
-                profile.getRecruitmentEndDate(),
-                project.getProjectStartDate(),
-                project.getProjectEndDate(),
-                profile.getExpectedMembers(),
-                images
-        );
-    }
-
-    // 응답 조립 편의를 위한 record
-    public record StaticPart(
-            Long projectProfilePk,
-            Long userPk,
-            String nickname,
-            String title,
-            String content,
-            String projectStatus,
-            String progressType,
-            List<PositionResponseDTO> positions,
-            List<TechStackResponseDTO> techStacks,
-            LocalDate recruitmentStartDate,
-            LocalDate recruitmentEndDate,
-            LocalDate projectStart,
-            LocalDate projectEnd,
-            int expectedMembers,
-            List<ProjectImageDTO> images
-    ){}
-
-
-
-    /**
+    /*
      * 프로젝트 목록 조회
      * */
     @Override
@@ -378,7 +315,7 @@ public class ProjectServiceImpl implements ProjectService{
     }
 
 
-    /**
+    /*
      * 프로젝트 삭제
      * */
     @Override
@@ -614,9 +551,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //기획 -> 모집 상태 변경
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
+//    @Caching(evict = {
+//            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+//            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+//    })
     @Transactional
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -631,11 +569,19 @@ public class ProjectServiceImpl implements ProjectService{
         ProjectMember leader = projectMemberRepository.findLeaderByProjectPk(project)
                 .orElseThrow(() -> new IllegalStateException("리더가 없습니다."));
         chattingService.addChattingParticipant(teamChattingRoom, leader.getUser().getUserPk(), now);
+
+
+        // 캐시 삭제
+        evictProjectCaches(projectPk);
+
+
     }
+
 
     //모집 -> 진행중 상태 변경
     @Override
     @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     @Transactional
@@ -890,5 +836,15 @@ public class ProjectServiceImpl implements ProjectService{
             // chatting_participant
 
 
+    }
+
+    /** 헬퍼 메서드 **/
+    // 캐시 삭제를 위한 메서드
+    //메서드 상단에서 캐시를 삭제하면 Transactional 과 순서가 꼬여서
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
+    public void evictProjectCaches(Long projectPk) {
     }
 }

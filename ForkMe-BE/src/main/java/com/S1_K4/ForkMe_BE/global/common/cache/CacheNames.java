@@ -20,4 +20,9 @@ public interface CacheNames {
 
         //프로젝트 목록
         String PROJECT_LIST   = "project:list";
+
+        // 김송이 추가(워크스페이스)
+        String BOARD_PROJECT_DETAIL = "board:project:detail";
+        String BOARD_PROJECT_LIST = "board:project:detail";
+
 }

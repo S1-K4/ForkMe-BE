@@ -1,9 +1,11 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingHistoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,13 +30,16 @@ public class ChattingHistoryController {
 
     // 특정 유저가 볼 수 있는 채팅방의 과거 메시지
     @GetMapping("/{chattingRoomPk}/messages/{userPk}")
-    public List<ChattingMessageDto> getChattingHistory(
+    public ResponseEntity<ApiResponse<List<ChattingMessageDto>>> getChattingHistory(
             @PathVariable("chattingRoomPk") Long chattingRoomPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
 //            @PathVariable("userPk") Long userPk
     ) {
 
         Long loginUser = userDetails.getUserPk();
-        return chattingHistoryService.getChattingHistory(chattingRoomPk, loginUser);
+        return ResponseEntity.ok(ApiResponse.success(
+                chattingHistoryService.getChattingHistory(chattingRoomPk, loginUser),
+                "이전 채팅 메세지 조회 성공")
+        );
     }
 }

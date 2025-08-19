@@ -164,7 +164,7 @@ public class ProjectController {
     @PostMapping("/{projectPk}/status/progress")
     public ResponseEntity<ApiResponse<String>> progress(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long userPk = userDetails.getUserPk();
@@ -179,7 +179,7 @@ public class ProjectController {
     @PostMapping("/{projectPk}/status/adding")
     public ResponseEntity<ApiResponse<String>> adding(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long userPk = userDetails.getUserPk();
@@ -194,7 +194,7 @@ public class ProjectController {
     @PostMapping("/{projectPk}/status/complete")
     public ResponseEntity<ApiResponse<String>> complete(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long userPk = userDetails.getUserPk();
@@ -209,7 +209,7 @@ public class ProjectController {
     @PostMapping("/{projectPk}/title")
     public ResponseEntity<ApiResponse<Long>> updateProjectTitle(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody ProjectTitleUpdateDTO dto
      ) {
@@ -225,7 +225,7 @@ public class ProjectController {
     @DeleteMapping("/{projectPk}/members/me")
     public ResponseEntity<ApiResponse<Long>> leaveProject(
             @Parameter(description = "프로젝트 PK", example = "1")
-            @PathVariable Long projectPk,
+            @PathVariable("projectPk")Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ){
         Long userPk = userDetails.getUserPk();
