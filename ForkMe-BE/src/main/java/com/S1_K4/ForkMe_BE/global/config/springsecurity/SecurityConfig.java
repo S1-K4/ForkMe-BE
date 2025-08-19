@@ -119,13 +119,13 @@ public class SecurityConfig {
                         ).permitAll() // 0812 김송이 추가
 
                         // ====== 채팅 : 인증X ======
-                        .requestMatchers(HttpMethod.GET, "api/chatting-room/*/participants").permitAll() // 채팅 참여자 리스트 조회
+                        .requestMatchers(HttpMethod.GET, "/api/chatting-room/*/participants").permitAll() // 채팅 참여자 리스트 조회
 
                         // ====== 채팅 : 인증 필요 ======
                         .requestMatchers(HttpMethod.GET,
                                 "/api/chatting-room/create", //채팅방 생성
-                                "api/chatting-room/private", //로그인 유저의 프로젝트 내 개인채팅방 리스트 조회
-                                "api/chatting-room/*/messages/*" //로그인한 유저 기준 채팅방 이전 대화 조회
+                                "/api/chatting-room/private", //로그인 유저의 프로젝트 내 개인채팅방 리스트 조회
+                                "/api/chatting-room/*/messages/**" //로그인한 유저 기준 채팅방 이전 대화 조회
                                 ).authenticated()
 
 
