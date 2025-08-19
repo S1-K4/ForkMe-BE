@@ -56,7 +56,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto(p.projectPk, p.projectTitle, p.projectStatus) " +
             "FROM ProjectMember pm JOIN pm.project p " +
-            "WHERE pm.user.userPk = :userPk AND p.projectStatus IN ('IN_PROGRESS','ADDING') AND p.deletedYN = 'N'")
+            "WHERE pm.user.userPk = :userPk AND p.projectStatus IN ('RECRUITING','IN_PROGRESS','ADDING') AND p.deletedYN = 'N'")
     List<SideBarProjectDto> findProgressProjectsByUser(@Param("userPk") Long userPk);
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.project.dto.CompletedProjectSummaryDto(" +

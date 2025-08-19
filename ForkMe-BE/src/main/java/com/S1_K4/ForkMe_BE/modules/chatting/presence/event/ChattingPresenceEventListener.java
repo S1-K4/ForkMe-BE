@@ -83,6 +83,6 @@ public class ChattingPresenceEventListener {
         String s = dest.substring("/topic/chat/".length());
         int slash = s.indexOf('/');
         return Long.valueOf(slash >= 0 ? s.substring(0, slash) : s);
-        // "/topic/chat/123" 또는 "/topic/chat/123/members" 모두 처리
+        // "/topic/chat/{chattingRoomPk}" 또는 "/topic/chat/{chattingRoomPk}/members" 모두 처리
     }
 }
