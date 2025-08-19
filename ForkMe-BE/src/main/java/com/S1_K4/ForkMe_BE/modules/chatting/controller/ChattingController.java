@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.controller;
 
+import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
@@ -7,8 +8,10 @@ import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingRoomResponse;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectUpdateFormDTO;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -60,16 +63,18 @@ public class ChattingController {
      */
     //채팅방 참여자 조회(참여자 조회에 권한 체크 필요하면 나중에 추가)
     @GetMapping("/{chattingRoomPk}/participants")
-    public List<ChattingUserDto> getChattingRoomParticipants(
+    public ResponseEntity<ApiResponse<List<ChattingUserDto>>> getChattingRoomParticipants(
             @PathVariable("chattingRoomPk") Long chattingRoomPk
 
     ) {
-        return chattingService.getChattingRoomParticipants(chattingRoomPk);
+        return ResponseEntity.ok(ApiResponse.success(
+                chattingService.getChattingRoomParticipants(chattingRoomPk), "프로젝트 채팅방 참여자 목록 조회 성공")
+        );
     }
 
 
     @GetMapping("/create")
-    public ChattingRoomResponse createPrivateChattingRoom(
+    public ResponseEntity<ApiResponse<ChattingRoomResponse>> createPrivateChattingRoom(
             @RequestParam("projectPk") Long projectPk,
             @RequestParam("roomType") RoomType roomType,
 //            @RequestParam(value = "fromUserPk", required = false) Long fromUserPk,
@@ -119,24 +124,29 @@ public class ChattingController {
             throw new IllegalArgumentException("유효하지 않은 채팅방 타입입니다.");
         }
 
-        return ChattingRoomResponse.builder()
+        return ResponseEntity.ok(ApiResponse.success(ChattingRoomResponse.builder()
                 .chattingRoomPk(chattingRoom.getChattingRoomPk())
                 .roomType(roomType)
                 .chattingRoomParticipants(participants)
                 .canSendMessage(canSendMessage)
-                .build();
+                .build(),
+                "채팅방 단건 생성 및 조회 성공"
+        ));
     }
 
 
     //현재 프로젝트에 귀속된 개인 채팅방 리스트 보여주기
     @GetMapping("/private")
-    public List<ChattingRoomResponse> getMyPrivateChattingRooms(
+    public ResponseEntity<ApiResponse<List<ChattingRoomResponse>>> getMyPrivateChattingRooms(
             @RequestParam("projectPk") Long projectPk,
             @AuthenticationPrincipal CustomUserDetails userDetails
 //            @RequestParam("userPk") Long userPk
     ) {
         User loginUser = userDetails.getUser();
-        return chattingService.getMyPrivateChattingRooms(projectPk, loginUser.getUserPk());
+        return ResponseEntity.ok(ApiResponse.success(
+                chattingService.getMyPrivateChattingRooms(projectPk, loginUser.getUserPk()),
+                "프로젝트 관련 개인 채팅방 목록 조회 성공")
+        );
     }
 
 
