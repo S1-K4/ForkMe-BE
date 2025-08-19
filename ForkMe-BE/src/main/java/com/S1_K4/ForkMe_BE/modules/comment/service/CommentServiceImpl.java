@@ -14,10 +14,13 @@ import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -73,9 +76,13 @@ public class CommentServiceImpl implements CommentService{
 
         Comment saved = commentRepository.save(comment);
 
-        //캐시 무효화
-        evictDetailAndList(profile.getProject().getProjectPk());
-
+        //커밋 이후 캐시 무효화
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+            }
+        });
         return CommentResponseDTO.builder()
                 .comment(saved.getComment())
                 .commentPk(saved.getCommentPk())
@@ -99,8 +106,13 @@ public class CommentServiceImpl implements CommentService{
 
         comment.updateComment(dto.getComment());
 
-        //캐시 무효화
-        evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+        //커밋 이후 캐시 무효화
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+            }
+        });
 
         return UpdateCommentDTO.builder()
                 .comment(comment.getComment())
@@ -126,13 +138,21 @@ public class CommentServiceImpl implements CommentService{
 
         comment.markDeleted();
 
-        //캐시 무효화
-        evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+        //커밋 이후 캐시 무효화
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
+            }
+        });
     }
 
     private void evictDetailAndList(Long projectPk) {
-        cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC).evict(projectPk);
-        cacheManager.getCache(CacheNames.PROJECT_LIST).clear();
+        Cache detail = cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC);
+        Cache list   = cacheManager.getCache(CacheNames.PROJECT_LIST);
+
+        detail.evictIfPresent(projectPk);   //상세보기 : 해당 projectPk를 가진 캐쉬만 무효화
+        list.clear();                       //목록보기 : 모두 무효화
     }
 
 
