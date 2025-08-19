@@ -42,42 +42,44 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
 
     @Transactional
     public CommentResponse createComment(CommentCreateRequest request, Long userPk, Long boardInProjectPk) {
-        // 1. 게시판 조회
+        System.out.println("유저는 : "+userPk);
+        System.out.println("보드는 : "+ boardInProjectPk);
+        //게시판 조회
         BoardInProject board = boardRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
 
-        // 2. 사용자 조회
+        //사용자 조회
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
 
-        // 3. 해당 유저 프로젝트 멤버인지 조회
+        //해당 유저 프로젝트 멤버인지 조회
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
         }
 
-        // 3. 댓글 생성
+        //댓글 생성
         CommentInProject comment = CommentInProject.builder()
                 .comment(request.getComment())
                 .boardInProject(board)
                 .user(user)
                 .build();
 
-        // 4. 저장
+        // 댓글 저장
         CommentInProject saved = commentRepository.save(comment);
 
         return CommentResponse.from(saved);
     }
 
     public List<CommentResponse> getCommentsByBoardId(Long boardPk, Long userPk) {
-        // 1. 게시판 조회
+        // 게시판 조회
         BoardInProject board = boardRepository.findById(boardPk)
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
 
-        // 2. 사용자 조회
+        // 사용자 조회
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
 
-        // 3. 해당 유저 프로젝트 멤버인지 조회
+        // 해당 유저 프로젝트 멤버인지 조회
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
         }
@@ -90,23 +92,23 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
     @Transactional
     public CommentResponse updateComment(CommentUpdateRequest request, Long userPk, Long commentInProjectPk){
 
-        // 1. 댓글 조회
+        // 댓글 조회
         CommentInProject comment = commentRepository.findById(commentInProjectPk)
                 .orElseThrow(()->new RuntimeException("해당 댓글이 존재하지 않습니다."));
-        // 2. 게시판 조회
+        // 게시판 조회
         BoardInProject board = boardRepository.findById(comment.getBoardInProject().getBoardInProjectPk())
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다."));
 
-        // 3. 사용자 조회
+        // 사용자 조회
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
 
-        // 4. 해당 유저 프로젝트 멤버인지 조회
+        // 해당 유저 프로젝트 멤버인지 조회
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
         }
 
-        // 5. 작성자 확인
+        // 작성자 확인
         if(!comment.getUser().getUserPk().equals(userPk)){
             throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
         }
@@ -135,6 +137,10 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
         // 해당 유저 프로젝트 멤버인지 조회
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
+
+        if (comment.getDeletedYN() == Yn.Y) {
+            throw new RuntimeException("해당 댓글은 삭제되었습니다.");
         }
 
         comment.markDeleted(); // deletedYN = Y로 변경

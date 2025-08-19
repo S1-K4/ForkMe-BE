@@ -99,6 +99,7 @@ public class BoardInProjectController {
         return ResponseEntity.ok(response);
     }
 
+    // 게시글 수정
     @PutMapping(value = "/{boardInProjectPk}/edit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateBoard(
             @PathVariable Long projectPk,
@@ -130,18 +131,18 @@ public class BoardInProjectController {
     }
 
     @DeleteMapping("/{boardInProjectPk}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable Long projectPk,
+    public ResponseEntity<ApiResponse<?>> deleteBoard(@PathVariable Long projectPk,
                                             @PathVariable Long boardInProjectPk,
                                             @AuthenticationPrincipal CustomUserDetails userDetails) {
         // 현재 로그인한 유저pk 가져오기
         Long loggedInUserPk = userDetails.getUserPk();
 
         boardInProjectService.deleteBoard(projectPk, boardInProjectPk, loggedInUserPk);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 완료"));
     }
 
     @DeleteMapping("/{boardInProjectPk}/files")
-    public ResponseEntity<?> deleteFile(
+    public ResponseEntity<ApiResponse<?>> deleteFile(
             @PathVariable Long projectPk,
             @PathVariable Long boardInProjectPk,
             @RequestBody Map<String, String> requestBody
@@ -149,7 +150,7 @@ public class BoardInProjectController {
 
         String key = requestBody.get("key");
         if (key == null || key.isBlank()) {
-            return ResponseEntity.badRequest().body("key 값이 필요합니다.");
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, "key 값이 필요합니다."));
         }
 
         try {
@@ -159,11 +160,11 @@ public class BoardInProjectController {
             // (선택) 게시글에서 해당 파일 정보를 제거 (DB 또는 객체에서)
             boardInProjectService.removeFileFromBoard(boardInProjectPk, key);
 
-            return ResponseEntity.ok("파일이 삭제되었습니다.");
+            return ResponseEntity.ok(ApiResponse.success("프로젝트 번호 : "+ projectPk, "프로젝트 삭제 완료"));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("파일 삭제 중 오류 발생");
+                    .body(ApiResponse.error(500, "파일 삭제 중 오류 발생"));
         }
     }
 

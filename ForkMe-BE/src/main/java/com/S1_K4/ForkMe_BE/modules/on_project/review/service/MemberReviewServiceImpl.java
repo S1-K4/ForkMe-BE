@@ -42,8 +42,8 @@ public class MemberReviewServiceImpl implements MemberReviewService {
    public MemberReviewResponse createReview(Long projectPk, Long writerUserPk, MemberReviewRequest dto){
        Project project = projectRepository.findById(projectPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
-       if (project.getProjectStatus() == ProjectStatus.COMPLETED) {
-           throw new IllegalArgumentException("완료된 프로젝트에는 후기를 작성할 수 없습니다.");
+       if (project.getProjectStatus() != ProjectStatus.COMPLETED) {
+           throw new IllegalArgumentException("완료되지 않은 프로젝트에는 후기를 작성할 수 없습니다.");
        }
        User writer = userRepository.findById(writerUserPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 작성자입니다."));
@@ -55,6 +55,13 @@ public class MemberReviewServiceImpl implements MemberReviewService {
        ProjectMember member = projectMemberRepository
                .findByProject_ProjectPkAndUser_UserPk(projectPk, dto.getTargetUserPk())
                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.MEMBER_NOT_FOUND));
+
+       // 해당 멤버한테 이미 후기를 작성했는지 확인
+       boolean alreadyReviewed = memberReviewRepository.existsByProjectAndWriterAndTarget(project, writer, target);
+       if (alreadyReviewed) {
+           System.out.println("이미 해당 멤버에 대한 후기를 작성하였습니다.");
+           throw new IllegalArgumentException("이미 해당 멤버에 대한 후기를 작성하였습니다.");
+       }
 
        MemberReview review = MemberReview.builder()
                .project(project)

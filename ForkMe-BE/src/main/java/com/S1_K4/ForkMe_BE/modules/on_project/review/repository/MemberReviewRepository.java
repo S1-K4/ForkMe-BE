@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.review.repository;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.entity.MemberReview;
+import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
+import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -25,6 +27,8 @@ public interface MemberReviewRepository extends JpaRepository<MemberReview, Long
 
     @Query("SELECT new com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto(mr.project.projectPk, mr.review) FROM MemberReview mr WHERE mr.target.userPk = (:userPk) AND mr.project.projectPk IN (:projectPkList)")
     List<MemberReviewMypageDto> findMemberReviewByProjectPkIn(Long userPk, List<Long> projectPkList);
+
+    boolean existsByProjectAndWriterAndTarget(Project project, User writer, User target);
 
 
 }

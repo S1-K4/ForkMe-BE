@@ -133,9 +133,14 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다. ID=" + boardInProjectPk));
 
+        if (board.getDeletedYN() == Yn.Y) {
+            throw new RuntimeException("해당 게시글은 삭제되었습니다.");
+        }
+
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
         }
+
         List<S3Image> boardImages = boardImageRepository.findByBoardInProject(board);
         List<String> imageUrls = boardImages.stream()
                 .map(S3Image::getUrl)
@@ -270,6 +275,9 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         if (!board.getProject().getProjectPk().equals(projectPk)) {
             throw new RuntimeException("해당 프로젝트에 속한 게시글이 아닙니다.");
+        }
+        if(board.getDeletedYN() == Yn.Y){
+            throw new RuntimeException("이미 삭제된 게시글 입니다.");
         }
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
             throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
