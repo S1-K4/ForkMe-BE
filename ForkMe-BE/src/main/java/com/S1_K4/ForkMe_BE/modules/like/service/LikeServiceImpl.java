@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.like.service;
 
 import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.EvictScope;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.ProjectCacheEvictEvent;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.like.dto.LikeDTO;
 import com.S1_K4.ForkMe_BE.modules.like.entity.Likes;
@@ -12,6 +14,7 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +31,7 @@ public class LikeServiceImpl implements LikeService{
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final LikeRepository likeRepository;
-    private final CacheManager cacheManager;
+    private final ApplicationEventPublisher publisher;
 
     /**
     * 특정 profile의 좋아요 유무 확인하는 메서드
@@ -74,8 +77,9 @@ public class LikeServiceImpl implements LikeService{
 
         likeRepository.save(like);
 
-        // ✅ 캐시 무효화
-        evictDetailAndList(profilePk);
+        // 커밋 후 프로젝트 상세 + 목록 조회 캐싱 무효화
+        Long projectPk = profile.getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
 
         return LikeDTO.builder()
                 .isLiked(true)
@@ -95,21 +99,16 @@ public class LikeServiceImpl implements LikeService{
                 .findByUser_UserPkAndProjectProfile_ProjectProfilePk(userPk, profilePk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.LIKED_NOT_FOUND));
 
+        Long projectPk = like.getProjectProfile().getProject().getProjectPk();
+
         likeRepository.delete(like);
 
-        Long projectPk = like.getProjectProfile().getProject().getProjectPk();
-        // ✅ 캐시 무효화
-        evictDetailAndList(projectPk);
+        // 커밋 후 프로젝트 상세 + 목록 조회 캐싱 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
 
         return LikeDTO.builder()
                 .isLiked(false)
                 .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profilePk))
                 .build();
     }
-
-    private void evictDetailAndList(Long projectPk) {
-        cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC).evict(projectPk);
-        cacheManager.getCache(CacheNames.PROJECT_LIST).clear(); // 목록 전체 무효화(간단/안전)
-    }
-
 }

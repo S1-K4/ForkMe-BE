@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.comment.service;
 
 import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.EvictScope;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.ProjectCacheEvictEvent;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.CommentResponseDTO;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -38,7 +41,7 @@ public class CommentServiceImpl implements CommentService{
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
-    private final CacheManager cacheManager;
+    private final ApplicationEventPublisher publisher;
 
     /**
      * 댓글 등록 메서드
@@ -76,13 +79,10 @@ public class CommentServiceImpl implements CommentService{
 
         Comment saved = commentRepository.save(comment);
 
-        //커밋 이후 캐시 무효화
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
-            }
-        });
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        Long projectPk = profile.getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
         return CommentResponseDTO.builder()
                 .comment(saved.getComment())
                 .commentPk(saved.getCommentPk())
@@ -106,13 +106,9 @@ public class CommentServiceImpl implements CommentService{
 
         comment.updateComment(dto.getComment());
 
-        //커밋 이후 캐시 무효화
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
-            }
-        });
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        Long projectPk = comment.getProjectProfile().getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
 
         return UpdateCommentDTO.builder()
                 .comment(comment.getComment())
@@ -136,24 +132,13 @@ public class CommentServiceImpl implements CommentService{
             throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
         }
 
+        Long projectPk = comment.getProjectProfile().getProject().getProjectPk();
+
         comment.markDeleted();
 
-        //커밋 이후 캐시 무효화
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                evictDetailAndList(comment.getProjectProfile().getProject().getProjectPk());
-            }
-        });
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
     }
-
-    private void evictDetailAndList(Long projectPk) {
-        Cache detail = cacheManager.getCache(CacheNames.PROJECT_DETAIL_STATIC);
-        Cache list   = cacheManager.getCache(CacheNames.PROJECT_LIST);
-
-        detail.evictIfPresent(projectPk);   //상세보기 : 해당 projectPk를 가진 캐쉬만 무효화
-        list.clear();                       //목록보기 : 모두 무효화
-    }
-
 
 }

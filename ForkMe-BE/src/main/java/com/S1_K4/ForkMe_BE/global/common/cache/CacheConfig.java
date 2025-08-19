@@ -7,9 +7,11 @@ import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -18,6 +20,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,10 +76,9 @@ public class CacheConfig {
 
         //캐시 이름별로 다른 설정을 적용하기 위한 Map -> 특정 캐시이름별로 TTL을 다르게 줄 수 있다.
         Map<String, RedisCacheConfiguration> confs = new HashMap<>();
-        //상세보기 TTL : 1분 -> 데이터 변경 주기가 상대적으로 길다.
-        confs.put(CacheNames.PROJECT_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
-        //목록 TTL : 30초 -> 실시간성이 중요하므로 짧게
-        confs.put(CacheNames.PROJECT_LIST,   defaultConf.entryTtl(Duration.ofMinutes(10)));
+
+        //목록 TTL : 30초 -> 실시간성이 중요하므로 짧게(현재는 테스트용으로 10분)
+        confs.put(CacheNames.PROJECT_LIST, defaultConf.entryTtl(Duration.ofMinutes(10)));
 
         //상세 정적 파트 : 변동 적음 -> 5분
         confs.put(CacheNames.PROJECT_DETAIL_STATIC, defaultConf.entryTtl(Duration.ofMinutes(3)));
@@ -86,13 +88,12 @@ public class CacheConfig {
 
         //좋아요 카운트 : 변동 잦음 -> (테스트용 1분)
         confs.put(CacheNames.PROJECT_LIKE_COUNT, defaultConf.entryTtl(Duration.ofMinutes(1)));
+
         // 김송이 추가 0818
         //워크스페이스 게시판 상세보기 TTL : 1분
         confs.put(CacheNames.BOARD_PROJECT_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
         //워크스페이스 게시판 목록 TTL : 30초
         confs.put(CacheNames.BOARD_PROJECT_LIST, defaultConf.entryTtl(Duration.ofSeconds(30)));
-
-
 
         return RedisCacheManager.builder(connectionFactory)
                 //캐시 이름 별로 별도 설정이 없는 경우 기본값(5분 TTL)을 적용
@@ -102,5 +103,21 @@ public class CacheConfig {
                 //트랜잭션 롤백 시, 캐시 반영도 취소
                 .transactionAware() // 트랜잭션 커밋 후 반영
                 .build();
+    }
+
+    //프로젝트 관련 캐싱 Key 생성 메서드
+    @Bean("projectListKeyGenerator")
+    public KeyGenerator projectListKeyGenerator() {
+        return (target, method, params) -> {
+            Pageable pageable = Arrays.stream(params)
+                    .filter(p -> p instanceof Pageable)
+                    .map(Pageable.class::cast)
+                    .findFirst().orElse(null);
+
+            assert pageable != null;
+            return "page=" + pageable.getPageNumber()
+                    + ":size=" + pageable.getPageSize()
+                    + ":sort=" + pageable.getSort();
+        };
     }
 }

@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.project.service;
 
 import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.EvictScope;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.ProjectCacheEvictEvent;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
@@ -37,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -76,6 +79,7 @@ public class ProjectServiceImpl implements ProjectService{
     private final S3Repository s3Repository;
     private final MemberReviewRepository memberReviewRepository;
     private final CommentRepository commentRepository;
+    private final ApplicationEventPublisher publisher;
 
     private final ChattingService chattingService;
 
@@ -86,9 +90,6 @@ public class ProjectServiceImpl implements ProjectService{
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = CacheNames.PROJECT_DETAIL_STATIC, key = "#p0", sync = true)
     public ProjectDetailResponseDTO getProjectDetail(Long projectPK){
-
-//        //정적 파트(캐시됨)
-//        StaticPart staticPart = getStaticPart(projectPK);
 
         Optional<Project> projectOpt = projectRepository.findWithProfileAndUserByProjectPk(projectPK);
         Project project = projectOpt.orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
@@ -213,7 +214,6 @@ public class ProjectServiceImpl implements ProjectService{
                     .build();
         });
 
-
         return PageResponse.from(dtoPage);
     }
 
@@ -262,9 +262,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 생성 시, 프로젝트 프로필 타이틀이 프로젝트 타이틀로 저장됨.
      * */
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public Long createdProject(ProjectCreateRequestDTO dto, List<MultipartFile> images, Long userPk) {
 
@@ -311,6 +308,9 @@ public class ProjectServiceImpl implements ProjectService{
         List<ProjectPosition> projectPositions = dto.toProjectPositionEntities(projectProfile, positions);
         projectPositionRepository.saveAll(projectPositions);
 
+        //커밋 후 프로젝트 목록 캐시만 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.LIST_ONLY));
+
         return project.getProjectPk();
     }
 
@@ -319,9 +319,6 @@ public class ProjectServiceImpl implements ProjectService{
      * 프로젝트 삭제
      * */
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public void deleteProject(Long projectPk, Long userPk){
 
@@ -364,6 +361,9 @@ public class ProjectServiceImpl implements ProjectService{
         projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());    //프로젝트 모집분야
         s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
 
+
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
 
         applyRepository.deleteByProject_ProjectPk(projectPk);
     }
@@ -425,10 +425,7 @@ public class ProjectServiceImpl implements ProjectService{
     /**
      * 프로젝트 수정
      */
-    @Override           //프로젝트 수정 시 캐시 무효회
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
+    @Override
     @Transactional
     public ProjectResponseDTO updatedProject(Long projectPk, ProjectUpdateFormDTO dto, List<MultipartFile> newImages, Long userPk) {
 
@@ -542,6 +539,9 @@ public class ProjectServiceImpl implements ProjectService{
                                 .build())
                         .toList();
 
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
+
         return ProjectResponseDTO.fromEntity(project, techStacks, positions);
     }
 
@@ -551,10 +551,6 @@ public class ProjectServiceImpl implements ProjectService{
 
     //기획 -> 모집 상태 변경
     @Override
-//    @Caching(evict = {
-//            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
-//            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-//    })
     @Transactional
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -570,20 +566,17 @@ public class ProjectServiceImpl implements ProjectService{
                 .orElseThrow(() -> new IllegalStateException("리더가 없습니다."));
         chattingService.addChattingParticipant(teamChattingRoom, leader.getUser().getUserPk(), now);
 
+//        // 캐시 삭제
+//        evictProjectCaches(projectPk);
 
-        // 캐시 삭제
-        evictProjectCaches(projectPk);
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
 
 
     }
 
-
     //모집 -> 진행중 상태 변경
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public void toInProgress(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -596,37 +589,37 @@ public class ProjectServiceImpl implements ProjectService{
         for (Apply apply : pendingApplies) {
             apply.reject();
         }
+
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
     }
 
     //진행중 -> 충원
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public void toAdding(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
         project.adding();
+
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
     }
 
     //진행중 -> 종료
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public void toCompleted(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
         project.complete();
+
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
     }
 
     /**
      * 프로젝트명 변경
      */
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
     @Transactional
     public void updateProjectTitle(Long userPk, Long projectPk, String newTitleRaw){
         Project project = checkValid(userPk, projectPk);
@@ -644,8 +637,10 @@ public class ProjectServiceImpl implements ProjectService{
             return;
         }
 
-
         project.updateProjectTitle(newTitle);
+
+        //커밋 후 프로젝트 목록 + 상세 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(project.getProjectPk(), EvictScope.DETAIL_AND_LIST));
     }
 
     /**
@@ -836,13 +831,27 @@ public class ProjectServiceImpl implements ProjectService{
             // chatting_participant
 
 
+        // 캐싱 무효화
+        // 삭제된 프로젝트들이 존재할 때만 무효화 이벤트 발행 : 목록 캐싱 무효화
+        if (!projectsDeleteList.isEmpty()) {
+            publisher.publishEvent(new ProjectCacheEvictEvent(
+                    projectsDeleteList.get(0).getProjectPk(),
+                    EvictScope.LIST_ONLY
+            ));
+
+            //각 프로젝트 상세 캐시 개별 무효화
+            for (Long pk : projectPkList) {
+                publisher.publishEvent(new ProjectCacheEvictEvent(pk, EvictScope.DETAIL_AND_LIST));
+            }
+        }
+
     }
 
     /** 헬퍼 메서드 **/
     // 캐시 삭제를 위한 메서드
     //메서드 상단에서 캐시를 삭제하면 Transactional 과 순서가 꼬여서
     @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL_STATIC, key = "#projectPk"),
             @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
     })
     public void evictProjectCaches(Long projectPk) {
