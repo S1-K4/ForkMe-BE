@@ -558,10 +558,10 @@ public class ProjectServiceImpl implements ProjectService{
 
     //기획 -> 모집 상태 변경
     @Override
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
-            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
-    })
+//    @Caching(evict = {
+//            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+//            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+//    })
     @Transactional
     public void toRecruiting(Long userPk, Long projectPk){
         Project project = checkValid(userPk, projectPk);
@@ -576,7 +576,14 @@ public class ProjectServiceImpl implements ProjectService{
         ProjectMember leader = projectMemberRepository.findLeaderByProjectPk(project)
                 .orElseThrow(() -> new IllegalStateException("리더가 없습니다."));
         chattingService.addChattingParticipant(teamChattingRoom, leader.getUser().getUserPk(), now);
+
+
+        // 캐시 삭제
+        evictProjectCaches(projectPk);
+
+
     }
+
 
     //모집 -> 진행중 상태 변경
     @Override
@@ -839,5 +846,15 @@ public class ProjectServiceImpl implements ProjectService{
             // chatting_participant
 
 
+    }
+
+    /** 헬퍼 메서드 **/
+    // 캐시 삭제를 위한 메서드
+    //메서드 상단에서 캐시를 삭제하면 Transactional 과 순서가 꼬여서
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk"),
+            @CacheEvict(cacheNames = CacheNames.PROJECT_LIST,   allEntries = true)
+    })
+    public void evictProjectCaches(Long projectPk) {
     }
 }
