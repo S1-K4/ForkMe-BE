@@ -78,11 +78,13 @@ public class BoardInProjectController {
     //전체 조회
     @GetMapping
     public ResponseEntity<Page<InBoardSimpleResponse>> getBoardsInProject(@PathVariable Long projectPk,
+                                                                          @AuthenticationPrincipal CustomUserDetails userDetails,
                                                                           @RequestParam(defaultValue = "0") int page,
                                                                           @RequestParam(defaultValue = "10") int size) {
 
+        Long userPk = userDetails.getUserPk();
         Pageable pageable = PageRequest.of(page, size);
-        Page<InBoardSimpleResponse> responses = boardInProjectService.getAllBoardsInProject(projectPk, pageable);
+        Page<InBoardSimpleResponse> responses = boardInProjectService.getAllBoardsInProject(projectPk, pageable, userPk);
         return ResponseEntity.ok(responses);
     }
 
@@ -90,8 +92,10 @@ public class BoardInProjectController {
     // 게시글 상세 조회
 
     @GetMapping("/{boardInProjectPk}")
-    public ResponseEntity<InBoardDetailResponse> getBoardDetail( @PathVariable Long boardInProjectPk) {
-        InBoardDetailResponse response = boardInProjectService.getBoardDetail(boardInProjectPk);
+    public ResponseEntity<InBoardDetailResponse> getBoardDetail( @PathVariable Long boardInProjectPk,
+                                                                 @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userPk = userDetails.getUserPk();
+        InBoardDetailResponse response = boardInProjectService.getBoardDetail(boardInProjectPk,userPk);
         return ResponseEntity.ok(response);
     }
 

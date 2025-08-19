@@ -12,6 +12,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
@@ -54,6 +55,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final CommentInProjectRepository commentInProjectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     // 게시판 생성
     @Transactional
@@ -63,6 +65,11 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         Project project = projectRepository.findById(projectPk)
                 .orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다. projectPk=" + projectPk));
+
+        // 해당 유저 프로젝트 멤버인지 조회
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
 
         List<FileInfoResponse> uploadedImageInfos = (images != null && !images.isEmpty())
                 ? s3Service.uploadFileIn(images, "images")
@@ -108,7 +115,12 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     // 게시글 전체조회(페이징)
-    public Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable) {
+    public Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable, Long userPk) {
+        // 해당 유저 프로젝트 멤버인지 조회
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
+
         Page<BoardInProject> boardsPage = boardInProjectRepository.findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(projectPk, Yn.N, pageable);
         return boardsPage.map(InBoardSimpleResponse::from);
     }
@@ -116,10 +128,14 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
     // 게시글 상세보기
     @Transactional(readOnly = true)
-    public InBoardDetailResponse getBoardDetail(Long boardInProjectPk) {
+    public InBoardDetailResponse getBoardDetail(Long boardInProjectPk, Long userPk) {
+
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)
                 .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다. ID=" + boardInProjectPk));
 
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(board.getProject().getProjectPk(), userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
         List<S3Image> boardImages = boardImageRepository.findByBoardInProject(board);
         List<String> imageUrls = boardImages.stream()
                 .map(S3Image::getUrl)
@@ -159,6 +175,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
         User user = userRepository.findById(userPk)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
 
         if(!board.getUser().getUserPk().equals(userPk)){
             throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
@@ -251,6 +271,11 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         if (!board.getProject().getProjectPk().equals(projectPk)) {
             throw new RuntimeException("해당 프로젝트에 속한 게시글이 아닙니다.");
         }
+        if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
+            throw new RuntimeException("해당 유저는 프로젝트 멤버가 아닙니다.");
+        }
+        User user = userRepository.findById(userPk)
+                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         // 게시글 작성자 체크
         if (!board.getUser().getUserPk().equals(userPk)) {

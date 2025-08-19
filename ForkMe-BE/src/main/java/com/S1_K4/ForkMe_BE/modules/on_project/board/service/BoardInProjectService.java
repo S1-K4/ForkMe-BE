@@ -23,9 +23,9 @@ public interface BoardInProjectService {
     // 게시글 생성
     BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files);
     //게시글 전체 조회
-    Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable);
+    Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable, Long userPk);
     //게시글 상세조회
-    InBoardDetailResponse getBoardDetail(Long boardInProjectPk);
+    InBoardDetailResponse getBoardDetail(Long boardInProjectPk, Long userPk);
     // 게시글 수정
     BoardInProject updateBoard(Long projectPk, Long boardInProjectPk, InBoardUpdateRequest request,
                                List<MultipartFile> newImages, List<MultipartFile> newFiles, Long userPk);
