@@ -17,6 +17,7 @@ import lombok.extern.jackson.Jacksonized;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectMemberListDTO {
     private Long userPk;
+    private String profile_url;
     private String nickname;
     private String isLeader;
 }

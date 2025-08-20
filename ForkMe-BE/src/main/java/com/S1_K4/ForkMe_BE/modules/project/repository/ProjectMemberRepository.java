@@ -36,6 +36,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     @Query("""
         select new com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberListDTO(
             u.userPk,
+            u.profileUrl,
             u.nickname,
             cast(pm.isLeader as string)
         )
