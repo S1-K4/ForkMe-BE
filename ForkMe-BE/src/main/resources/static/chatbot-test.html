@@ -4,9 +4,15 @@
     <meta charset="utf-8" />
     <title>LLM 프로젝트 주제 추천 챗봇 테스트</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- SockJS & STOMP (현행 UMD) -->
+
+    <!-- SockJS & STOMP -->
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+
+    <!-- Markdown parser & Sanitizer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+
     <style>
         :root { --bg:#0b1020; --card:#121830; --muted:#9fb0ff; --text:#e8edff; }
         body { margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
@@ -52,7 +58,7 @@
             <button class="primary" onclick="connect()">Connect</button>
             <button class="ghost"   onclick="disconnect()">Disconnect</button>
             <button onclick="startSession()">Start 세션</button>
-            <span class="muted">※ Start 누르면 'start' 메시지를 보내며 세션을 초기화합니다.</span>
+            <span class="muted">※ Start 누르면 'start' 메시지를 보내며 세션 초기화</span>
         </div>
 
         <!-- 로그 -->
@@ -82,63 +88,71 @@
 <script>
     let client = null;
     let connected = false;
+    let gptSubscription = null;
 
     const $ = (id) => document.getElementById(id);
 
-    function logSystem(text)   { appendMsg('시스템', text, 'sys'); }
-    function logBot(text)      { appendMsg('GPT-봇', text, 'bot'); }
-    function logMe(text)       { appendMsg('나', text, 'me'); }
-    function setStatus(text)   { $('statusBadge').innerText = text; }
+    function renderMarkdownSafe(md) {
+        const html = marked.parse(md ?? '');
+        return DOMPurify.sanitize(html);
+    }
+    function escapeHtml(s) {
+        return (s ?? '').replace(/[&<>"']/g, (m) => (
+            {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
+        ));
+    }
 
-    function appendMsg(from, text, cls) {
+    function appendMsg(from, text, cls, { markdown = false } = {}) {
         const line = document.createElement('div');
         line.className = `msg ${cls}`;
-        line.innerHTML = `<div class="muted">${new Date().toLocaleTimeString()} · ${from}</div><div>${escapeHtml(text).replace(/\n/g, '<br/>')}</div>`;
+        const body = markdown ? renderMarkdownSafe(text) : escapeHtml(text).replace(/\n/g, '<br/>');
+        line.innerHTML = `<div class="muted">${new Date().toLocaleTimeString()} · ${from}</div><div>${body}</div>`;
         $('log').appendChild(line);
         $('log').scrollTop = $('log').scrollHeight;
     }
 
-    function escapeHtml(s) {
-        return s.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
+    function logSystem(t){ appendMsg('시스템', t, 'sys'); }
+    function logBot(t)   { appendMsg('GPT-봇', t, 'bot', { markdown: true }); }
+    function logMe(t)    { appendMsg('나', t, 'me'); }
+    function setStatus(t){ $('statusBadge').innerText = t; }
 
     // Connect
     function connect() {
         if (connected) return;
 
         const base = $('serverUrl').value.trim() || 'http://localhost:8080';
-        const ep   = $('endpoint').value.trim(); // "/ws" or "/ws-stomp"
+        const ep   = $('endpoint').value.trim();
         const tok  = $('token').value.trim();
 
         const endpointUrl = (ep === '/ws-stomp' && tok)
             ? `${base}${ep}?accessToken=${encodeURIComponent(tok)}`
             : `${base}${ep}`;
 
-        // STOMP 클라이언트 (SockJS 사용)
         client = new StompJs.Client({
             webSocketFactory: () => new SockJS(endpointUrl),
-            reconnectDelay: 5000,           // 자동 재연결
-            heartbeatIncoming: 10000,       // 서버 -> 클라
-            heartbeatOutgoing: 10000,       // 클라 -> 서버
-            onConnect: frame => {
+            reconnectDelay: 5000,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
+            onConnect: () => {
                 connected = true;
                 setStatus('연결됨');
                 logSystem('서버에 연결되었습니다.');
-                // 구독: /topic/gpt
-                client.subscribe('/topic/gpt', (message) => {
+
+                // 중복 구독 방지
+                if (gptSubscription) { try { gptSubscription.unsubscribe(); } catch(e){} }
+                // 봇 메시지만 렌더
+                gptSubscription = client.subscribe('/topic/gpt', (message) => {
                     try {
                         const payload = JSON.parse(message.body);
                         const from = payload.from || 'GPT-봇';
                         const text = payload.message || '';
-                        if (from === '나') logMe(text); else logBot(text);
+                        if (from === 'GPT-봇') logBot(text);
                     } catch (e) {
                         logBot(message.body);
                     }
                 });
             },
-            onStompError: frame => {
-                logSystem('STOMP 오류: ' + (frame.headers['message'] || ''));
-            },
+            onStompError: frame => logSystem('STOMP 오류: ' + (frame.headers['message'] || '')),
             onWebSocketClose: () => {
                 connected = false;
                 setStatus('연결 끊김');
@@ -152,13 +166,14 @@
     // Disconnect
     function disconnect() {
         if (!client) return;
+        if (gptSubscription) { try { gptSubscription.unsubscribe(); } catch(e){} gptSubscription = null; }
         client.deactivate();
         connected = false;
         setStatus('연결 안 됨');
         logSystem('연결을 종료했습니다.');
     }
 
-    // Start 세션: 'start' 메시지 전송
+    // Start 세션: 'start' 메시지 전송 (로컬 에코는 사용자가 보낸 것만)
     function startSession() {
         if (!connected) return logSystem('먼저 Connect 해주세요.');
         const from = $('from').value || '나';
@@ -167,7 +182,7 @@
         logMe('start');
     }
 
-    // 일반 전송
+    // 일반 전송: 로컬 에코 즉시 + 서버는 봇만 브로드캐스트
     function send() {
         if (!connected) return logSystem('먼저 Connect 해주세요.');
         const from = $('from').value || '나';
@@ -176,11 +191,10 @@
 
         const body = JSON.stringify({ from, message: msg });
         client.publish({ destination: '/pub/gpt', body });
-        logMe(msg);
+        logMe(msg);  // 즉시 표시
         $('message').value = '';
     }
 
-    // 퀵 전송
     function quick(text) {
         $('message').value = text;
         send();

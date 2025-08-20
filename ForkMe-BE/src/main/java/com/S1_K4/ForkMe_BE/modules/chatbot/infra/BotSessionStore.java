@@ -17,41 +17,29 @@ import java.util.concurrent.TimeUnit;
  * @date : 2025-08-20
  * @description : Redis를 이용한 세션관리(TTL)
  */
-@Component
 @RequiredArgsConstructor
+@Component
 public class BotSessionStore {
-
     private static final String KEY_PREFIX = "gptbot:session:";
-    private static final long TTL_MIN = 30; // 30분 세션 TTL
+    private static final long TTL_MIN = 30;
 
-    @Qualifier("jsonRedisTemplate")
-    private final RedisTemplate<String, Object> jsonRedisTemplate;
+    @Qualifier("botSessionRedisTemplate")
+    private final RedisTemplate<String, BotSession> botSessionRedisTemplate;
 
     private String key(String sessionId) { return KEY_PREFIX + sessionId; }
 
     public BotSession getOrCreate(String sessionId, Long userPk) {
-        String key = key(sessionId);
-        Object val = jsonRedisTemplate.opsForValue().get(key);
-        if (val instanceof BotSession s) {
-            return s;
-        }
-        BotSession created = BotSession.builder()
-                .sessionId(sessionId)
-                .userPk(userPk)
-                .state(BotState.START)
-                .suggestionRounds(0)
-                .updatedAt(Instant.now())
-                .build();
-        save(created);
-        return created;
+        String k = key(sessionId);
+        BotSession s = botSessionRedisTemplate.opsForValue().get(k);
+        if (s != null) return s;
+        s = BotSession.builder().sessionId(sessionId).userPk(userPk).state(BotState.START).suggestionRounds(0)
+                .updatedAt(java.time.Instant.now()).build();
+        save(s);
+        return s;
     }
-
-    public void save(BotSession session) {
-        session.setUpdatedAt(Instant.now());
-        jsonRedisTemplate.opsForValue().set(key(session.getSessionId()), session, TTL_MIN, TimeUnit.MINUTES);
+    public void save(BotSession s) {
+        s.setUpdatedAt(java.time.Instant.now());
+        botSessionRedisTemplate.opsForValue().set(key(s.getSessionId()), s, TTL_MIN, java.util.concurrent.TimeUnit.MINUTES);
     }
-
-    public void reset(String sessionId) {
-        jsonRedisTemplate.delete(key(sessionId));
-    }
+    public void reset(String sessionId) { botSessionRedisTemplate.delete(key(sessionId)); }
 }
