@@ -63,7 +63,8 @@ public class SecurityConfig {
                         // ====== Projects : 인증X ======
                         .requestMatchers(HttpMethod.GET,
                                 "/api/projects",                // 프로젝트 목록 조회
-                                "/api/projects/*"               // 프로젝트 상세 조회
+                                "/api/projects/*",               // 프로젝트 상세 조회
+                                "/api/projects/*/members"       //프로젝트 멤버 조회
                         ).permitAll()
 
                         // ====== Projects : 인증 필요 ======

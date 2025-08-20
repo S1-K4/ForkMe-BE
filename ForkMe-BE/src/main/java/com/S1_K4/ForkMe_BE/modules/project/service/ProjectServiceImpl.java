@@ -43,7 +43,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -724,6 +723,20 @@ public class ProjectServiceImpl implements ProjectService{
         //채팅방에서도 해당 멤버 퇴장 처리
         chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), target.getUser().getUserPk(), now);
     }
+
+    /*
+    * 해당 프로젝트에 참여중인 인원 조회
+    * */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectMemberListDTO> getProjectMembers(Long projectPk){
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        return projectMemberRepository.findMemberListByProjectPk(projectPk);
+    }
+
+
 
     //user, project 유효성 체크 및 팀장 여부 확인 메서드
     public Project checkValid(Long userPk, Long projectPk){
