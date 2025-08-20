@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.dto;
 
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Jacksonized
 public class InBoardCreateRequest {
 
     private String title;

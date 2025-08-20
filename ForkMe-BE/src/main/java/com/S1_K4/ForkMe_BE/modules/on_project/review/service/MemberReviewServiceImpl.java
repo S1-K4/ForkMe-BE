@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.review.service;
 
+import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewResponse;
@@ -15,7 +16,11 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -39,6 +44,13 @@ public class MemberReviewServiceImpl implements MemberReviewService {
 
 
     // 멤버 리뷰 작성
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.REVIEW_LIST, key = "'written:' + #writerUserPk + ':' + #projectPk"),
+            @CacheEvict(cacheNames = CacheNames.REVIEW_LIST, key = "'writtenAll:' + #writerUserPk"),
+            @CacheEvict(cacheNames = CacheNames.REVIEW_LIST, key = "'received:' + #dto.targetUserPk + ':' + #projectPk"),
+            @CacheEvict(cacheNames = CacheNames.REVIEW_LIST, key = "'receivedAll:' + #dto.targetUserPk")
+    })
+    @Transactional
    public MemberReviewResponse createReview(Long projectPk, Long writerUserPk, MemberReviewRequest dto){
        Project project = projectRepository.findById(projectPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
@@ -76,7 +88,12 @@ public class MemberReviewServiceImpl implements MemberReviewService {
    }
 
 
-   // 내가 작성한 리뷰
+
+   // 내가 특정 프로젝트에서 작성한 리뷰
+   @Cacheable(
+           cacheNames = CacheNames.REVIEW_LIST,
+           key = "'written:' + #userPk + ':' + #projectPk"
+   )
    public List<MemberReviewResponse> getMyWrittenReviews(Long userPk, Long projectPk){
 
        Project project = projectRepository.findById(projectPk)
@@ -85,6 +102,11 @@ public class MemberReviewServiceImpl implements MemberReviewService {
        return MemberReviewResponse.fromList(reviews);
    }
 
+    // 내가 작성한 모든 리뷰
+    @Cacheable(
+            cacheNames = CacheNames.REVIEW_LIST,
+            key = "'written:' + #userPk"
+    )
    public List<MemberReviewResponse> getMyWrittenAllReviews(Long userPk){
        List<MemberReview> reviews = memberReviewRepository.findByWriterUserPk(userPk);
 
@@ -92,7 +114,11 @@ public class MemberReviewServiceImpl implements MemberReviewService {
 
    }
 
-   // 내가 받은 리뷰
+   // 내가 특정 프로젝트에서 받은 리뷰
+   @Cacheable(
+           cacheNames = CacheNames.REVIEW_LIST,
+           key = "'received:' + #userPk + ':' + #projectPk"
+   )
    public List<MemberReviewResponse> getMyReceivedReviews(Long userPk, Long projectPk){
        Project project = projectRepository.findById(projectPk)
                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 프로젝트입니다."));
@@ -101,6 +127,11 @@ public class MemberReviewServiceImpl implements MemberReviewService {
        return MemberReviewResponse.fromList(recevies);
    }
 
+   // 내가 받은 모든 리뷰
+   @Cacheable(
+           cacheNames = CacheNames.REVIEW_LIST,
+           key = "'received:' + #userPk"
+   )
     public List<MemberReviewResponse> getMyReceivedAllReviews(Long userPk){
         List<MemberReview> reviews = memberReviewRepository.findByTargetUserPk(userPk);
 
