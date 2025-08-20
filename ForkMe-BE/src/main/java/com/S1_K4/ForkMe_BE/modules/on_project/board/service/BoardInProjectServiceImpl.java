@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.board.service;
 
+import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.common.entity.BaseTime;
 import com.S1_K4.ForkMe_BE.global.common.s3.S3Service;
@@ -22,6 +23,9 @@ import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -58,6 +62,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     private final ProjectMemberRepository projectMemberRepository;
 
     // 게시판 생성
+    @CacheEvict(cacheNames = CacheNames.BOARD_PROJECT_LIST, allEntries = true)
     @Transactional
     public BoardInProject createBoard(Long projectPk, Long userPk, InBoardCreateRequest request,List<MultipartFile> images, List<MultipartFile> files) {
         User user = userRepository.findById(userPk)
@@ -115,6 +120,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     // 게시글 전체조회(페이징)
+
     public Page<InBoardSimpleResponse> getAllBoardsInProject(Long projectPk, Pageable pageable, Long userPk) {
         // 해당 유저 프로젝트 멤버인지 조회
         if(!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(projectPk, userPk)){
@@ -127,6 +133,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     // 게시글 상세보기
+    @Cacheable(value = CacheNames.BOARD_PROJECT_DETAIL, // 캐시 이름
+                    key = "#boardInProjectPk", // 키
+                    sync = true //스탬피드(stampede) 방지
+     )
     @Transactional(readOnly = true)
     public InBoardDetailResponse getBoardDetail(Long boardInProjectPk, Long userPk) {
 
@@ -168,6 +178,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 
 
     //게시글 수정
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.BOARD_PROJECT_DETAIL, key = "#boardInProjectPk"),
+            @CacheEvict(cacheNames = CacheNames.BOARD_PROJECT_LIST, allEntries = true)
+    })
     @Transactional
     public BoardInProject updateBoard(Long projectPk, Long boardInProjectPk, InBoardUpdateRequest request,
                                       List<MultipartFile> newImages, List<MultipartFile> newFiles,Long userPk) {
@@ -268,6 +282,10 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
     }
 
 // 삭제
+@Caching(evict = {
+        @CacheEvict(cacheNames = CacheNames.BOARD_PROJECT_DETAIL, key = "#boardInProjectPk"),
+        @CacheEvict(cacheNames = CacheNames.BOARD_PROJECT_LIST, allEntries = true)
+})
     @Transactional
     public void deleteBoard(Long projectPk, Long boardInProjectPk, Long userPk) {
         BoardInProject board = boardInProjectRepository.findById(boardInProjectPk)

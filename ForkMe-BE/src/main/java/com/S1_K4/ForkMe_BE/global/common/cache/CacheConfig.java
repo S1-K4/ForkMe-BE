@@ -83,6 +83,10 @@ public class CacheConfig {
         confs.put(CacheNames.BOARD_PROJECT_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
         //워크스페이스 게시판 목록 TTL : 30초
         confs.put(CacheNames.BOARD_PROJECT_LIST, defaultConf.entryTtl(Duration.ofSeconds(30)));
+        //멤버리뷰 상세보기 TTL : 1분
+        confs.put(CacheNames.REVIEW_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
+        //멤버리뷰 목록 TTL : 30초
+        confs.put(CacheNames.REVIEW_LIST, defaultConf.entryTtl(Duration.ofSeconds(30)));
 
 
 
