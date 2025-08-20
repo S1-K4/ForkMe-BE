@@ -138,7 +138,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                         .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
                         .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/github/hooks/authorize").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/github/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/oauth2/authorization/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
