@@ -138,10 +138,8 @@ public class ProjectServiceImpl implements ProjectService{
      * */
     @Override
     @Cacheable(
-            cacheNames = CacheNames.PROJECT_LIST,                       //캐시이름
-            key = "T(java.util.Objects)" +
-                    ".hash(#pageable.pageNumber, " +                    //현재 페이지 번호
-                    "#pageable.pageSize, #pageable.sort.toString())",   //페이지 크기, 정렬 기준
+            cacheNames = CacheNames.PROJECT_LIST,
+            keyGenerator = "projectListKeyGenerator",
             unless = "#result == null || #result.content == null || #result.content.isEmpty()"      //결과가 NULL이거나 비어있으면 캐싱x
     )
     @Transactional(readOnly = true)
