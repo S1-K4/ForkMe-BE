@@ -33,12 +33,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+        http.csrf(csrf -> csrf.ignoringRequestMatchers(
+                "/api/**",
+                        "/ws/**",           // [추가]
+                        "/ws-stomp/**",     // [추가]
+                        "/pub/**",          // [추가] STOMP app prefix (MessageMapping)
+                        "/app/**"           // [추가]
+
+                ))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .authorizeHttpRequests(auth -> auth
+
+                        // ====== WebSocket / STOMP / SockJS ======
+                        // [추가] SockJS가 내부적으로 /ws/** (info, xhr_streaming 등)로 다수 요청
+                        .requestMatchers("/ws/**", "/ws-stomp/**").permitAll()
+                        // [추가] STOMP 발행 prefix는 핸드셰이크 전에 막히지 않게 열어두는 게 테스트에 편함
+                        .requestMatchers("/pub/**", "/app/**", "/topic/**", "/sub/**").permitAll()
+                        // [추가] 프리플라이트 전역 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // ====== Public ======
                         .requestMatchers(

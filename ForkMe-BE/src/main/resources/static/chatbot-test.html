@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <title>LLM 프로젝트 주제 추천 챗봇 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- SockJS & STOMP (현행 UMD) -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <style>
+        :root { --bg:#0b1020; --card:#121830; --muted:#9fb0ff; --text:#e8edff; }
+        body { margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+            background:linear-gradient(180deg, #0b1020, #0e1430); color:var(--text); }
+        .wrap { max-width:960px; margin:40px auto; padding:0 16px; }
+        .card { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,.35); }
+        h1 { font-size:22px; margin:0 0 10px; }
+        .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        .row > * { flex:1; min-width:180px; }
+        input, button, select { padding:10px 12px; border-radius:10px; border:1px solid #2a3666;
+            background:#0d1530; color:var(--text); }
+        button { cursor:pointer; }
+        button.primary { background:#283cff; border-color:#4b5bff; }
+        button.ghost { background:transparent; border-color:#33407a; }
+        .log { height:420px; overflow:auto; background:#0a1027; border:1px solid #273165;
+            border-radius:12px; padding:12px; line-height:1.5; }
+        .msg { margin:8px 0; padding:10px 12px; border-radius:12px; max-width:80%; }
+        .me   { background:#0c224d; margin-left:auto; }
+        .bot  { background:#18235a; }
+        .sys  { background:#2a1f4b; text-align:center; max-width:60%; margin:8px auto; }
+        .muted { color:var(--muted); font-size:12px; }
+        .grid { display:grid; grid-template-columns:1fr auto; gap:10px; }
+        .quick { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+        .quick button { font-size:12px; padding:6px 10px; }
+        .badge { font-size:12px; background:#213077; padding:3px 8px; border-radius:999px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <h1>프로젝트 주제 추천 챗봇 <span class="badge" id="statusBadge">연결 안 됨</span></h1>
+
+        <!-- 연결 설정 -->
+        <div class="row" style="margin-bottom:10px;">
+            <input id="serverUrl" placeholder="서버 주소 (예: http://localhost:8080)" />
+            <select id="endpoint">
+                <option value="/ws">/ws (토큰 불필요)</option>
+                <option value="/ws-stomp">/ws-stomp (토큰 사용 가능)</option>
+            </select>
+            <input id="token" placeholder="accessToken (선택, ws-stomp 사용 시)" />
+        </div>
+        <div class="row" style="margin-bottom:16px;">
+            <button class="primary" onclick="connect()">Connect</button>
+            <button class="ghost"   onclick="disconnect()">Disconnect</button>
+            <button onclick="startSession()">Start 세션</button>
+            <span class="muted">※ Start 누르면 'start' 메시지를 보내며 세션을 초기화합니다.</span>
+        </div>
+
+        <!-- 로그 -->
+        <div id="log" class="log"></div>
+
+        <!-- 입력/전송 -->
+        <div class="grid" style="margin-top:12px;">
+            <input id="from" value="나" />
+            <span></span>
+        </div>
+        <div class="grid" style="margin-top:8px;">
+            <input id="message" placeholder="메시지 입력 (예: 네 / Java Spring / 2개월 / 3명)" />
+            <button class="primary" onclick="send()">Send</button>
+        </div>
+
+        <!-- 퀵버튼 -->
+        <div class="quick">
+            <button onclick="quick('네')">네</button>
+            <button onclick="quick('아니요')">아니요</button>
+            <button onclick="quick('Java, Spring, Redis')">스택 예시</button>
+            <button onclick="quick('2개월')">기간 예시</button>
+            <button onclick="quick('3명')">인원 예시</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let client = null;
+    let connected = false;
+
+    const $ = (id) => document.getElementById(id);
+
+    function logSystem(text)   { appendMsg('시스템', text, 'sys'); }
+    function logBot(text)      { appendMsg('GPT-봇', text, 'bot'); }
+    function logMe(text)       { appendMsg('나', text, 'me'); }
+    function setStatus(text)   { $('statusBadge').innerText = text; }
+
+    function appendMsg(from, text, cls) {
+        const line = document.createElement('div');
+        line.className = `msg ${cls}`;
+        line.innerHTML = `<div class="muted">${new Date().toLocaleTimeString()} · ${from}</div><div>${escapeHtml(text).replace(/\n/g, '<br/>')}</div>`;
+        $('log').appendChild(line);
+        $('log').scrollTop = $('log').scrollHeight;
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // Connect
+    function connect() {
+        if (connected) return;
+
+        const base = $('serverUrl').value.trim() || 'http://localhost:8080';
+        const ep   = $('endpoint').value.trim(); // "/ws" or "/ws-stomp"
+        const tok  = $('token').value.trim();
+
+        const endpointUrl = (ep === '/ws-stomp' && tok)
+            ? `${base}${ep}?accessToken=${encodeURIComponent(tok)}`
+            : `${base}${ep}`;
+
+        // STOMP 클라이언트 (SockJS 사용)
+        client = new StompJs.Client({
+            webSocketFactory: () => new SockJS(endpointUrl),
+            reconnectDelay: 5000,           // 자동 재연결
+            heartbeatIncoming: 10000,       // 서버 -> 클라
+            heartbeatOutgoing: 10000,       // 클라 -> 서버
+            onConnect: frame => {
+                connected = true;
+                setStatus('연결됨');
+                logSystem('서버에 연결되었습니다.');
+                // 구독: /topic/gpt
+                client.subscribe('/topic/gpt', (message) => {
+                    try {
+                        const payload = JSON.parse(message.body);
+                        const from = payload.from || 'GPT-봇';
+                        const text = payload.message || '';
+                        if (from === '나') logMe(text); else logBot(text);
+                    } catch (e) {
+                        logBot(message.body);
+                    }
+                });
+            },
+            onStompError: frame => {
+                logSystem('STOMP 오류: ' + (frame.headers['message'] || ''));
+            },
+            onWebSocketClose: () => {
+                connected = false;
+                setStatus('연결 끊김');
+                logSystem('연결이 끊어졌습니다.');
+            }
+        });
+
+        client.activate();
+    }
+
+    // Disconnect
+    function disconnect() {
+        if (!client) return;
+        client.deactivate();
+        connected = false;
+        setStatus('연결 안 됨');
+        logSystem('연결을 종료했습니다.');
+    }
+
+    // Start 세션: 'start' 메시지 전송
+    function startSession() {
+        if (!connected) return logSystem('먼저 Connect 해주세요.');
+        const from = $('from').value || '나';
+        const body = JSON.stringify({ from, message: 'start' });
+        client.publish({ destination: '/pub/gpt', body });
+        logMe('start');
+    }
+
+    // 일반 전송
+    function send() {
+        if (!connected) return logSystem('먼저 Connect 해주세요.');
+        const from = $('from').value || '나';
+        const msg  = $('message').value.trim();
+        if (!msg) return;
+
+        const body = JSON.stringify({ from, message: msg });
+        client.publish({ destination: '/pub/gpt', body });
+        logMe(msg);
+        $('message').value = '';
+    }
+
+    // 퀵 전송
+    function quick(text) {
+        $('message').value = text;
+        send();
+    }
+</script>
+</body>
+</html>
