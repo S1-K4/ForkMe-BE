@@ -2,6 +2,7 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.webhook.controller;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.dto.GithubEventResponseDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.dto.PendingHookRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.service.WebhookService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,7 +23,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /*
@@ -53,7 +56,8 @@ public class WebhookController {
             @RequestParam(required = false) String repo,
             @RequestParam(required = false, defaultValue = "push") String events,
             @RequestParam(required = false, defaultValue = "false") boolean insecureSsl,
-            @RequestParam(required = false) String overrideSecret
+            @RequestParam(required = false) String overrideSecret,
+            @RequestParam(required = false) Long projectPk
     ) {
         //모드 설정 없는 경우 체크
         if (!"repo".equals(mode) && !"org".equals(mode)) {
@@ -75,7 +79,7 @@ public class WebhookController {
         //넘어온 정보들 session 에 pending_hook으로 저장
         session.setAttribute(
                 GithubHookSessionKeys.PENDING_HOOK,
-                new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret)
+                new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk)
         );
 
         // 등록한 registrationId와 정확히 일치해야 함. 아래 주소로 리다이렉트(깃헙훅 OAuth2 체크)
@@ -126,5 +130,26 @@ public class WebhookController {
         return sb.toString();
     }
 
+    @GetMapping("{projectPk}/github-events")
+    public ResponseEntity<?> getGithubEvents(
+            @PathVariable("projectPk") Long projectPk,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        List<GithubEventResponseDto> events = webhookService.getEventsByProject(projectPk, page, size);
+        boolean isConnected = webhookService.isWebhookConnected(projectPk);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("isWebhookConnected", isConnected);
+        data.put("events", events);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("success", true);
+        resp.put("code", 200);
+        resp.put("message", "GitHub 이벤트 조회 성공");
+        resp.put("data", data);
+
+        return ResponseEntity.ok(resp);
+    }
 }
 

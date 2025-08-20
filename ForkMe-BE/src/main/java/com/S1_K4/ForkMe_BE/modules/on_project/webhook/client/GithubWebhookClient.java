@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class GithubWebhookClient {
     @Value("${github.api.base}")
     private String apiBase;
     @Value("${github.webhook.callback-url}")
-    private String callbackUrl;
+    private String callbackBase;
     @Value("${github.webhook.secret}")
     private String defaultSecret;
     @Value("${github.webhook.allow-insecure-ssl:false}")
@@ -47,9 +48,16 @@ public class GithubWebhookClient {
                 .build();
     }
 
+    private String buildCallback(Long projectPk) {
+        return UriComponentsBuilder.fromHttpUrl(callbackBase)
+                .replaceQueryParam("projectPk", projectPk)
+                .build(true)     // already-encoded 허용
+                .toUriString();
+    }
+
     public Map<String, Object> createRepoWebhook(
             String token, String owner, String repo,
-            List<String> events, String secret, boolean insecureSsl
+            List<String> events, String secret, boolean insecureSsl, Long projectPk
     ) {
         if(events == null || events.isEmpty()) events = List.of("push");
         String useSecret = (secret == null || secret.isBlank()) ? defaultSecret : secret;
@@ -57,7 +65,7 @@ public class GithubWebhookClient {
         Map<String, Object> body = Map.of(
                 "name","web","active",true, "events", events,
                 "config", Map.of(
-                        "url", callbackUrl,
+                        "url", buildCallback(projectPk),
                         "content_type", "json",
                         "secret", useSecret,
                         "insecure_ssl", insecureSsl ? "1" : "0"
@@ -73,7 +81,7 @@ public class GithubWebhookClient {
     }
 
     public Map<String,Object> createOrgWebhook(
-            String token, String org, List<String> events, String secret, boolean insecureSsl
+            String token, String org, List<String> events, String secret, boolean insecureSsl, Long projectPk
     ){
         if(events == null || events.isEmpty()) events = List.of("push");
         String useSecret = (secret == null || secret.isBlank()) ? defaultSecret : secret;
@@ -81,7 +89,7 @@ public class GithubWebhookClient {
         Map<String, Object> body = Map.of(
                 "name","web","active",true, "events", events,
                 "config", Map.of(
-                        "url", callbackUrl,
+                        "url", buildCallback(projectPk),
                         "content_type", "json",
                         "secret", useSecret,
                         "insecure_ssl", insecureSsl ? "1" : "0"
