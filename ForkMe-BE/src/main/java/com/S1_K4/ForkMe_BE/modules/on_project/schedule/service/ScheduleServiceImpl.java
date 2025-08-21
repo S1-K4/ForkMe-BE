@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.modules.on_project.schedule.dto.ScheduleCreateRequest
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.dto.ScheduleResponse;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity.Schedule;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity.ScheduleMention;
+import com.S1_K4.ForkMe_BE.modules.on_project.schedule.repository.ScheduleMentionRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.repository.ScheduleRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
@@ -35,6 +36,7 @@ public class ScheduleServiceImpl implements ScheduleService{
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ScheduleMentionRepository scheduleMentionRepository;
 
 
     // 프로젝트 일정 조회
@@ -141,7 +143,9 @@ public class ScheduleServiceImpl implements ScheduleService{
         User writer = userRepository.findById(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-
+        if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(schedule.getProject().getProjectPk(), userPk)) {
+            throw new AccessDeniedException("해당 프로젝트의 멤버만 일정을 삭제할 수 있습니다.");
+        }
 
         schedule.setTitle(dto.getTitle());
         schedule.setStartDate(dto.getStart());
@@ -221,9 +225,10 @@ public class ScheduleServiceImpl implements ScheduleService{
         User writer = userRepository.findById(userPk)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        if(!schedule.getUser().getUserPk().equals(userPk)){
-            throw new AccessDeniedException("일정 작성자가 아닙니다.");
+        if (!projectMemberRepository.existsByProject_ProjectPkAndUser_UserPk(schedule.getProject().getProjectPk(), userPk)) {
+            throw new AccessDeniedException("해당 프로젝트의 멤버만 일정을 삭제할 수 있습니다.");
         }
+
 
         scheduleRepository.deleteById(schedulePk);
     }
