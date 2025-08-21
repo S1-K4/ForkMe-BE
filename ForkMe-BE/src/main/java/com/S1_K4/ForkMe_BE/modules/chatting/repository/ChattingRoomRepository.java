@@ -4,6 +4,7 @@ import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -109,5 +110,9 @@ public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long
             @Param("userPk") Long userPk
     );
 
+    // 프로젝트 리스트로 소프트 삭제
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE ChattingRoom cr SET cr.deletedYn = 'Y' WHERE cr.projectPk.projectPk in (:projectPkList)")
+    void softDeleteByProjectPkInBulk(List<Long> projectPkList);
 }
 

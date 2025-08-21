@@ -27,11 +27,12 @@ public interface ApplyTechStackRepository extends JpaRepository<ApplyTechStack, 
             "WHERE ats.apply.applyPk IN (:applyPkList)")
     List<ApplyTechStackDto> findApplyTechStacksByApplyPkIn(List<Long> applyPkList);
 
-    @Modifying(clearAutomatically = true)
-    @Query("DELETE FROM ApplyTechStack ats WHERE ats.apply.project.projectPk IN (:applyPkList)")
-    void deleteApplyTechStacksByApply_Project_ProjectPkInBulk(List<Long> projectPkList);
 
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM ApplyTechStack ats WHERE ats.apply.user = (:user)")
     void deleteApplyTechStackByApply_UserInBulk(User user);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM ApplyTechStack ats WHERE ats.apply.applyPk IN (:applyPkList)")
+    void deleteByApply_ApplyPkInBulk(List<Long> applyPkList);
 }

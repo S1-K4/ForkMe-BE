@@ -55,4 +55,5 @@ public interface ChattingParticipantRepository extends JpaRepository<ChattingPar
     """)
     List<ChattingParticipant> findWithUserByChattingRoomPk(@Param("room") ChattingRoom room); //
 
+    List<ChattingParticipant> findAllByUserPk(User userPk);
 }
