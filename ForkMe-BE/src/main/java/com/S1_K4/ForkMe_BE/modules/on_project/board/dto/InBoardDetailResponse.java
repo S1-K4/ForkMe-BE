@@ -3,6 +3,7 @@ package com.S1_K4.ForkMe_BE.modules.on_project.board.dto;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Getter
 @Builder
+@Jacksonized
 public class InBoardDetailResponse {
 
     private Long boardInProjectPk;

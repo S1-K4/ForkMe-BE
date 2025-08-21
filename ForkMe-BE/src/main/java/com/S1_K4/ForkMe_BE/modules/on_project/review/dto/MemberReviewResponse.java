@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.on_project.review.dto;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.review.entity.MemberReview;
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Jacksonized
 public class MemberReviewResponse {
 
     private Long memberReviewPk;

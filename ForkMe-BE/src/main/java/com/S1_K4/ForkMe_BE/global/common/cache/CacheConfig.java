@@ -78,6 +78,17 @@ public class CacheConfig {
         //목록 TTL : 30초 -> 실시간성이 중요하므로 짧게
         confs.put(CacheNames.PROJECT_LIST,   defaultConf.entryTtl(Duration.ofMinutes(10)));
 
+        // 김송이 추가 0818
+        //워크스페이스 게시판 상세보기 TTL : 1분
+        confs.put(CacheNames.BOARD_PROJECT_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
+        //워크스페이스 게시판 목록 TTL : 30초
+        confs.put(CacheNames.BOARD_PROJECT_LIST, defaultConf.entryTtl(Duration.ofSeconds(30)));
+        //멤버리뷰 상세보기 TTL : 1분
+        confs.put(CacheNames.REVIEW_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(1)));
+        //멤버리뷰 목록 TTL : 30초
+        confs.put(CacheNames.REVIEW_LIST, defaultConf.entryTtl(Duration.ofSeconds(30)));
+
+
 
         return RedisCacheManager.builder(connectionFactory)
                 //캐시 이름 별로 별도 설정이 없는 경우 기본값(5분 TTL)을 적용

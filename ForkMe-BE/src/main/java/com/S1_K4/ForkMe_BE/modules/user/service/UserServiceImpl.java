@@ -3,9 +3,9 @@ package com.S1_K4.ForkMe_BE.modules.user.service;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
 import com.S1_K4.ForkMe_BE.modules.auth.repository.AuthRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.SideBarProjectDto;
-import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.project.service.ProjectService;
 import com.S1_K4.ForkMe_BE.modules.user.dto.SideBarResponseDto;
@@ -40,12 +40,12 @@ public class UserServiceImpl implements UserService {
     private final ApplyTechStackRepository applyTechStackRepository;
     private final AuthRepository authRepository;
     private final LikeRepository likeRepository;
-    private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
     private final ProjectService projectService;
     private final StackRepository stackRepository;
     private final UserRepository userRepository;
     private final UserTechStackRepository userTechStackRepository;
+    private final ChattingService chattingService;
 
     @Override
     public UserInfoResponseDto getMyProfile(Long userPk) {
@@ -120,33 +120,35 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid User PK: " + userPk));
         log.info("user = " + user.toString());
 
-        // 유저 정보 탈퇴로 변경
-        user.withdraw();
-
         // 유저 기술 스택 삭제
         userTechStackRepository.deleteAllByUser(user);
         log.info("유저 기술 스택 삭제");
 
         // Auth 삭제
         authRepository.deleteAllByUser(user);
-        log.info("Auth 삭제");
+        log.info("delete - auth");
 
-        // 프로젝트(탈퇴한 유저가 팀장인 프로젝트)
-        projectService.withdrawUser(user);
+        // 프로젝트 탈퇴 처리
+        projectService.handleUserWithdrawal(user);
+        log.info("delete - project");
 
-/*
-데이터 없어서 주석해놈
         // like
         likeRepository.deleteByUser(user);
+        log.info("delete - like");
+
         // apply + applyTechStack
         applyTechStackRepository.deleteApplyTechStackByApply_UserInBulk(user);
+        log.info("delete - apply_tech_stack");
         applyRepository.deleteApplyByUserInBulk(user);
-        // 참여중인 프로젝트
-        projectMemberRepository.deleteByUserInBulk(user);
-*/
+        log.info("delete - apply");
 
-        // 나머지 기능들에서 삭제하거나 deleted_yn 변경하는 과정 필요
+        // chatting -> 테스트 전
+        chattingService.leaveAllChattingRoomForWithdrawal(user);
+        log.info("leave - chatting_room");
 
+        // 유저 정보 탈퇴로 변경
+        user.withdraw();
+        log.info("withdraw - user");
 
         userRepository.save(user);
         log.info("withdrawUser - success");

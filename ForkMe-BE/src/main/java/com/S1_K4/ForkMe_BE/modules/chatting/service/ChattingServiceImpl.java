@@ -415,6 +415,21 @@ public class ChattingServiceImpl implements ChattingService{
         }
     }
 
+    @Override
+    @Transactional
+    public void leaveAllChattingRoomForWithdrawal(User user){
+        // 유저가 참여하고 있는 모든 채팅방에서 나가는 메서드
+
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 유저의 모든 채팅방 정보 조회
+        List<ChattingParticipant> participantList = chattingParticipantRepository.findAllByUserPk(user);
+        if(participantList.isEmpty()) return;
+
+        for (ChattingParticipant participant : participantList) {
+            removeChattingParticipant(participant.getChattingRoomPk(), user, now);
+        }
+    }
 
 
     /** 헬버 메서드 **/

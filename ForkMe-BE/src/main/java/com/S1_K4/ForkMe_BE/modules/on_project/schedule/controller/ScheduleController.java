@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.on_project.schedule.controller;
 
+import com.S1_K4.ForkMe_BE.global.exception.ApiResponse;
 import com.S1_K4.ForkMe_BE.modules.auth.dto.CustomUserDetails;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.dto.ScheduleCreateRequest;
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.dto.ScheduleResponse;
@@ -65,11 +66,11 @@ public class ScheduleController {
 
     // 일정 삭제
     @DeleteMapping("/{schedulePk}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable("schedulePk") Long schedulePk,
-                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<ApiResponse<?>> deleteSchedule(@PathVariable("schedulePk") Long schedulePk,
+                                                      @AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userPk= userDetails.getUserPk();
         scheduleService.deleteSchedule(schedulePk, userPk);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("일정 pk 번호 : "+ schedulePk, "일정 삭제 완료"));
     }
 
 }
