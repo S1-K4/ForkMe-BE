@@ -53,5 +53,7 @@ public interface ChattingService {
     //프로젝트에 멤버 추가 시 기존 멤버와 자동으로 개인 채팅방 모두 생성
     void createAllPrivateRoomsForNewMember(Project project, User newMember, LocalDateTime now);
 
+    // 참여 중인 모든 채팅방 나가기
+    void leaveAllChattingRoomForWithdrawal(User user);
 }
 

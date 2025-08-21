@@ -371,4 +371,21 @@ public class ApplyServiceImpl implements ApplyService{
         return applyList;
     }
 
+    @Override
+    @Transactional
+    public void deleteApplyByProjectPkInBulk(List<Long> projectPkList){
+        List<Apply> applyList = applyRepository.findAllByProjectPkIn(projectPkList);
+
+        if(applyList.isEmpty()){
+            return;
+        }
+
+        // 지원서 기술스택 삭제
+        List<Long> applyPkList = applyList.stream().map(Apply::getApplyPk).toList();
+        applyTechStackRepository.deleteByApply_ApplyPkInBulk(applyPkList);
+
+        // 지원서 삭제
+        applyRepository.deleteAllInBatch(applyList);
+    }
+
 }

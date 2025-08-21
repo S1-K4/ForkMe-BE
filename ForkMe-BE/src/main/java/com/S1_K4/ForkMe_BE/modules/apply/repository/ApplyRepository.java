@@ -87,12 +87,11 @@ public interface ApplyRepository extends JpaRepository<Apply,Long> {
             "WHERE a.user.userPk = :userPk AND a.deletedYN = 'N' AND a.status IN(:stateList)")
     List<MyApplyListResponseDto> findApplyByUserPkInState(Long userPk, List<String> stateList) ;
 
-    @Modifying(clearAutomatically = true)
-    @Query("DELETE FROM Apply a WHERE a.project.projectPk IN (:projectPkList)")
-    void deleteApplyByApplyByProject_ProjectPkInBulk(List<Long> projectPkList);
 
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Apply a WHERE a.user = (:user)")
     void deleteApplyByUserInBulk(User user);
 
+    @Query("SELECT a FROM Apply a WHERE a.project.projectPk IN (:projectPkList)")
+    List<Apply> findAllByProjectPkIn(List<Long> projectPkList);
 }
