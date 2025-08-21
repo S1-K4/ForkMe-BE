@@ -78,7 +78,7 @@ public interface ProjectService {
     List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk);
 
 
-    // 회원 탈퇴하면 프로젝트 삭제
-    void withdrawUser(User user);
+    // 회원 탈퇴하면 관련 프로젝트 삭제
+    void handleUserWithdrawal(User user);
 
 }
