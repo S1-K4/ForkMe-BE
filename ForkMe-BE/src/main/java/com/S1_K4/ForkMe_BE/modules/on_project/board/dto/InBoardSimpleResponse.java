@@ -19,14 +19,17 @@ import java.time.LocalDateTime;
 public class InBoardSimpleResponse {
 
     private Long boardInProjectPk;
+    private Long userPk;
     private String title;
     private String content;
     private LocalDateTime createdAt;
 
 
+
     public static InBoardSimpleResponse from(BoardInProject board) {
         return InBoardSimpleResponse.builder()
                 .boardInProjectPk(board.getBoardInProjectPk())
+                .userPk(board.getUser().getUserPk())
                 .title(board.getTitle())
                 .content(board.getContent())
                 .createdAt(board.getCreatedAt())
