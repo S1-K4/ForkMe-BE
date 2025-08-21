@@ -128,6 +128,15 @@ public class SecurityConfig {
                                 "/api/chatting-room/*/messages/**" //로그인한 유저 기준 채팅방 이전 대화 조회
                                 ).authenticated()
 
+                        // ====== 알람 : 인증 필요 ======
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/alarm/**" //알람 리스트 가져오기
+                        ).authenticated()
+                        // ====== 알람 : 인증 필요 ======
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/alarm/**" //알람 삭제하기
+                        ).authenticated()
+
 
                         // 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/user/me/**").authenticated()

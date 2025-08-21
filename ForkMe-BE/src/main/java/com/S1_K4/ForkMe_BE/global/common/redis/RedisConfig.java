@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -70,7 +71,13 @@ public class RedisConfig {
 
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
+
+        //채팅 채널
         container.addMessageListener(redisSubscriber, new ChannelTopic("chat"));
+
+        // 알림 채널 (유저별 동적 구독 지원 필요시 PatternTopic 사용 가능)
+        container.addMessageListener(redisSubscriber, new PatternTopic("alarm:*"));
+
         return container;
     }
 

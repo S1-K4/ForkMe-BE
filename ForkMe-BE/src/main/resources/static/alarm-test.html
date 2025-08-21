@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>실시간 알림 배지/내역 오토 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<!-- 종 버튼/배지/팝업 UI -->
+<div style="position:absolute; top:18px; right:32px;">
+    <button id="alarmBtn" style="background:none;border:none;position:relative;cursor:pointer;">
+        <span id="alarmIcon" style="font-size:28px;">🔔</span>
+        <span id="alarmCount" style="
+            display:none; position:absolute;
+            top:0; right:0;
+            background:#ef4444; color:white;
+            border-radius:50%; padding:2px 6px;
+            font-size:12px; min-width:16px; text-align:center;
+        ">0</span>
+    </button>
+    <div id="alarmPopup" style="
+        display:none; position:absolute;
+        top:32px; right:0;
+        width:320px; max-height:400px;
+        overflow-y:auto; background:#fff;
+        border:1px solid #ddd; border-radius:10px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.12); z-index:1000;
+    ">
+        <div style="padding:12px; border-bottom:1px solid #eee; font-weight:bold;">알림 내역</div>
+        <ul id="alarmList" style="list-style:none;padding:0;margin:0;"></ul>
+    </div>
+</div>
+<script>
+    // 1. 쿼리스트링 → 세션 저장 (항상 우선)
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const tokenFromUrl = params.get('accessToken');
+        const userPkFromUrl = params.get('userPk');
+        if (tokenFromUrl) sessionStorage.setItem('accessToken', tokenFromUrl);
+        if (userPkFromUrl) sessionStorage.setItem('userPk', userPkFromUrl);
+    })();
+
+    // 2. **무조건 세션에서만** 값 읽기 (기본값 없음)
+    let userPk = sessionStorage.getItem("userPk");
+    let accessToken = sessionStorage.getItem("accessToken");
+    console.log(`[인증정보] userPk=${userPk}, accessToken=${accessToken ? accessToken.slice(0, 10) + "..." : "(없음)"}`);
+
+    let stompClient = null;
+    let alarmCount = 0;
+    const alarmMessages = [];
+
+    window.addEventListener("DOMContentLoaded", () => {
+        if (!userPk || !accessToken) {
+            alert("userPk, accessToken이 반드시 필요합니다! 로그인 후 알림 테스트하세요.");
+            return;
+        }
+        connectWebSocket();
+    });
+
+    function connectWebSocket() {
+        const wsUrl = `/ws-stomp?accessToken=${encodeURIComponent(accessToken)}`;
+        const socket = new SockJS(wsUrl);
+        stompClient = Stomp.over(socket);
+
+        stompClient.debug = function(str) { console.log('[STOMP]', str); };
+        socket.onopen = () => console.log("🟢 [SockJS] 소켓 연결 open!");
+        socket.onclose = (e) => console.log("🟠 [SockJS] 소켓 닫힘", e);
+        socket.onerror = (e) => console.log("🔴 [SockJS] 소켓 에러", e);
+
+        stompClient.connect({}, function (frame) {
+            console.log(`🟢 [STOMP] 연결 성공! frame:`, frame);
+            subscribeAlarm();
+        }, function(error) {
+            console.error("🔴 [STOMP] 연결 에러:", error);
+        });
+    }
+
+    function subscribeAlarm() {
+        // **여기서도 userPk 없으면 아예 구독 불가**
+        if (!userPk) {
+            console.error("[알림구독] userPk 정보 없음. 구독 실패");
+            return;
+        }
+        const topic = `/topic/alarm/${userPk}`;
+        console.log(`🟢 [알림구독] 토픽: ${topic} 구독`);
+
+        stompClient.subscribe(topic, function (msg) {
+            console.log("🟢 [알림구독] 💡 실시간 알림 도착! Raw:", msg);
+            try {
+                const alarm = JSON.parse(msg.body);
+                alarm.alarmType = alarm.alarmType || alarm.type;
+                alarm.alarmContent = alarm.alarmContent || alarm.content;
+                alarmMessages.unshift(alarm);
+                alarmCount++;
+                updateAlarmUI();
+                console.log("🟢 [알림구독] 알림 파싱 & UI 갱신 완료:", alarm);
+            } catch (e) {
+                console.error("🔴 [알림구독] 알림 파싱 실패:", e, msg.body);
+            }
+        });
+    }
+
+    function updateAlarmUI() {
+        const alarmCountEl = document.getElementById("alarmCount");
+        const alarmListEl = document.getElementById("alarmList");
+        // 배지
+        if (alarmCount > 0) {
+            alarmCountEl.textContent = alarmCount;
+            alarmCountEl.style.display = "";
+        } else {
+            alarmCountEl.style.display = "none";
+        }
+        // 알림 목록 (내역)
+        alarmListEl.innerHTML = "";
+        alarmMessages.forEach(alarm => {
+            const li = document.createElement("li");
+            li.style.padding = "8px 12px";
+            li.style.borderBottom = "1px solid #f3f4f6";
+            li.style.fontSize = "14px";
+            li.innerHTML = `
+                <span style="color:#2563eb;font-weight:bold;">[${alarm.alarmType}]</span>
+                <span>${alarm.alarmContent}</span>
+                <div style="font-size:11px;color:#aaa;">${formatAlarmTime(alarm.createdAt)}</div>
+            `;
+            alarmListEl.appendChild(li);
+        });
+        console.log(`🟢 [UI] 알림 배지/내역 갱신 (총 ${alarmMessages.length}개)`);
+    }
+
+    document.getElementById("alarmBtn").addEventListener("click", () => {
+        console.log("🟢 [BTN] 종버튼 클릭! 알림 팝업 토글");
+        const popup = document.getElementById("alarmPopup");
+        popup.style.display = (popup.style.display === "none" || !popup.style.display) ? "block" : "none";
+        alarmCount = 0;
+        updateAlarmUI();
+    });
+    document.addEventListener("click", (e) => {
+        const alarmBtn = document.getElementById("alarmBtn");
+        const popup = document.getElementById("alarmPopup");
+        if (!alarmBtn.contains(e.target) && !popup.contains(e.target)) {
+            popup.style.display = "none";
+        }
+    });
+    function formatAlarmTime(dt) {
+        if (!dt) return "";
+        const d = new Date(dt);
+        if (isNaN(d.getTime())) return dt;
+        return d.toLocaleString();
+    }
+</script>
+</body>
+</html>

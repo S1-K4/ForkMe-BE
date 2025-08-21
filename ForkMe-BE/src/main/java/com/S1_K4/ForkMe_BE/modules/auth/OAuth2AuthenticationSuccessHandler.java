@@ -140,9 +140,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         refreshTokenCookie.setPath("/");
         response.addCookie(refreshTokenCookie);
 
-        String url = "http://forkme.site:3000/login-success.html";
+//        String url = "http://forkme.site:3000/login-success.html";
         //String url = "http://localhost:3000/login-success.html";
 //        String url = "http://localhost:8080/chatting-test22.html"; //채팅 테스트(남이)
+        String url = "http://localhost:8080/alarm-test4.html";
         String targetUrl = UriComponentsBuilder.fromUriString(url)
                 .queryParam("accessToken", accessToken)
                 .build().toUriString();

@@ -74,10 +74,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(415).body(ApiResponse.error(415, "지원하지 않는 Content-Type입니다."));
     }
     
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMediaType2(IllegalArgumentException ex) {
-        return ResponseEntity.status(400).body(ApiResponse.error(415, "@PathVariable 누락"));
-    }
+//    @ExceptionHandler(IllegalArgumentException.class)
+//    public ResponseEntity<ApiResponse<Object>> handleMediaType2(IllegalArgumentException ex) {
+//        return ResponseEntity.status(400).body(ApiResponse.error(415, "@PathVariable 누락"));
+//    }
 
 
     // 500 - 그 외 모든 예외

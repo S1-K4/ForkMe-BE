@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>채팅방 통합 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<!-- ✅ 종 버튼/알림 카운트/팝업: h1과 같은 라인 우측에 배치 -->
+<div style="position: absolute; top: 18px; right: 32px;">
+    <button id="alarmBtn" style="background:none;border:none;position:relative;cursor:pointer;">
+        <span id="alarmIcon" style="font-size:28px;">🔔</span>
+        <span id="alarmCount" style="
+            display:none;
+            position:absolute;
+            top:0;
+            right:0;
+            background:#ef4444;
+            color:white;
+            border-radius:50%;
+            padding:2px 6px;
+            font-size:12px;
+            min-width:16px;
+            text-align:center;
+        ">0</span>
+    </button>
+    <div id="alarmPopup" style="
+        display:none;
+        position:absolute;
+        top:32px; right:0;
+        width:320px;
+        max-height:400px;
+        overflow-y:auto;
+        background:#fff;
+        border:1px solid #ddd;
+        border-radius:10px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.12);
+        z-index:1000;
+    ">
+        <div style="padding:12px; border-bottom:1px solid #eee; font-weight:bold;">알림 내역</div>
+        <ul id="alarmList" style="list-style:none;padding:0;margin:0;"></ul>
+        <button id="alarmClearBtn" style="width:100%;border:none;background:#f3f4f6;padding:8px 0;font-size:13px;">알림 모두 지우기</button>
+    </div>
+</div>
+
+<h1>채팅 테스트</h1>
+
+<label>내 유저 PK: <input type="number" id="myUserPk" value="1"></label>
+<label>프로젝트 PK: <input type="number" id="projectPk" value="100"></label>
+<button id="loadTeamBtn">팀 채팅방 입장</button>
+
+<h3>👥 팀 채팅 참여자 목록</h3>
+<ul id="teamMembers"></ul>
+
+<h3 id="roomTitle">채팅 메시지</h3>
+<ul id="chatMessages"></ul>
+
+<input type="text" id="message" placeholder="메시지 입력" />
+<button id="sendBtn">전송</button>
+
+<script>
+    // ⬇️ [★ accessToken 추출용: 기존 유지]
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const tokenFromUrl = params.get('accessToken');
+        if (tokenFromUrl) {
+            sessionStorage.setItem('accessToken', tokenFromUrl);
+        }
+    })();
+
+    let stompClient = null;
+    let connectedUserPk = null;
+    let currentProjectPk = null;
+    let teamChattingRoomPk = null;
+    let currentChattingRoomPk = null;
+    let canSendMessage = true;
+
+    let memberSubscription = null;
+    let messageSubscription = null;
+
+    const allMessages = [];
+    const renderedMessages = new Set();
+    let lastRenderedDate = null;
+
+    // ================== 알림 관련 ==================
+    let alarmCount = 0;
+    const alarmMessages = [];
+    let alarmLoaded = false;
+    let alarmPopupOpened = false;
+
+    // 시간 포맷
+    function formatAlarmTime(dt) {
+        if (!dt) return "";
+        const d = new Date(dt);
+        if (isNaN(d.getTime())) return dt;
+        return d.toLocaleString();
+    }
+
+    // 알림 내역 조회 및 unreadCount로 배지 표시
+    async function fetchAlarmHistory() {
+        alarmMessages.length = 0;
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) return;
+        try {
+            const res = await fetch(`/api/alarm/list`, {
+                headers: { "Authorization": `Bearer ${accessToken}` }
+            });
+            const data = await res.json();
+            (data.data.alarms || []).forEach(alarm => alarmMessages.push(alarm));
+            alarmCount = data.data.unreadCount || 0;
+            updateAlarmUI();
+        } catch (e) {
+            alert("알림 내역 불러오기 실패");
+        }
+    }
+
+    // 알림 리스트, 배지 UI 렌더링 + X버튼
+    function updateAlarmUI() {
+        const alarmCountEl = document.getElementById("alarmCount");
+        const alarmListEl = document.getElementById("alarmList");
+
+        // 배지
+        if (alarmCount > 0) {
+            alarmCountEl.textContent = alarmCount;
+            alarmCountEl.style.display = "";
+        } else {
+            alarmCountEl.style.display = "none";
+        }
+
+        // 알림 리스트
+        alarmListEl.innerHTML = "";
+        alarmMessages.forEach((alarm, idx) => {
+            const li = document.createElement("li");
+            li.style.position = "relative";
+            li.style.padding = "8px 12px";
+            li.style.borderBottom = "1px solid #f3f4f6";
+            li.style.fontSize = "14px";
+            li.style.cursor = "pointer";
+            li.innerHTML = `
+                <span style="color:#2563eb;font-weight:bold;">[${alarm.alarmType || alarm.type}]</span>
+                <span>${alarm.alarmContent || alarm.content}</span>
+                <div style="font-size:11px;color:#aaa;">${formatAlarmTime(alarm.createdAt)}</div>
+                <button class="alarm-delete-btn"
+                        data-idx="${idx}"
+                        title="삭제"
+                        style="position:absolute;top:8px;right:10px;
+                               background:none;border:none;padding:0;
+                               color:#888;font-size:13px;cursor:pointer;">✕</button>
+            `;
+            alarmListEl.appendChild(li);
+        });
+
+        // X버튼 이벤트 바인딩
+        document.querySelectorAll(".alarm-delete-btn").forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.idx, 10);
+                const alarm = alarmMessages[idx];
+                await deleteAlarmByPk(alarm.alarmPk); // API 호출
+                alarmMessages.splice(idx, 1);
+                updateAlarmUI();
+            };
+        });
+    }
+
+    // 알림 단건 삭제
+    async function deleteAlarmByPk(alarmPk) {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!alarmPk || !accessToken) return;
+        await fetch(`/api/alarm/${alarmPk}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+    }
+
+    // 알림 모두 읽음 처리
+    async function readAllAlarms() {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) return;
+        await fetch(`/api/alarm/read`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        alarmCount = 0;
+        updateAlarmUI();
+    }
+
+    // 종버튼(알림창) 클릭 시 동작
+    document.getElementById("alarmBtn").addEventListener("click", async () => {
+        const popup = document.getElementById("alarmPopup");
+        const willOpen = (popup.style.display === "none" || !popup.style.display);
+
+        if (willOpen) {
+            if (!alarmLoaded) {
+                await fetchAlarmHistory();
+                alarmLoaded = true;
+            }
+            popup.style.display = "block";
+            alarmPopupOpened = true;
+            await readAllAlarms();
+        } else {
+            popup.style.display = "none";
+            alarmPopupOpened = false;
+        }
+    });
+
+    // 실시간 알람 구독
+    function subscribeAlarm() {
+        const myUserPk = sessionStorage.getItem("userPk");
+        if (!myUserPk) return;
+        stompClient.subscribe(`/topic/alarm/${myUserPk}`, async (msg) => {
+            const alarm = JSON.parse(msg.body);
+            alarmMessages.unshift(alarm);
+            if (alarmPopupOpened) {
+                await readAllAlarms();
+            } else {
+                alarmCount++;
+            }
+            updateAlarmUI();
+        });
+    }
+
+    // 모두 삭제 버튼
+    document.getElementById("alarmClearBtn").addEventListener("click", async () => {
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) return;
+        await fetch(`/api/alarm/all`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        alarmMessages.length = 0;
+        alarmCount = 0;
+        updateAlarmUI();
+        document.getElementById("alarmPopup").style.display = "none";
+        alarmPopupOpened = false;
+    });
+
+    // 팝업 외 클릭 시 닫기
+    document.addEventListener("click", (e) => {
+        const alarmBtn = document.getElementById("alarmBtn");
+        const popup = document.getElementById("alarmPopup");
+        if (!alarmBtn.contains(e.target) && !popup.contains(e.target)) {
+            popup.style.display = "none";
+            alarmPopupOpened = false;
+        }
+    });
+    // ================== 알림 관련 끝 ==================
+
+    document.getElementById("loadTeamBtn").addEventListener("click", async () => {
+        let myUserPk = sessionStorage.getItem("userPk");
+        if (!myUserPk) {
+            myUserPk = parseInt(document.getElementById("myUserPk").value);
+            sessionStorage.setItem("userPk", myUserPk);
+        }
+        myUserPk = parseInt(myUserPk);
+
+        const projectPk = parseInt(document.getElementById("projectPk").value);
+
+        connectedUserPk = myUserPk;
+        currentProjectPk = projectPk;
+
+        const accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+            alert("로그인이 필요합니다. accessToken을 확인하세요.");
+            return;
+        }
+        const res = await fetch(`/api/chatting-room/create?projectPk=${projectPk}&roomType=T`, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+        const data = await res.json();
+
+        const roomData = data.data;
+
+        teamChattingRoomPk = roomData.chattingRoomPk;
+        currentChattingRoomPk = roomData.chattingRoomPk;
+        canSendMessage = roomData.canSendMessage;
+
+        document.getElementById("roomTitle").innerText = "💬 팀 채팅방";
+
+        if (!stompClient || !stompClient.connected) {
+            await connectWebSocket();
+        }
+
+        subscribeTeamParticipants();
+        subscribeMessages(teamChattingRoomPk);
+
+        renderTeamMembers(roomData.chattingRoomParticipants);
+        loadMessages(teamChattingRoomPk, connectedUserPk);
+    });
+
+    function renderTeamMembers(members) {
+        const ul = document.getElementById("teamMembers");
+        if (!ul) return;
+        while (ul.firstChild) ul.removeChild(ul.firstChild);
+        members.sort((a, b) => (b.online === true) - (a.online === true));
+        members.forEach(member => {
+            const li = document.createElement("li");
+            li.id = `member-${member.userPk}`;
+            li.style.cursor = "pointer";
+            li.style.display = "flex";
+            li.style.alignItems = "center";
+            li.style.gap = "8px";
+
+            const dot = document.createElement("span");
+            dot.style.display = "inline-block";
+            dot.style.width = "8px";
+            dot.style.height = "8px";
+            dot.style.borderRadius = "50%";
+            dot.style.background = member.online ? "#22c55e" : "#9ca3af";
+            dot.title = member.online ? "온라인" : "오프라인";
+
+            const name = document.createElement("span");
+            name.textContent = member.leader ? `👑 ${member.nickName}` : member.nickName;
+
+            li.appendChild(dot);
+            li.appendChild(name);
+
+            li.addEventListener("click", async () => {
+                if (member.userPk === connectedUserPk) return;
+
+                const accessToken = sessionStorage.getItem("accessToken");
+                const res = await fetch(`/api/chatting-room/create?projectPk=${currentProjectPk}&roomType=P&fromUserPk=${connectedUserPk}&toUserPk=${member.userPk}`, {
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`
+                    }
+                });
+                const data = await res.json();
+
+                const roomData = data.data;
+
+                currentChattingRoomPk = roomData.chattingRoomPk;
+                canSendMessage = roomData.canSendMessage;
+                document.getElementById("roomTitle").innerText = `💬 ${member.nickName}님과의 1:1 채팅`;
+
+                allMessages.length = 0;
+                renderedMessages.clear();
+                lastRenderedDate = null;
+                document.getElementById("chatMessages").innerHTML = "";
+
+                subscribeMessages(currentChattingRoomPk);
+                loadMessages(currentChattingRoomPk, connectedUserPk);
+            });
+
+            ul.appendChild(li);
+        });
+    }
+
+    async function connectWebSocket() {
+        return new Promise((resolve) => {
+            const accessToken = sessionStorage.getItem("accessToken");
+            if (!accessToken) {
+                alert("로그인이 필요합니다. accessToken을 확인하세요.");
+                return;
+            }
+            const wsUrl = `/ws-stomp?accessToken=${encodeURIComponent(accessToken)}`;
+            const socket = new SockJS(wsUrl);
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, () => {
+                console.log("✅ WebSocket connected");
+                subscribeAlarm();
+                resolve();
+            });
+        });
+    }
+
+    function subscribeTeamParticipants() {
+        if (memberSubscription) memberSubscription.unsubscribe();
+        memberSubscription = stompClient.subscribe(
+            `/topic/chat/${teamChattingRoomPk}/members`,
+            (msg) => {
+                const participants = JSON.parse(msg.body);
+                renderTeamMembers(participants);
+            }
+        );
+    }
+
+    function subscribeMessages(roomPk) {
+        if (messageSubscription) messageSubscription.unsubscribe();
+        messageSubscription = stompClient.subscribe(
+            `/topic/chat/${roomPk}`,
+            (msg) => {
+                const data = JSON.parse(msg.body);
+                allMessages.push(data);
+                renderMessages();
+            },
+            { userPk: String(connectedUserPk), roomPk: String(roomPk) }
+        );
+    }
+
+    function loadMessages(chattingRoomPk, userPk) {
+        allMessages.length = 0;
+        renderedMessages.clear();
+        lastRenderedDate = null;
+        document.getElementById("chatMessages").innerHTML = "";
+
+        const accessToken = sessionStorage.getItem("accessToken");
+        fetch(`/api/chatting-room/${chattingRoomPk}/messages/${userPk}`, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        })
+            .then(res => res.json())
+            .then(res => {
+                allMessages.push(...(res.data ?? []));
+                renderMessages();
+            });
+    }
+
+    document.getElementById("sendBtn").addEventListener("click", () => {
+        const message = document.getElementById("message").value.trim();
+        if (!message || !canSendMessage) {
+            alert("메시지를 보낼 수 없습니다.");
+            return;
+        }
+        stompClient.send("/app/chat/message", {}, JSON.stringify({
+            chattingRoomPk: currentChattingRoomPk,
+            userPk: connectedUserPk,
+            message: message
+        }));
+        document.getElementById("message").value = "";
+    });
+
+    window.addEventListener('beforeunload', () => {
+        try { if (messageSubscription) messageSubscription.unsubscribe(); } catch (e) {}
+        try { if (memberSubscription) memberSubscription.unsubscribe(); } catch (e) {}
+        try { if (stompClient && stompClient.connected) stompClient.disconnect(() => {}); } catch (e) {}
+    });
+
+    function renderMessages() {
+        const ul = document.getElementById("chatMessages");
+        allMessages.forEach(msg => {
+            const key = `${msg.createdAt}|${msg.nickName}|${msg.message}`;
+            if (renderedMessages.has(key)) return;
+            renderedMessages.add(key);
+
+            let dateStr = null, timeStr = null;
+            if (msg.createdAt) {
+                const d = new Date(msg.createdAt);
+                if (!isNaN(d.getTime())) {
+                    dateStr = d.toLocaleDateString();
+                    timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+            if (dateStr && lastRenderedDate !== dateStr) {
+                lastRenderedDate = dateStr;
+                const dateLi = document.createElement("li");
+                dateLi.innerHTML =
+                    '<hr style="border:none;border-top:1px solid #ccc;margin:16px 0;">' +
+                    `<div style="text-align:center;font-weight:bold;color:#666;">📅 ${dateStr}</div>` +
+                    '<hr style="border:none;border-top:1px solid #ccc;margin:8px 0;">';
+                ul.appendChild(dateLi);
+            }
+
+            const li = document.createElement("li");
+            const isSystem = msg.chattingMessageType === "JOIN" || msg.chattingMessageType === "LEAVE";
+            if (isSystem) {
+                li.textContent = `[${msg.nickName}] ${msg.message}`;
+                li.style.color = "gray";
+                li.style.fontStyle = "italic";
+            } else {
+                li.textContent = timeStr ? `[${msg.nickName}] ${msg.message} (${timeStr})` : `[${msg.nickName}] ${msg.message}`;
+            }
+            ul.appendChild(li);
+        });
+    }
+</script>
+</body>
+</html>
