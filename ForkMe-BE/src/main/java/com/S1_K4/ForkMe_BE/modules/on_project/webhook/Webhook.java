@@ -36,6 +36,7 @@ public class Webhook {
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType;
 
+    @Convert(converter = EventGroupConverter.class)
     @Column(name = "event_group", nullable = false, length = 20)
     private EventGroup eventGroup;
 

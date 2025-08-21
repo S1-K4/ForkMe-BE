@@ -10,4 +10,12 @@ package com.S1_K4.ForkMe_BE.global.common.cache;
 public interface CacheNames {
         String PROJECT_DETAIL = "project:detail";
         String PROJECT_LIST   = "project:list";
+
+        // 김송이 추가(워크스페이스)
+        String BOARD_PROJECT_DETAIL = "board:project:detail";
+        String BOARD_PROJECT_LIST = "board:project:list";
+        String REVIEW_LIST = "review:list";
+        String REVIEW_DETAIL = "review:detail";
+        
+
 }

@@ -28,6 +28,7 @@ public class CorsConfig {
         c.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
+        s.registerCorsConfiguration("/oauth2/authorization/**", c);
         s.registerCorsConfiguration("/webhooks/github/**", c);
         s.registerCorsConfiguration("/api/**", c);
         return s;

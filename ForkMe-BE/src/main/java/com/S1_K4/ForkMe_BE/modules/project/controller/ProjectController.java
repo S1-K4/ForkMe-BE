@@ -141,6 +141,19 @@ public class ProjectController {
 
     }
 
+    /**
+     * 프로젝트 멤버 조회
+     * */
+    @Operation(summary = "프로젝트에 속해있는 멤버 조회")
+    @GetMapping("/{projectPk}/members")
+    public ResponseEntity<ApiResponse<List<ProjectMemberListDTO>>> getProjectMembers(
+            @Parameter(description = "프로젝트 PK", example = "1")
+            @PathVariable("projectPk") Long projectPk
+    ){
+        List<ProjectMemberListDTO> members = projectService.getProjectMembers(projectPk);
+        return ResponseEntity.ok(ApiResponse.success(members,"프로젝트 멤버 조회 성공"));
+    }
+
 
     /**
     * 프로젝트 상태 수정(기획 -> 모집)
