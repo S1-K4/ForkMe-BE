@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.apply.service;
 
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
+import com.S1_K4.ForkMe_BE.modules.alarm.service.AlarmService;
 import com.S1_K4.ForkMe_BE.modules.apply.dto.*;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.ApplyTechStack;
@@ -61,6 +62,7 @@ public class ApplyServiceImpl implements ApplyService{
     private final ProjectMemberRepository projectMemberRepository;
 
     private final ChattingService chattingService;
+    private final AlarmService alarmService;
 
     /**
     * 신청서 생성폼 호출하는 메서드(모집분야, 기술스택 List로 호출)
@@ -149,6 +151,9 @@ public class ApplyServiceImpl implements ApplyService{
                 .toList();
         applyTechStackRepository.saveAll(applyTechStacks);
         apply.getApplyTechStacks().addAll(applyTechStacks);
+
+        /** 신청서 생성 후 리더에게 새 신청서 알림 보내기**/
+        alarmService.alarmApplyToLeader(user, project, apply);
 
         return ApplyResponseDTO.from(apply);
     }
@@ -309,6 +314,9 @@ public class ApplyServiceImpl implements ApplyService{
 
         /**기존 멤버들과 개인 채팅방 자동 생성 로직 **/
         chattingService.createAllPrivateRoomsForNewMember(project, applicant, now);
+
+        /** 지원자에게 신청서 수락 완료 메세지 전송 **/
+        alarmService.alarmApplyToApplicant(applicant, project, apply, now);
 
 
     }

@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.chatting.service;
 
 import com.S1_K4.ForkMe_BE.global.common.redis.RedisPublisher;
+import com.S1_K4.ForkMe_BE.modules.alarm.service.AlarmService;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.ChattingMessageType;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
@@ -49,6 +50,7 @@ public class ChattingServiceImpl implements ChattingService{
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
     private final ChattingPresenceService chattingPresenceService;
+    private final AlarmService alarmService;
 
 
     @Override
@@ -133,11 +135,11 @@ public class ChattingServiceImpl implements ChattingService{
         }
 
         // 3. 유저 조회
-        User user = userRepository.findById(chattingMessageDto.getUserPk())
+        User senderUser = userRepository.findById(chattingMessageDto.getUserPk())
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         // 4. 참여자 권한 검증
-        chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, user)
+        chattingParticipantRepository.findByChattingRoomPkAndUserPk(chattingRoom, senderUser)
                 .orElseThrow(() -> new IllegalArgumentException("해당 채팅방에 속한 사용자가 아닙니다."));
 
         /**개인 채팅방에서 상대방 탈퇴 시 메시지 송신 차단**/
@@ -145,7 +147,7 @@ public class ChattingServiceImpl implements ChattingService{
             List<ChattingParticipant> participants = chattingParticipantRepository.findByChattingRoomPk(chattingRoom);
 
             boolean hasOtherUser = participants.stream()
-                    .anyMatch(participant -> !participant.getUserPk().getUserPk().equals(user.getUserPk()));
+                    .anyMatch(participant -> !participant.getUserPk().getUserPk().equals(senderUser.getUserPk()));
 
             if (!hasOtherUser) {
                 throw new IllegalStateException("상대방이 탈퇴하여 메시지를 보낼 수 없습니다.");
@@ -155,23 +157,29 @@ public class ChattingServiceImpl implements ChattingService{
 
         //Redis 발행용 데이터 세팅 (시간 포맷 적용)
         chattingMessageDto.setCreatedAt(now);
-        chattingMessageDto.setNickName(user.getNickname());
+        chattingMessageDto.setNickName(senderUser.getNickname());
         chattingMessageDto.setChattingMessageType(ChattingMessageType.CHAT);
 
         // 5. MySQL 저장
         chattingMessageRepository.save(
-                chattingMessageDto.toEntity(chattingRoom, user, now)
+                chattingMessageDto.toEntity(chattingRoom, senderUser, now)
         );
 
         // 6. MongoDB 저장
         chattingMessageMongoRepository.save(
-                chattingMessageDto.toDocument(user.getNickname(), now)
+                chattingMessageDto.toDocument(senderUser.getNickname(), now)
         );
 
 
 
         // 8. Redis 발행
         redisPublisher.publish("chat", chattingMessageDto);
+
+
+        /** 채팅 알림을 위한 부분 - 현재 채팅 참여자에게는 알림 보내지 않기 위해 **/
+        List<ChattingUserDto> participantsDetails = getChattingRoomParticipants(chattingRoom.getChattingRoomPk());
+
+        alarmService.alarmChattingMessageToMember(chattingRoom.getChattingRoomPk(), senderUser, now, participantsDetails);
     }
 
 
