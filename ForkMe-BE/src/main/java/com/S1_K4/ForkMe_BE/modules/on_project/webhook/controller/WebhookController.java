@@ -10,12 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
+
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -36,7 +38,7 @@ import java.util.Map;
  * @description : 깃허브 웹훅 컨트롤러입니다.
  */
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/github")
 @RequiredArgsConstructor
@@ -44,6 +46,12 @@ public class WebhookController {
 
     @Value("${github.webhook.secret}")
     private String secret;
+
+    @Value("${spring.security.oauth2.client.registration.github-hooks.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
+    private String fixedRedirectUri;
 
     private final WebhookService webhookService;
     private final ObjectMapper om = new ObjectMapper();
@@ -76,12 +84,9 @@ public class WebhookController {
                 .filter(s -> !s.isEmpty())
                 .toList();
 
-        //넘어온 정보들 session 에 pending_hook으로 저장
-        session.setAttribute(
-                GithubHookSessionKeys.PENDING_HOOK,
-                new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk)
-        );
+        PendingHookRequest pending = new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk);
 
+        session.setAttribute(GithubHookSessionKeys.PENDING_HOOK, pending);
         // 등록한 registrationId와 정확히 일치해야 함. 아래 주소로 리다이렉트(깃헙훅 OAuth2 체크)
         return new RedirectView("/oauth2/authorization/github-hooks?prompt=consent");
         //리다이렉트 화면에서 깃헙 권한체크 화면

@@ -3,17 +3,30 @@ package com.S1_K4.ForkMe_BE.global.config.springsecurity;
 import com.S1_K4.ForkMe_BE.global.security.jwt.JwtTokenFilter;
 import com.S1_K4.ForkMe_BE.modules.auth.OAuth2AuthenticationSuccessHandler;
 import com.S1_K4.ForkMe_BE.modules.auth.service.CustomOAuth2UserService;
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author : 선순주
@@ -22,17 +35,22 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * @date : 2025-08-03
  * @description : springSecurity 관련 설정파일입니다.
  */
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+    @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
+    private String fixedRedirectUri;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final JwtTokenFilter jwtTokenFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,OAuth2AuthorizationRequestResolver customResolver) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
@@ -173,12 +191,78 @@ public class SecurityConfig {
                         })
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorization"))
+                        .authorizationEndpoint(auth -> auth.authorizationRequestResolver(customResolver).baseUri("/oauth2/authorization"))
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository) {
+
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+
+        return new OAuth2AuthorizationRequestResolver() {
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
+                // URI에서 registrationId 추출
+                String registrationId = extractRegistrationIdFromRequest(request);
+                return customizeAndStore(req, request, registrationId);
+            }
+
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
+                return customizeAndStore(req, request, clientRegistrationId);
+            }
+
+            private OAuth2AuthorizationRequest customizeAndStore(OAuth2AuthorizationRequest req, HttpServletRequest request, String registrationId) {
+                if (req == null) return null;
+
+                // redirect_uri 고정
+                OAuth2AuthorizationRequest swapped = OAuth2AuthorizationRequest.from(req)
+                        .redirectUri(fixedRedirectUri)
+                        .build();
+
+                // 오직 github-hooks 등록에 대해서만 session -> redis 저장
+                if ("github-hooks".equals(registrationId)) {
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        Object pendingObj = session.getAttribute(GithubHookSessionKeys.PENDING_HOOK);
+                        if (pendingObj != null) {
+                            try {
+                                String key = "pending_hook:" + swapped.getState();
+                                String json = objectMapper.writeValueAsString(pendingObj);
+                                redisTemplate.opsForValue().set(key, json, 10, TimeUnit.MINUTES);
+                                log.info("customResolver: saved pending to redis key={}", key);
+                                session.removeAttribute(GithubHookSessionKeys.PENDING_HOOK);
+                            } catch (Exception e) {
+                                log.error("customResolver: failed to save pending to redis", e);
+                            }
+                        }
+                    }
+                }
+
+                return swapped;
+            }
+
+            private String extractRegistrationIdFromRequest(HttpServletRequest request) {
+                String uri = request.getRequestURI();
+                if (uri == null) return null;
+                String prefix = "/oauth2/authorization/";
+                int idx = uri.indexOf(prefix);
+                if (idx < 0) return null;
+                String registrationId = uri.substring(idx + prefix.length());
+                int q = registrationId.indexOf('?');
+                if (q >= 0) registrationId = registrationId.substring(0, q);
+                return registrationId;
+            }
+        };
     }
 }
