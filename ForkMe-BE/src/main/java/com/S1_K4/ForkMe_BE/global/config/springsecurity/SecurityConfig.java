@@ -50,17 +50,14 @@ public class SecurityConfig {
     private final JwtTokenFilter jwtTokenFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, OAuth2AuthorizationRequestResolver customResolver) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers(
-                "/api/**",
+                "/api/**" ,
                         "/ws/**",           // [추가]
                         "/ws-stomp/**",     // [추가]
                         "/pub/**",          // [추가] STOMP app prefix (MessageMapping)
                         "/app/**"           // [추가]
-
                 ))
-    public SecurityFilterChain filterChain(HttpSecurity http,OAuth2AuthorizationRequestResolver customResolver) throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
