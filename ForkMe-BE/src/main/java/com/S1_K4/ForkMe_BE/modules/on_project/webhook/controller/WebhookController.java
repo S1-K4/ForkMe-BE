@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 
 /*
@@ -55,7 +53,6 @@ public class WebhookController {
     @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
     private String fixedRedirectUri;
 
-    private final StringRedisTemplate redisTemplate;
     private final WebhookService webhookService;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -88,9 +85,6 @@ public class WebhookController {
                 .toList();
 
         PendingHookRequest pending = new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk);
-
-        // 1) state 생성
-        String state = java.util.UUID.randomUUID().toString();
 
         session.setAttribute(GithubHookSessionKeys.PENDING_HOOK, pending);
         // 등록한 registrationId와 정확히 일치해야 함. 아래 주소로 리다이렉트(깃헙훅 OAuth2 체크)
