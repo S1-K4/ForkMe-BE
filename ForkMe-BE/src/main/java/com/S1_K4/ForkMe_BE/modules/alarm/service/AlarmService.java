@@ -1,11 +1,14 @@
 package com.S1_K4.ForkMe_BE.modules.alarm.service;
 
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
+import org.w3c.dom.stylesheets.LinkStyle;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author : 김남이
@@ -23,7 +26,12 @@ public interface                                                                
     void alarmApplyToApplicant(User applicant, Project project, Apply apply, LocalDateTime now);
 
     //프로젝트 내의 채팅방(팀/개인)에서 새로운 채팅 발생 시 알림 발송
-    void alarmChattingMessageToMember(Long chattingRoomPk, User teamMember, LocalDateTime now);
+    void alarmChattingMessageToMember(
+            Long chattingRoomPk,
+            User teamMember,
+            LocalDateTime now,
+            List<ChattingUserDto> participantsDetails
+    );
 
     //알람 단건 삭제
     String removeAlarm(String alarmPk);

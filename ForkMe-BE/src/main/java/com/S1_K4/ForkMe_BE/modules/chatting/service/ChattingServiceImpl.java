@@ -175,7 +175,11 @@ public class ChattingServiceImpl implements ChattingService{
         // 8. Redis 발행
         redisPublisher.publish("chat", chattingMessageDto);
 
-        alarmService.alarmChattingMessageToMember(chattingRoom.getChattingRoomPk(), senderUser, now);
+
+        /** 채팅 알림을 위한 부분 - 현재 채팅 참여자에게는 알림 보내지 않기 위해 **/
+        List<ChattingUserDto> participantsDetails = getChattingRoomParticipants(chattingRoom.getChattingRoomPk());
+
+        alarmService.alarmChattingMessageToMember(chattingRoom.getChattingRoomPk(), senderUser, now, participantsDetails);
     }
 
 

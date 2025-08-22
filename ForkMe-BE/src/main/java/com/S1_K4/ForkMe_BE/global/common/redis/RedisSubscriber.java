@@ -31,28 +31,6 @@ public class RedisSubscriber implements MessageListener {
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-//    @Override
-//    public void onMessage(Message message, byte[] pattern) {
-//        try {
-//            ChattingMessageDto chattingMessage = objectMapper.readValue(message.getBody(), ChattingMessageDto.class);
-//            ChattingMessageType chattingMessageType = chattingMessage.getChattingMessageType();
-//
-//            Long roomPk = chattingMessage.getChattingRoomPk(); // 반복 제거용
-//
-//            //타입 분기
-//            switch (chattingMessageType) {
-//                case CHAT -> messagingTemplate.convertAndSend("/topic/chat/" + chattingMessage.getChattingRoomPk(), chattingMessage);
-//                case JOIN, LEAVE -> {
-//                    messagingTemplate.convertAndSend("/topic/chat/" + roomPk, chattingMessage); // 기존 유지
-//
-//                }
-//            }
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
-
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -76,8 +54,10 @@ public class RedisSubscriber implements MessageListener {
             Long roomPk = chattingMessage.getChattingRoomPk();
 
             switch (chattingMessageType) {
-                case CHAT -> messagingTemplate.convertAndSend("/topic/chat/" + roomPk, chattingMessage);
-                case JOIN, LEAVE -> messagingTemplate.convertAndSend("/topic/chat/" + roomPk, chattingMessage);
+                case CHAT, JOIN, LEAVE -> messagingTemplate.convertAndSend("/topic/chat/" + roomPk, chattingMessage);
+
+//                // 분기 설정 추가 시 주석 해제
+//                case JOIN, LEAVE -> messagingTemplate.convertAndSend("/topic/chat/" + roomPk, chattingMessage);
             }
         } catch (Exception e) {
             e.printStackTrace();

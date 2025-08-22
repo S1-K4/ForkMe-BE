@@ -6,9 +6,11 @@ import com.S1_K4.ForkMe_BE.modules.alarm.dto.AlarmMessageRequest;
 import com.S1_K4.ForkMe_BE.modules.alarm.mongo_document.AlarmMessageDocument;
 import com.S1_K4.ForkMe_BE.modules.alarm.repository.AlarmMessageMongoRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
+import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
 import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingRoomRepository;
+import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author : 김남이
@@ -95,7 +99,11 @@ public class AlarmServiceImpl implements  AlarmService{
     }
 
     @Override
-    public void alarmChattingMessageToMember(Long chattingRoomPk, User senderUser, LocalDateTime now){
+    public void alarmChattingMessageToMember(
+            Long chattingRoomPk,
+            User senderUser,
+            LocalDateTime now,
+            List<ChattingUserDto> participantsDetails){
 
         // fetch join 으로 다시 조회
         ChattingRoom chattingRoom = chattingRoomRepository.findWithParticipantsById(chattingRoomPk)
@@ -108,14 +116,28 @@ public class AlarmServiceImpl implements  AlarmService{
 
         List<ChattingParticipant> chattingParticipants = chattingRoom.getChattingParticipants();
 
-
-        // 대상 유저 리스트 추출(본인 제외, 중복 제거)
-        List<Long> targetUserPks = chattingParticipants.stream()
+        // DB 기준 대상 유저 (본인 제외, 중복 제거)
+        List<Long> candidateUserPks = chattingParticipants.stream()
                 .map(p -> p.getUserPk().getUserPk())
                 .filter(pk -> !pk.equals(senderUserPk))
                 .distinct()
                 .toList();
 
+
+        // 현재 방에 접속중인 유저 목록을 DTO 로 가져와서 online=true 인 userPk 집합을 만든다
+        Set<Long> onlineUserPks = participantsDetails.stream()
+                .filter(dto -> Boolean.TRUE.equals(dto.isOnline())) // ChattingUserDto#online 반환 타입에 맞게 조정
+                .map(dto -> dto.getUserPk())
+                .collect(Collectors.toSet());
+
+
+        // 실제 알림을 보낼 대상: DB 후보 - (현재 접속중인 유저들)
+        List<Long> targetUserPks = candidateUserPks.stream()
+                .filter(pk -> !onlineUserPks.contains(pk))
+                .toList();
+
+
+        // 알림 생성/업서트 수행
         // 각 대상 유저에 대해 upsert 수행 (없으면 생성 + Redis 발행, 있으면 무시)
         for (Long targetUserPk : targetUserPks) {
             upsertUnreadChatAlarmOnce(targetUserPk, project.getProjectPk(), project.getProjectTitle(), now);
