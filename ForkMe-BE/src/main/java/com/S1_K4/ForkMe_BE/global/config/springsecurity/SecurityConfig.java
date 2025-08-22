@@ -211,27 +211,30 @@ public class SecurityConfig {
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
                 OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
-                // URI에서 registrationId 추출
                 String registrationId = extractRegistrationIdFromRequest(request);
-                return customizeAndStore(req, request, registrationId);
+                return customizeIfGithubHooks(req, registrationId, request);
             }
 
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
                 OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
-                return customizeAndStore(req, request, clientRegistrationId);
+                return customizeIfGithubHooks(req, clientRegistrationId, request);
             }
 
-            private OAuth2AuthorizationRequest customizeAndStore(OAuth2AuthorizationRequest req, HttpServletRequest request, String registrationId) {
+            private OAuth2AuthorizationRequest customizeIfGithubHooks(OAuth2AuthorizationRequest req, String registrationId, HttpServletRequest request) {
                 if (req == null) return null;
 
-                // redirect_uri 고정
-                OAuth2AuthorizationRequest swapped = OAuth2AuthorizationRequest.from(req)
-                        .redirectUri(fixedRedirectUri)
-                        .build();
-
-                // 오직 github-hooks 등록에 대해서만 session -> redis 저장
+                // github-hooks 일 때만 redirectUri 강제 및 session->redis 이동
                 if ("github-hooks".equals(registrationId)) {
+                    OAuth2AuthorizationRequest swapped = OAuth2AuthorizationRequest.from(req)
+                            .redirectUri(fixedRedirectUri)
+                            .build();
+
+                    // 로그
+                    log.info("customResolver: github-hooks request. state={}, originalRedirectUri={}, swappedRedirectUri={}",
+                            swapped.getState(), req.getRedirectUri(), swapped.getRedirectUri());
+
+                    // session -> redis 저장 (state 기준)
                     HttpSession session = request.getSession(false);
                     if (session != null) {
                         Object pendingObj = session.getAttribute(GithubHookSessionKeys.PENDING_HOOK);
@@ -239,30 +242,46 @@ public class SecurityConfig {
                             try {
                                 String key = "pending_hook:" + swapped.getState();
                                 String json = objectMapper.writeValueAsString(pendingObj);
+                                // TTL 10분 (필요시 조정)
                                 redisTemplate.opsForValue().set(key, json, 10, TimeUnit.MINUTES);
                                 log.info("customResolver: saved pending to redis key={}", key);
                                 session.removeAttribute(GithubHookSessionKeys.PENDING_HOOK);
                             } catch (Exception e) {
                                 log.error("customResolver: failed to save pending to redis", e);
                             }
+                        } else {
+                            log.debug("customResolver: session has no pending hook (sessionId={})", session.getId());
                         }
+                    } else {
+                        log.warn("customResolver: no session available to read pending hook");
                     }
+
+                    return swapped;
                 }
 
-                return swapped;
+                // other registrations (github 등)는 그대로 반환
+                return req;
             }
 
+
+            // 안전한 registrationId 추출기 (URI에서 /oauth2/authorization/{registrationId} 형태를 파싱)
             private String extractRegistrationIdFromRequest(HttpServletRequest request) {
                 String uri = request.getRequestURI();
-                if (uri == null) return null;
                 String prefix = "/oauth2/authorization/";
-                int idx = uri.indexOf(prefix);
-                if (idx < 0) return null;
-                String registrationId = uri.substring(idx + prefix.length());
-                int q = registrationId.indexOf('?');
-                if (q >= 0) registrationId = registrationId.substring(0, q);
-                return registrationId;
+                if (uri == null || !uri.contains(prefix)) {
+                    return null;
+                }
+                String tail = uri.substring(uri.indexOf(prefix) + prefix.length());
+                // tail에 쿼리나 추가 경로가 있으면 ? 부터 자르기
+                int q = tail.indexOf('?');
+                if (q >= 0) tail = tail.substring(0, q);
+                // 만약 슬래시가 추가로 붙어있으면 첫 슬래시 이전까지
+                int s = tail.indexOf('/');
+                if (s >= 0) tail = tail.substring(0, s);
+                return tail;
             }
         };
     }
+
+
 }
