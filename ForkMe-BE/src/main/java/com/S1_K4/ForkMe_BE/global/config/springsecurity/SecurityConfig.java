@@ -3,8 +3,10 @@ package com.S1_K4.ForkMe_BE.global.config.springsecurity;
 import com.S1_K4.ForkMe_BE.global.security.jwt.JwtTokenFilter;
 import com.S1_K4.ForkMe_BE.modules.auth.OAuth2AuthenticationSuccessHandler;
 import com.S1_K4.ForkMe_BE.modules.auth.service.CustomOAuth2UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,6 +14,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -31,8 +37,11 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final JwtTokenFilter jwtTokenFilter;
 
+    @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
+    private String fixedRedirectUri;
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,OAuth2AuthorizationRequestResolver customResolver) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
@@ -164,12 +173,53 @@ public class SecurityConfig {
                         })
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorization"))
+                        .authorizationEndpoint(auth -> auth.authorizationRequestResolver(customResolver).baseUri("/oauth2/authorization"))
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+
+        return new OAuth2AuthorizationRequestResolver() {
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
+                return customize(req, request);
+            }
+
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
+                return customize(req, request);
+            }
+
+            private OAuth2AuthorizationRequest customize(OAuth2AuthorizationRequest req, HttpServletRequest request) {
+                if (req == null) return null;
+
+                // 요청 URI에서 registrationId 추출: /oauth2/authorization/{registrationId}
+                String uri = request.getRequestURI();
+                String prefix = "/oauth2/authorization/";
+                String registrationId = null;
+                if (uri != null && uri.contains(prefix)) {
+                    registrationId = uri.substring(uri.indexOf(prefix) + prefix.length());
+                    int qidx = registrationId.indexOf('?');
+                    if (qidx >= 0) registrationId = registrationId.substring(0, qidx);
+                }
+
+                if ("github-hooks".equals(registrationId)) {
+                    return OAuth2AuthorizationRequest.from(req)
+                            .redirectUri(fixedRedirectUri) // application.properties 값으로 강제
+                            .build();
+                }
+                return req;
+            }
+        };
     }
 }
