@@ -75,6 +75,7 @@ public class RedisConfig {
         return container;
     }
 
+    //챗봇 세션 객체를 redis에 타입 안정적으로 넣고빼는 템플릿(세션 저장, ttl)
     @Bean
     public RedisTemplate<String, BotSession> botSessionRedisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, BotSession> t = new RedisTemplate<>();

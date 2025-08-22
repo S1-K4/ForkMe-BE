@@ -1,6 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.chatbot.controller;
 
-import com.S1_K4.ForkMe_BE.modules.chatbot.app.ProjectTopicBotService;
+import com.S1_K4.ForkMe_BE.modules.chatbot.service.ProjectTopicBotService;
 import com.S1_K4.ForkMe_BE.modules.chatbot.dto.ChatMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.Header;
@@ -8,6 +8,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
+
 /**
  * @author : 선순주
  * @packageName : com.S1_K4.ForkMe_BE.modules.chatbot.controller
@@ -25,23 +28,19 @@ public class ChatbotController {
     @MessageMapping("/gpt")
     public void onUserMessage(ChatMessage incoming,
                               SimpMessageHeaderAccessor headers,
-                              @Header(name = "simpSessionId", required = false) String sessionId) {
+                              @Header(name = "simpSessionId", required = false) String sessionId,
+                              Principal principal) {
 
-        // simpSessionId 확보
-        String sid = (sessionId != null) ? sessionId : headers.getSessionId();
+        // 세션/사용자 키 결정
+        final String sid = (sessionId != null) ? sessionId : headers.getSessionId();
+        final String userKey = (principal != null) ? principal.getName() : sid; // 익명도 OK
 
-        // Handshake Interceptor에서 넣은 userPk (없어도 동작)
-        Long userPk = null;
-        Object attr = headers.getSessionAttributes() != null ? headers.getSessionAttributes().get("userPk") : null;
-        if (attr instanceof Long l) userPk = l;
-        else if (attr instanceof Integer i) userPk = i.longValue();
+        // 비즈니스 로직 호출 (서비스는 비동기 응답도 convertAndSendToUser로 보냄)
+        ChatMessage[] outs = bot.handle(sid, null, incoming.getMessage(), userKey);
 
-        // 비즈니스 로직 호출
-        ChatMessage[] outs = bot.handle(sid, userPk, incoming.getMessage());
-
-        // 사용자 에코 + 봇 답장을 순차 브로드캐스트
+        // 즉시 응답도 사용자별 큐로 전송 (여기서 브로드캐스트 금지!)
         for (ChatMessage m : outs) {
-            template.convertAndSend("/topic/gpt", m);
+            template.convertAndSendToUser(userKey, "/queue/gpt", m);
         }
     }
 }

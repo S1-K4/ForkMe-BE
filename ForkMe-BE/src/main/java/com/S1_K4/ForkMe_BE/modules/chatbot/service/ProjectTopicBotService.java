@@ -1,12 +1,11 @@
-package com.S1_K4.ForkMe_BE.modules.chatbot.app;
+package com.S1_K4.ForkMe_BE.modules.chatbot.service;
 
 import com.S1_K4.ForkMe_BE.modules.chatbot.domain.BotSession;
 import com.S1_K4.ForkMe_BE.modules.chatbot.domain.BotState;
 import com.S1_K4.ForkMe_BE.modules.chatbot.dto.ChatMessage;
-import com.S1_K4.ForkMe_BE.modules.chatbot.dto.InputValidator;
-import com.S1_K4.ForkMe_BE.modules.chatbot.infra.BotSessionStore;
-import com.S1_K4.ForkMe_BE.modules.chatbot.llm.GPTService;
-import com.S1_K4.ForkMe_BE.modules.chatbot.prompt.ProjectIdeaPromptBuilder;
+import com.S1_K4.ForkMe_BE.modules.chatbot.service.GPTService;
+import com.S1_K4.ForkMe_BE.modules.chatbot.setting.BotSessionStore;
+import com.S1_K4.ForkMe_BE.modules.chatbot.setting.ProjectIdeaPromptBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 /**
  * @author : 선순주
@@ -22,33 +20,44 @@ import java.util.concurrent.Future;
  * @fileName : ProjectTopicBotService
  * @date : 2025-08-20
  * @description : projectTopicBotService
+ * -> 세션 상태를 보고, 입력 검증하고, 필요 시 GTPService 호출 후 그 결과를 ChatMessage[]로 만들어 돌려줌.
  */
 @Service
 @RequiredArgsConstructor
 public class ProjectTopicBotService {
 
-    private final BotSessionStore store;
-    private final GPTService gpt;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final BotSessionStore store;                        // 세션보관/TTL
+    private final GPTService gpt;                               // LLM 호출기
+    private final SimpMessagingTemplate messagingTemplate;      // STOMP 송신
+    private final ChatSessionSummaryService summaryService;     //DB 저장용
 
     // 선택: 특정 실행기 사용하고 싶으면 주입
     @Qualifier("botExecutor")
-    private final Executor botExecutor;
+    private final Executor botExecutor;                         // 오래 걸리는 작업용 스레드풀
 
+    // 메시지에 GPT-봇을 찍어주는 헬퍼
     private ChatMessage bot(String text) {
         return new ChatMessage("GPT-봇", text);
     }
 
-    public ChatMessage[] handle(String sessionId, Long userPk, String incomingText) {
+    /**
+     * targetUserKey: 컨트롤러에서 전달한 Principal 이름(세션별 고유값)
+     * - 즉시 응답은 컨트롤러가 convertAndSendToUser(...)로 보내야 함
+     * - 비동기 응답은 여기서 convertAndSendToUser(...)로 바로 보냄
+     */
+    public ChatMessage[] handle(String sessionId, Long userPk, String incomingText, String targetUserKey) {
         BotSession s = store.getOrCreate(sessionId, userPk);
         String userMsg = incomingText == null ? "" : incomingText.trim();
 
         switch (s.getState()) {
+            // 첫인사 + 다음상태로 이동
             case START -> {
                 s.setState(BotState.AWAIT_YES);
                 store.save(s);
                 return new ChatMessage[]{ bot("안녕하세요! 저는 **프로젝트 주제추천 챗봇**이에요. 주제추천을 해드릴까요? (답변: 네)") };
             }
+
+            // Yes/No만 허용하여 사용자 흐름 교육
             case AWAIT_YES -> {
                 if (isYes(userMsg)) {
                     s.setState(BotState.ASK_STACK);
@@ -60,6 +69,7 @@ public class ProjectTopicBotService {
                     return new ChatMessage[]{ bot("시작하려면 **'네'**라고 입력해주세요. (예: 네)") };
                 }
             }
+
             case ASK_STACK -> {
                 if (!StringUtils.hasText(userMsg)) {
                     return new ChatMessage[]{ bot("기술스택을 입력해주세요. (예: Java, Spring, Redis)") };
@@ -69,6 +79,7 @@ public class ProjectTopicBotService {
                 store.save(s);
                 return new ChatMessage[]{ bot("다음으로 **예상 기간**을 알려주세요! (예: 1개월 / 6주 / 2개월)") };
             }
+
             case ASK_DURATION -> {
                 if (!StringUtils.hasText(userMsg)) {
                     return new ChatMessage[]{ bot("예상 기간을 입력해주세요. (예: 2개월)") };
@@ -78,6 +89,8 @@ public class ProjectTopicBotService {
                 store.save(s);
                 return new ChatMessage[]{ bot("마지막으로 **예상 인원**을 알려주세요! (예: 3명)") };
             }
+
+            // 요약 + 로딩을 먼저 반환 -> 사용자 입장에서 챗봇이 제대로 작동하고 있구나 확인 가능
             case ASK_MEMBERS -> {
                 if (!StringUtils.hasText(userMsg)) {
                     return new ChatMessage[]{ bot("인원 형식이 맞지 않아요. (예: 3명)") };
@@ -89,7 +102,7 @@ public class ProjectTopicBotService {
                 s.setState(BotState.ASK_MORE);
                 store.save(s);
 
-                // ✅ 로딩 먼저 응답
+                // ✅ 로딩 먼저 응답(컨트롤러가 즉시 사용자별 큐로 보내도록)
                 ChatMessage[] loading = new ChatMessage[]{
                         bot("""
                             요구사항 요약
@@ -100,28 +113,30 @@ public class ProjectTopicBotService {
                         bot("잠시만 기다려주세요, 주제를 생성 중입니다... ⏳")
                 };
 
-                // ✅ 비동기로 생성 → /topic/gpt 로 직접 publish
-                // 세션 스냅샷(동시성 안전을 위해 필요한 필드만 복사)
+                // ✅ 비동기로 생성 → 사용자별 큐(/user/queue/gpt)로 직접 publish
                 final String tech = s.getTechStack();
                 final String dur  = s.getDuration();
                 final String mem  = s.getMembers();
 
                 botExecutor.execute(() -> {
                     try {
-                        // ✅ BotSession 생성 대신, 오버로드 사용
                         String prompt = ProjectIdeaPromptBuilder.buildFirst(tech, dur, mem);
                         String ideas  = gpt.complete(prompt, ProjectIdeaPromptBuilder.systemContext());
-
+                        //몽고DB 요약 저장
+                        summaryService.saveFirstIdeas(sessionId, tech, dur, mem, ideas);
+                        
                         String combined = """
-                추천 주제 3개:
-                %s
+                        추천 주제 3개:
+                        %s
 
-                더 추천해드릴까요? (네/아니요)
-                """.formatted(ideas);
+                        더 추천해드릴까요? (네/아니요)
+                        """.formatted(ideas);
 
-                        messagingTemplate.convertAndSend("/topic/gpt", bot(combined));
+                        // ★ 사용자별 큐로 송신
+                        messagingTemplate.convertAndSendToUser(targetUserKey, "/queue/gpt", bot(combined));
                     } catch (Exception e) {
-                        messagingTemplate.convertAndSend("/topic/gpt", bot("❗추천 생성 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."));
+                        messagingTemplate.convertAndSendToUser(targetUserKey, "/queue/gpt",
+                                bot("❗추천 생성 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."));
                     }
                 });
 
@@ -132,24 +147,36 @@ public class ProjectTopicBotService {
                 if (isYes(userMsg)) {
                     // 추가 추천도 비동기로 처리 (동일 패턴)
                     final BotSession snap = store.getOrCreate(sessionId, userPk);
-                    messagingTemplate.convertAndSend("/topic/gpt", bot("추가 추천을 준비 중입니다... ⏳"));
+
+                    // 준비 중 문구는 즉시(컨트롤러가 사용자별 큐로 보내도록 배열 반환 가능),
+                    // 또는 여기서 바로 보내도 됨. 여기서는 바로 보냄.
+                    messagingTemplate.convertAndSendToUser(targetUserKey, "/queue/gpt",
+                            bot("추가 추천을 준비 중입니다... ⏳"));
+
                     botExecutor.execute(() -> {
                         try {
                             String prompt = ProjectIdeaPromptBuilder.buildMore(snap);
                             String ideas  = gpt.complete(prompt, ProjectIdeaPromptBuilder.systemContext());
+                            //회수 + 1
+                            summaryService.extendTtlOnMoreRequest(sessionId);
+
                             String combined = """
                                     추가 추천 3개:
                                     %s
 
                                     더 추천해드릴까요? (네/아니요)
                                     """.formatted(ideas);
-                            messagingTemplate.convertAndSend("/topic/gpt", bot(combined));
+
+                            messagingTemplate.convertAndSendToUser(targetUserKey, "/queue/gpt", bot(combined));
                         } catch (Exception e) {
-                            messagingTemplate.convertAndSend("/topic/gpt", bot("❗추가 추천 생성 중 오류가 발생했어요."));
+                            messagingTemplate.convertAndSendToUser(targetUserKey, "/queue/gpt",
+                                    bot("❗추가 추천 생성 중 오류가 발생했어요."));
                         }
                     });
+
                     return new ChatMessage[]{}; // 이미 "준비 중"을 보냈으므로 여기서는 빈 배열
                 } else if (isNo(userMsg)) {
+                    summaryService.markEndedIfExists(sessionId);
                     store.reset(sessionId);
                     return new ChatMessage[]{ bot("도움이 되었다면 좋겠어요! 필요하시면 언제든 다시 '네'라고 시작해 주세요. 👋") };
                 } else {

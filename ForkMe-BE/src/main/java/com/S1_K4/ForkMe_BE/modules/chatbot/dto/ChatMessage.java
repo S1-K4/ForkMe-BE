@@ -13,6 +13,7 @@ import lombok.Setter;
  * @date : 2025-08-20
  * @description : 챗메세지 DTO
  */
+//화면에 뿌릴 한줄 메시지
 @Schema(description = "웹소켓/STOPM 채팅 메시지 DTO")
 @Getter
 @Setter

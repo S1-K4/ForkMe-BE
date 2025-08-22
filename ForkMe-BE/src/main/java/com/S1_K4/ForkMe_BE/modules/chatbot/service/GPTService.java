@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.chatbot.llm;
+package com.S1_K4.ForkMe_BE.modules.chatbot.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +29,6 @@ public class GPTService {
     @Value("${openai.api-key}")
     private String openaiApiKey;
 
-    // gpt-4o-mini 권장 (비용/속도/품질 밸런스)
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
 
@@ -67,6 +66,7 @@ public class GPTService {
             HttpResponse<String> res = HttpClient.newHttpClient()
                     .send(req, HttpResponse.BodyHandlers.ofString());
 
+            //성공(2XX)가 아니면 null로 실패 처리. 정상 시 choices[0].message.content에서 텍스트만 뽑음.
             if (res.statusCode() / 100 != 2) {
                 System.err.println("[ChatCompletions] status=" + res.statusCode() + " body=" + res.body());
                 return null;

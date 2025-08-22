@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.chatbot.app;
+package com.S1_K4.ForkMe_BE.modules.chatbot.setting;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +13,7 @@ import java.util.concurrent.Executor;
  * @fileName : AsyncConfig
  * @date : 2025-08-21
  * @description : 비동기 설정 추가
+ * -> 긴 작업(GPT 호출, 로그 저장)을 스레드 풀로 빼서 응답 지연 최소화
  */
 @Configuration
 @EnableAsync

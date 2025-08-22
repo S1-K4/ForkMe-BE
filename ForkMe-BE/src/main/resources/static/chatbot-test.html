@@ -141,7 +141,7 @@
                 // 중복 구독 방지
                 if (gptSubscription) { try { gptSubscription.unsubscribe(); } catch(e){} }
                 // 봇 메시지만 렌더
-                gptSubscription = client.subscribe('/topic/gpt', (message) => {
+                gptSubscription = client.subscribe('/user/queue/gpt', (message) => {
                     try {
                         const payload = JSON.parse(message.body);
                         const from = payload.from || 'GPT-봇';

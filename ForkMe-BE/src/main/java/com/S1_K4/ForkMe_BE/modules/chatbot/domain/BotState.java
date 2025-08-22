@@ -5,7 +5,7 @@ package com.S1_K4.ForkMe_BE.modules.chatbot.domain;
  * @packageName : com.S1_K4.ForkMe_BE.modules.chatbot
  * @fileName : BotState
  * @date : 2025-08-20
- * @description : 챗봇 상태 도메인
+ * @description : 챗봇 상태 도메인(챗봇이 지금 대화에서 어디까지 왔는지 단계를 열거형으로 관리)
  */
 public enum BotState {
     START,              // 초기 상태 (인사/시작 안내)

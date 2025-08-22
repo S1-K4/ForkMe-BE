@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.chatbot.dto;
+package com.S1_K4.ForkMe_BE.modules.chatbot.setting;
 import java.util.Set;
 import java.util.regex.Pattern;
 /**

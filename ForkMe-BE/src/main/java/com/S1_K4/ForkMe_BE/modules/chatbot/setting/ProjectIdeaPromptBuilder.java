@@ -1,4 +1,4 @@
-package com.S1_K4.ForkMe_BE.modules.chatbot.prompt;
+package com.S1_K4.ForkMe_BE.modules.chatbot.setting;
 
 import com.S1_K4.ForkMe_BE.modules.chatbot.domain.BotSession;
 import lombok.experimental.UtilityClass;
