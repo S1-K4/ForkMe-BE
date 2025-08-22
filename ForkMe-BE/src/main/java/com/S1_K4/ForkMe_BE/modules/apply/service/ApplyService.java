@@ -1,7 +1,6 @@
 package com.S1_K4.ForkMe_BE.modules.apply.service;
 
 import com.S1_K4.ForkMe_BE.modules.apply.dto.*;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -38,4 +37,7 @@ public interface ApplyService {
 
     //지원서 리스트
     List<MyApplyListResponseDto> getMyApplyList(Long userPk, List<String> stateList);
+
+    // 지원서 전체 삭제
+    void deleteApplyByProjectPkInBulk(List<Long> projectPkList);
 }

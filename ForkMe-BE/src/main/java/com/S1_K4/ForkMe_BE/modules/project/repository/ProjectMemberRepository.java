@@ -89,4 +89,6 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     // 특정 프로젝트의 리더 찾기
     @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.isLeader = 'LEADER'")
     Optional<ProjectMember> findLeaderByProjectPk(@Param("project") Project project);
+
+    List<ProjectMember> findAllByUser(User user);
 }

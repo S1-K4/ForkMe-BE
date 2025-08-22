@@ -110,9 +110,11 @@ public class BoardInProjectController {
             @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         Long loggedInUserPk = userDetails.getUserPk();  // 1. 로그인한 유저의 PK
+        int existingImageCount = request.getImageUrls() != null ? request.getImageUrls().size() : 0;// 기존 image 갯수
+        int newImageCount = images != null ? images.size() : 0;
 
         // 이미지 갯수 제한 (현재 : 5개)
-        if (images != null && images.size() > 5) {
+        if (existingImageCount + newImageCount > 5) {
             ApiResponse<?> errorResponse = ApiResponse.error(400, "이미지는 최대 5장까지만 업로드할 수 있습니다.");
             return ResponseEntity.badRequest().body(errorResponse);
         }

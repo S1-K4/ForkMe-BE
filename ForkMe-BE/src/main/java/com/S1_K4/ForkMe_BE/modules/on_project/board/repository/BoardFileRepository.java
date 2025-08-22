@@ -29,5 +29,7 @@ public interface BoardFileRepository extends JpaRepository<S3File, Long> {
     @Query("DELETE FROM S3File f WHERE f.url IN :urls")
     void deleteByUrls(@Param("urls") List<String> urls);
 
-
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM S3File f WHERE f.boardInProject.project.projectPk IN (:projectPkList)")
+    void deleteByProjectPkInBulk(List<Long> projectPkList);
 }
