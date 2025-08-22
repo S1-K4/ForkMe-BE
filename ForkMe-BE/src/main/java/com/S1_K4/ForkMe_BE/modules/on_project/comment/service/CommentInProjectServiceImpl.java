@@ -144,6 +144,7 @@ public class CommentInProjectServiceImpl implements CommentInProjectService {
         }
 
         comment.markDeleted(); // deletedYN = Y로 변경
+        commentRepository.save(comment);
     }
 
     @Transactional

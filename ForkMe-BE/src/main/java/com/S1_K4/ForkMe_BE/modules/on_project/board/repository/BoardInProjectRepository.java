@@ -27,6 +27,9 @@ public interface BoardInProjectRepository extends JpaRepository<BoardInProject, 
     // List<BoardInProject> findByProject_ProjectPkAndDeletedYN(Long projectPk, Yn deletedYN);
     Page<BoardInProject> findByProject_ProjectPkAndDeletedYNOrderByCreatedAtDesc(Long projectPk, Yn deletedYN, Pageable pageable);
 
+    // 프로젝트 기준 게시글 조회
+    List<BoardInProject> findByProject_ProjectPk(Long projectPk);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE BoardInProject b SET b.deletedYN = 'Y' WHERE b.project.projectPk IN (:projectPkList)")
     void softDeleteByProjectPkInBulk(List<Long> projectPkList);
