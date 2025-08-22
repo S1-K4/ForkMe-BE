@@ -20,6 +20,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -44,6 +45,12 @@ public class WebhookController {
 
     @Value("${github.webhook.secret}")
     private String secret;
+
+    @Value("${spring.security.oauth2.client.registration.github-hooks.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
+    private String fixedRedirectUri;
 
     private final WebhookService webhookService;
     private final ObjectMapper om = new ObjectMapper();
@@ -82,8 +89,18 @@ public class WebhookController {
                 new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk)
         );
 
+        String state = java.util.UUID.randomUUID().toString();
+        session.setAttribute("GITHUB_OAUTH_STATE", state); // 이후 SuccessHandler에서 확인 가능
+
+        String scope = "admin:repo_hook admin:org_hook read:org repo";
+        String githubUrl = "https://github.com/login/oauth/authorize"
+                + "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+                + "&scope=" + URLEncoder.encode(scope, StandardCharsets.UTF_8)
+                + "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8)
+                + "&redirect_uri=" + URLEncoder.encode(fixedRedirectUri, StandardCharsets.UTF_8);
+
         // 등록한 registrationId와 정확히 일치해야 함. 아래 주소로 리다이렉트(깃헙훅 OAuth2 체크)
-        return new RedirectView("/oauth2/authorization/github-hooks?prompt=consent");
+        return new RedirectView(githubUrl);
         //리다이렉트 화면에서 깃헙 권한체크 화면
         //Oauth2authenticationSuccessHandler 으로 이동.
     }
