@@ -12,11 +12,13 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
+
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 
 /*
@@ -53,6 +56,7 @@ public class WebhookController {
     @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
     private String fixedRedirectUri;
 
+    private final StringRedisTemplate redisTemplate;
     private final WebhookService webhookService;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -84,18 +88,19 @@ public class WebhookController {
                 .filter(s -> !s.isEmpty())
                 .toList();
 
-        //넘어온 정보들 session 에 pending_hook으로 저장
-        session.setAttribute(
-                GithubHookSessionKeys.PENDING_HOOK,
-                new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk)
-        );
+        PendingHookRequest pending = new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk);
 
-        log.info("authorize(): sessionId={}, pending saved, owner={}, repo={}, projectPk={}",
-                session.getId(), owner, repo, projectPk);
-
+        // 1) state 생성
         String state = java.util.UUID.randomUUID().toString();
-        session.setAttribute("GITHUB_OAUTH_STATE", state); // 이후 SuccessHandler에서 확인 가능
-        log.info("authorize(): generated state={}", state);
+
+        // 2) pending을 JSON으로 직렬화해서 Redis에 저장 (TTL 10분)
+        try {
+            String json = om.writeValueAsString(pending);
+            String key = "pending_hook:" + state;
+            redisTemplate.opsForValue().set(key, json, 10, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            throw new RuntimeException("failed to save pending hook to redis", e);
+        }
 
         String scope = "admin:repo_hook admin:org_hook read:org repo";
         String githubUrl = "https://github.com/login/oauth/authorize"
@@ -104,6 +109,7 @@ public class WebhookController {
                 + "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8)
                 + "&redirect_uri=" + URLEncoder.encode(fixedRedirectUri, StandardCharsets.UTF_8);
 
+        log.info("authorize(): state={}, redisKey=pending_hook:{}", state, state);
         // 등록한 registrationId와 정확히 일치해야 함. 아래 주소로 리다이렉트(깃헙훅 OAuth2 체크)
         return new RedirectView(githubUrl);
         //리다이렉트 화면에서 깃헙 권한체크 화면
