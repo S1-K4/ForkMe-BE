@@ -26,24 +26,11 @@ public class AlarmMessageResponse {
     private String alarmType; // ex."INVITE", "COMMENT", "SYSTEM"
     private Long referenceId;  // 관련된 리소스
 
-    private Yn readYn;
-    private Yn deletedYn; // 삭제 여부
+    private Yn readYn = Yn.N;
+    private Yn deletedYn = Yn.N; // 삭제 여부
 
     private LocalDateTime createdAt; //알림 생성 시간
 
-    //MongoDB Document 변환
-    public static AlarmMessageDocument toDocument(
-            com.S1_K4.ForkMe_BE.modules.alarm.dto.AlarmMessageRequest alarm
-    ) {
-        return AlarmMessageDocument.create(
-                alarm.getUserPk(),
-                alarm.getAlarmContent(),
-                alarm.getAlarmType(),
-                alarm.getReferenceId(),
-                alarm.getCreatedAt()
-        );
-
-    }
 
     public static AlarmMessageResponse fromDocument(AlarmMessageDocument alarmDocument) {
         return AlarmMessageResponse.builder()

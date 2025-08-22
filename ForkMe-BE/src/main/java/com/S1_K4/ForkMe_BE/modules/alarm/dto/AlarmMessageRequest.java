@@ -5,6 +5,7 @@ import com.S1_K4.ForkMe_BE.modules.alarm.mongo_document.AlarmMessageDocument;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * @author : 김남이
@@ -34,6 +35,18 @@ public class AlarmMessageRequest {
     public static AlarmMessageDocument toDocument(
             AlarmMessageRequest alarm
     ) {
+
+        /** 방어 코드 **/
+        // 1. createdAt 방어: 서비스에서 now 를 넣는 것이 원칙이지만, 혹시 null 이면 현재 시각으로 보정
+        LocalDateTime created = alarm.getCreatedAt() != null
+                ? alarm.getCreatedAt()
+                : LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        //2. AlarmType 대뮨자로만 저장
+        // 쿼리 일관성을 위해 대문자로 저장
+        String normalizedType = alarm.getAlarmType() != null ? alarm.getAlarmType().toUpperCase() : null;
+        /*******/
+
         return AlarmMessageDocument.create(
                 alarm.getUserPk(),
                 alarm.getAlarmContent(),

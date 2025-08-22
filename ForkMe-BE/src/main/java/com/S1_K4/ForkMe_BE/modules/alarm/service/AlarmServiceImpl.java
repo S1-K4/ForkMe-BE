@@ -6,12 +6,21 @@ import com.S1_K4.ForkMe_BE.modules.alarm.dto.AlarmMessageRequest;
 import com.S1_K4.ForkMe_BE.modules.alarm.mongo_document.AlarmMessageDocument;
 import com.S1_K4.ForkMe_BE.modules.alarm.repository.AlarmMessageMongoRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingParticipant;
+import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingRoomRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectMemberRepository;
+import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
+import com.mongodb.client.result.UpdateResult;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,9 +39,12 @@ import java.util.List;
 @Builder
 public class AlarmServiceImpl implements  AlarmService{
 
+    private final MongoTemplate mongoTemplate;
     private final RedisPublisher redisPublisher;
     private final ProjectMemberRepository projectMemberRepository;
     private final AlarmMessageMongoRepository alarmMessageMongoRepository;
+    private final ProjectRepository projectRepository;
+    private final ChattingRoomRepository chattingRoomRepository;
 
     @Override
     public void alarmApplyToLeader(User applicant, Project project, Apply apply) {
@@ -67,7 +79,7 @@ public class AlarmServiceImpl implements  AlarmService{
 
         // 알림 메시지 조립
         AlarmMessageRequest alarm = AlarmMessageRequest.builder()
-                .userPk(applicant.getUserPk())
+                .userPk(applicantPk)
                 .alarmContent("[" + project.getProjectTitle() + "] 에서 신청서를 수락했습니다.")
                 .alarmType("APPLY")
                 .referenceId(apply.getApplyPk())
@@ -79,6 +91,35 @@ public class AlarmServiceImpl implements  AlarmService{
 
         // Redis 발행
         redisPublisher.publishAlarm(applicantPk, alarm);
+
+    }
+
+    @Override
+    public void alarmChattingMessageToMember(Long chattingRoomPk, User senderUser, LocalDateTime now){
+
+        // fetch join 으로 다시 조회
+        ChattingRoom chattingRoom = chattingRoomRepository.findWithParticipantsById(chattingRoomPk)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+        Long senderUserPk = senderUser.getUserPk();
+
+        Project project = projectRepository.findById(chattingRoom.getProjectPk().getProjectPk())
+                .orElseThrow(() -> new IllegalStateException("해당하는 프로젝트가 없습니다."));
+
+        List<ChattingParticipant> chattingParticipants = chattingRoom.getChattingParticipants();
+
+
+        // 대상 유저 리스트 추출(본인 제외, 중복 제거)
+        List<Long> targetUserPks = chattingParticipants.stream()
+                .map(p -> p.getUserPk().getUserPk())
+                .filter(pk -> !pk.equals(senderUserPk))
+                .distinct()
+                .toList();
+
+        // 각 대상 유저에 대해 upsert 수행 (없으면 생성 + Redis 발행, 있으면 무시)
+        for (Long targetUserPk : targetUserPks) {
+            upsertUnreadChatAlarmOnce(targetUserPk, project.getProjectPk(), project.getProjectTitle(), now);
+        }
 
     }
 
@@ -127,5 +168,39 @@ public class AlarmServiceImpl implements  AlarmService{
 
         alarmMessageMongoRepository.saveAll(alarms); // 일괄 저장
 
+    }
+
+
+    /** 헬퍼 메서드 **/
+    private void upsertUnreadChatAlarmOnce(Long userPk, Long projectPk, String projectTitle, LocalDateTime now) {
+        Query q = new Query(Criteria.where("userPk").is(userPk)
+                .and("alarmType").is("CHAT")
+                .and("referenceId").is(projectPk)
+                .and("readYn").is(Yn.N)
+                .and("deletedYn").is(Yn.N));
+
+        Update u = new Update()
+                .setOnInsert("userPk", userPk)
+                .setOnInsert("alarmType", "CHAT")
+                .setOnInsert("referenceId", projectPk)
+                .setOnInsert("readYn", Yn.N)
+                .setOnInsert("deletedYn", Yn.N)
+                .setOnInsert("createdAt", now)
+                .setOnInsert("alarmContent", "[" + projectTitle + "] 에 새 메시지가 있습니다.");
+
+        UpdateResult res = mongoTemplate.upsert(q, u, AlarmMessageDocument.class);
+
+        // new insert 된 경우에만 Redis 발행 (중복이 이미 있으면 발행하지 않음)
+        if (res.getUpsertedId() != null) {
+            AlarmMessageRequest alarm = AlarmMessageRequest.builder()
+                    .userPk(userPk)
+                    .alarmContent("[" + projectTitle + "] 에 새 메시지가 있습니다.")
+                    .alarmType("CHAT")
+                    .referenceId(projectPk)   // projectPk를 referenceId로 저장
+                    .createdAt(now)
+                    .build();
+
+            redisPublisher.publishAlarm(userPk, alarm);
+        }
     }
 }

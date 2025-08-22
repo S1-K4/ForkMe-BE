@@ -114,5 +114,10 @@ public interface ChattingRoomRepository extends JpaRepository<ChattingRoom, Long
     @Modifying(clearAutomatically = true)
     @Query("UPDATE ChattingRoom cr SET cr.deletedYn = 'Y' WHERE cr.projectPk.projectPk in (:projectPkList)")
     void softDeleteByProjectPkInBulk(List<Long> projectPkList);
+
+
+    // chattingRoomRepository 에 커스텀 쿼리 추가(채팅 알림에서 사용)
+    @Query("SELECT cr FROM ChattingRoom cr LEFT JOIN FETCH cr.chattingParticipants WHERE cr.chattingRoomPk = :roomPk")
+    Optional<ChattingRoom> findWithParticipantsById(@Param("roomPk") Long chattingRoomPk);
 }
 
