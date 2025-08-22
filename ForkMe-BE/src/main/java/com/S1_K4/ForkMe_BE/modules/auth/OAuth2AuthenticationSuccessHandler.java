@@ -61,6 +61,16 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         HttpSession session = request.getSession(false);
         //세선에 있는 pendinghookrequest를 꺼냄
+
+        if (session == null) {
+            log.warn("onAuthSuccess(): session == null");
+        } else {
+            Object pending = session.getAttribute(GithubHookSessionKeys.PENDING_HOOK);
+            Object stateAttr = session.getAttribute("GITHUB_OAUTH_STATE");
+            log.info("onAuthSuccess(): sessionId={}, pending={}, GITHUB_OAUTH_STATE={}",
+                    session.getId(), pending != null ? "present" : "null", stateAttr);
+        }
+
         PendingHookRequest pending = (session != null)
                 ? (PendingHookRequest) session.getAttribute(GithubHookSessionKeys.PENDING_HOOK) : null;
 
@@ -68,6 +78,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         OAuth2AuthenticationToken oauth2 =
                 (authentication instanceof OAuth2AuthenticationToken)
                     ? (OAuth2AuthenticationToken) authentication : null;
+
+        if (oauth2 != null) {
+            log.info("onAuthSuccess(): authorizedClientRegistrationId={}", oauth2.getAuthorizedClientRegistrationId());
+        }
 
         if(pending != null && oauth2 != null
                 && "github-hooks".equals(oauth2.getAuthorizedClientRegistrationId())) {

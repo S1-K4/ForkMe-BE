@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ import java.util.Map;
  * @description : 깃허브 웹훅 컨트롤러입니다.
  */
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/github")
 @RequiredArgsConstructor
@@ -89,8 +90,12 @@ public class WebhookController {
                 new PendingHookRequest(mode, owner, repo, eventList, insecureSsl, overrideSecret, projectPk)
         );
 
+        log.info("authorize(): sessionId={}, pending saved, owner={}, repo={}, projectPk={}",
+                session.getId(), owner, repo, projectPk);
+
         String state = java.util.UUID.randomUUID().toString();
         session.setAttribute("GITHUB_OAUTH_STATE", state); // 이후 SuccessHandler에서 확인 가능
+        log.info("authorize(): generated state={}", state);
 
         String scope = "admin:repo_hook admin:org_hook read:org repo";
         String githubUrl = "https://github.com/login/oauth/authorize"
