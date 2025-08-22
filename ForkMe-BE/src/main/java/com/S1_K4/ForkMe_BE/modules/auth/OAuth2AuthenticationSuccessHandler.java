@@ -149,7 +149,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                     authorizedClientService.removeAuthorizedClient(
                             oauth2.getAuthorizedClientRegistrationId(), principalName);
                 } catch (Throwable ignore) {}
-                if (state != null) {
+
+                if (state != null && !state.isBlank()) {
                     redisTemplate.delete("pending_hook:" + state);
                 }
             }
