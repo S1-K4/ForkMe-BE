@@ -28,7 +28,7 @@ public class ChattingMessageDocument {
 
     private Long chattingRoomPk;
     private Long userPk;
-    private String nickName;   // ✅ 닉네임 저장
+    private String nickName;   // 닉네임 저장
     private String message;
 
     @Field("chattingMessageType")

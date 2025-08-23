@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.global.common.redis;
 
+import com.S1_K4.ForkMe_BE.modules.alarm.dto.AlarmMessageRequest;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingMessageDto;
 import com.S1_K4.ForkMe_BE.modules.chatting.dto.ChattingUserDto;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,12 @@ public class RedisPublisher {
     // 리스트 자체를 전달받는 방식으로 변경
     public void publishParticipantList(Long roomPk, List<ChattingUserDto> participants) {
         messagingTemplate.convertAndSend("/topic/chat/" + roomPk + "/members", participants);
+    }
+
+    // 기존 RedisPublisher 에 추가
+    public void publishAlarm(Long userPk, AlarmMessageRequest alarm) {
+        String topic = "alarm:" + userPk; // 유저별 채널
+        jsonRedisTemplate.convertAndSend(topic, alarm);
     }
 }
 
