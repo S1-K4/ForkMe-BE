@@ -1,5 +1,6 @@
 package com.S1_K4.ForkMe_BE.global.common.redis;
 
+import com.S1_K4.ForkMe_BE.modules.chatbot.domain.BotSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -79,6 +80,29 @@ public class RedisConfig {
         container.addMessageListener(redisSubscriber, new PatternTopic("alarm:*"));
 
         return container;
+    }
+
+    //챗봇 세션 객체를 redis에 타입 안정적으로 넣고빼는 템플릿(세션 저장, ttl)
+    @Bean
+    public RedisTemplate<String, BotSession> botSessionRedisTemplate(RedisConnectionFactory cf) {
+        RedisTemplate<String, BotSession> t = new RedisTemplate<>();
+        t.setConnectionFactory(cf);
+
+        // ObjectMapper 커스터마이징
+        ObjectMapper om = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        Jackson2JsonRedisSerializer<BotSession> ser =
+                new Jackson2JsonRedisSerializer<>(om, BotSession.class);
+
+        t.setKeySerializer(new StringRedisSerializer());
+        t.setValueSerializer(ser);
+        t.setHashKeySerializer(new StringRedisSerializer());
+        t.setHashValueSerializer(ser);
+
+        t.afterPropertiesSet();
+        return t;
     }
 
 }

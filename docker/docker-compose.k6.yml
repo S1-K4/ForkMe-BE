@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-local
+    working_dir: /work
+    volumes:
+      - ./scripts:/work/scripts        # 호스트 scripts/ -> 컨테이너 /work/scripts
+    ports:
+      - "5665:5665"                    # K6 Web Dashboard
+    environment:
+      - K6_WEB_DASHBOARD=true
+      - BASE_URL=http://host.docker.internal:8080
+    entrypoint: ["sleep", "infinity"]  # 항상 켜두고 exec로 run
