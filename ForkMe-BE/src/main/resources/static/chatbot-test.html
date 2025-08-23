@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="utf-8" />
-    <title>LLM 프로젝트 주제 추천 챗봇 테스트</title>
+    <title>LLM 프로젝트 주제 추천 챗봇 테스트 (Auto-Greet ver.)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- SockJS & STOMP -->
@@ -54,11 +54,12 @@
             </select>
             <input id="token" placeholder="accessToken (선택, ws-stomp 사용 시)" />
         </div>
+
+        <!-- 연결/해제 -->
         <div class="row" style="margin-bottom:16px;">
             <button class="primary" onclick="connect()">Connect</button>
             <button class="ghost"   onclick="disconnect()">Disconnect</button>
-            <button onclick="startSession()">Start 세션</button>
-            <span class="muted">※ Start 누르면 'start' 메시지를 보내며 세션 초기화</span>
+            <span class="muted">※ Connect만 하면 자동으로 인사합니다. (서버 구독 리스너)</span>
         </div>
 
         <!-- 로그 -->
@@ -138,9 +139,10 @@
                 setStatus('연결됨');
                 logSystem('서버에 연결되었습니다.');
 
-                // 중복 구독 방지
+                // 기존 구독 정리
                 if (gptSubscription) { try { gptSubscription.unsubscribe(); } catch(e){} }
-                // 봇 메시지만 렌더
+
+                // /user/queue/gpt 구독 → 서버의 SessionSubscribeEvent 리스너가 자동 인사 송신
                 gptSubscription = client.subscribe('/user/queue/gpt', (message) => {
                     try {
                         const payload = JSON.parse(message.body);
@@ -151,6 +153,7 @@
                         logBot(message.body);
                     }
                 });
+                
             },
             onStompError: frame => logSystem('STOMP 오류: ' + (frame.headers['message'] || '')),
             onWebSocketClose: () => {
@@ -173,16 +176,7 @@
         logSystem('연결을 종료했습니다.');
     }
 
-    // Start 세션: 'start' 메시지 전송 (로컬 에코는 사용자가 보낸 것만)
-    function startSession() {
-        if (!connected) return logSystem('먼저 Connect 해주세요.');
-        const from = $('from').value || '나';
-        const body = JSON.stringify({ from, message: 'start' });
-        client.publish({ destination: '/pub/gpt', body });
-        logMe('start');
-    }
-
-    // 일반 전송: 로컬 에코 즉시 + 서버는 봇만 브로드캐스트
+    // 일반 전송
     function send() {
         if (!connected) return logSystem('먼저 Connect 해주세요.');
         const from = $('from').value || '나';
