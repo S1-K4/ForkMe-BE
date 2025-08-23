@@ -31,6 +31,7 @@ public interface S3Repository extends JpaRepository<S3Image, Long> {
            select new com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO(i.s3ImagePk, i.url)
            from S3Image i
            where i.projectProfile.projectProfilePk = :profilePk
+           AND i.boardInProject is Null
            """)
     List<ProjectImageDTO> findAllImagesByProfilePk(@Param("profilePk") Long profilePk);
 

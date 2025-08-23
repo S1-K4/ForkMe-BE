@@ -316,9 +316,12 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
         List<S3File> files = boardFileRepository.findByBoardInProject(board);
         boardFileRepository.deleteAll(files);
 
-        //게시글 댓글 하드 삭제
+        //게시글 댓글 소프트 삭제
         List<CommentInProject> commentInProjectList = commentInProjectRepository.findByBoardInProject(board);
-        commentInProjectRepository.deleteAll(commentInProjectList);
+        for (CommentInProject comment : commentInProjectList) {
+        comment.markDeleted();
+        }
+        commentInProjectRepository.saveAll(commentInProjectList);
 
         // 게시글 소프트 삭제
         board.markDeleted();
