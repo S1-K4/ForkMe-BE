@@ -2,6 +2,7 @@ package com.S1_K4.ForkMe_BE.modules.on_project.webhook.service;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.EventGroup;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.Webhook;
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.dto.GithubEventResponseDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.webhook.repository.WebhookRepository;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectRepository;
@@ -9,7 +10,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author : 김관중
@@ -130,4 +138,54 @@ public class WebhookService {
     private static String optText(JsonNode n) { return (n == null || n.isMissingNode() || n.isNull()) ? null : n.asText(); }
     private static Long optLong(JsonNode n) { return (n == null || n.isMissingNode() || n.isNull()) ? null : n.asLong(); }
 
+    // 페이징으로 이벤트 목록 가져오기
+    @Transactional(readOnly = true)
+    public List<GithubEventResponseDto> getEventsByProject(Long projectPk, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by("createdAt").descending());
+        return webhookRepository.findByProject_ProjectPkOrderByCreatedAtDesc(projectPk, pageable)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // 간단한 연결 여부 체크
+    @Transactional(readOnly = true)
+    public boolean isWebhookConnected(Long projectPk) {
+        return webhookRepository.existsByProject_ProjectPk(projectPk);
+    }
+
+    // 엔티티 -> DTO 변환 헬퍼 (필드명이 다르면 getter 이름을 맞춰주세요)
+    private GithubEventResponseDto toDto(Webhook w) {
+        if (w == null) return null;
+
+        // project PK 안전 추출
+        Long projPk = null;
+        if (w.getProject() != null) {
+            try { projPk = w.getProject().getProjectPk(); } catch (Exception ignored) {}
+        }
+
+        // actorUser PK 안전 추출 (actorUser는 User 엔티티이고 PK는 getUserPk())
+        Long actorUserPk = null;
+        if (w.getActorUser() != null) {
+            try { actorUserPk = w.getActorUser().getUserPk(); } catch (Exception ignored) {}
+        }
+
+        String eventGroupStr = (w.getEventGroup() != null) ? w.getEventGroup().name() : null;
+
+        return GithubEventResponseDto.builder()
+                .gitTimelinePk(w.getGitTimelinePk())
+                .projectPk(projPk)
+                .eventType(w.getEventType())
+                .eventGroup(eventGroupStr)
+                .eventSummary(w.getEventSummary())
+                .deliveryId(w.getDeliveryId())
+                .actorUserPk(actorUserPk)
+                .actorLogin(w.getActorLogin())
+                .actorAvatar(w.getActorAvatar())
+                .repositoryId(w.getRepositoryId())
+                .repositoryFullName(w.getRepositoryFullName())
+                .organizationLogin(w.getOrganizationLogin())
+                .createdAt(w.getCreatedAt())
+                .build();
+    }
 }

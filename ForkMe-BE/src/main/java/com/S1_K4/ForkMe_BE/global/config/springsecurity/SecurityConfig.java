@@ -3,17 +3,30 @@ package com.S1_K4.ForkMe_BE.global.config.springsecurity;
 import com.S1_K4.ForkMe_BE.global.security.jwt.JwtTokenFilter;
 import com.S1_K4.ForkMe_BE.modules.auth.OAuth2AuthenticationSuccessHandler;
 import com.S1_K4.ForkMe_BE.modules.auth.service.CustomOAuth2UserService;
+import com.S1_K4.ForkMe_BE.modules.on_project.webhook.GithubHookSessionKeys;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author : 선순주
@@ -22,23 +35,42 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * @date : 2025-08-03
  * @description : springSecurity 관련 설정파일입니다.
  */
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+    @Value("${spring.security.oauth2.client.registration.github-hooks.redirect-uri}")
+    private String fixedRedirectUri;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final JwtTokenFilter jwtTokenFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+    public SecurityFilterChain filterChain(HttpSecurity http, OAuth2AuthorizationRequestResolver customResolver) throws Exception {
+        http.csrf(csrf -> csrf.ignoringRequestMatchers(
+                "/api/**" ,
+                        "/ws/**",           // [추가]
+                        "/ws-stomp/**",     // [추가]
+                        "/pub/**",          // [추가] STOMP app prefix (MessageMapping)
+                        "/app/**"           // [추가]
+                ))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .authorizeHttpRequests(auth -> auth
+
+                        // ====== WebSocket / STOMP / SockJS ======
+                        // [추가] SockJS가 내부적으로 /ws/** (info, xhr_streaming 등)로 다수 요청
+                        .requestMatchers("/ws/**", "/ws-stomp/**").permitAll()
+                        // [추가] STOMP 발행 prefix는 핸드셰이크 전에 막히지 않게 열어두는 게 테스트에 편함
+                        .requestMatchers("/pub/**", "/app/**", "/topic/**", "/sub/**").permitAll()
+                        // [추가] 프리플라이트 전역 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // ====== Public ======
                         .requestMatchers(
@@ -63,7 +95,8 @@ public class SecurityConfig {
                         // ====== Projects : 인증X ======
                         .requestMatchers(HttpMethod.GET,
                                 "/api/projects",                // 프로젝트 목록 조회
-                                "/api/projects/*"               // 프로젝트 상세 조회
+                                "/api/projects/*",               // 프로젝트 상세 조회
+                                "/api/projects/*/members"       //프로젝트 멤버 조회
                         ).permitAll()
 
                         // ====== Projects : 인증 필요 ======
@@ -128,6 +161,15 @@ public class SecurityConfig {
                                 "/api/chatting-room/*/messages/**" //로그인한 유저 기준 채팅방 이전 대화 조회
                                 ).authenticated()
 
+                        // ====== 알람 : 인증 필요 ======
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/alarm/**" //알람 리스트 가져오기
+                        ).authenticated()
+                        // ====== 알람 : 인증 필요 ======
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/alarm/**" //알람 삭제하기
+                        ).authenticated()
+
 
                         // 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/user/me/**").authenticated()
@@ -138,7 +180,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/github/webhooks").permitAll()
                         .requestMatchers("/hook-test.html", "/hook-result.html").permitAll()
                         .requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/github/hooks/authorize").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/github/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/oauth2/authorization/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
@@ -161,7 +205,7 @@ public class SecurityConfig {
                         })
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorization"))
+                        .authorizationEndpoint(auth -> auth.authorizationRequestResolver(customResolver).baseUri("/oauth2/authorization"))
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
@@ -169,4 +213,89 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+    @Bean
+    public OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository) {
+
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+
+        return new OAuth2AuthorizationRequestResolver() {
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
+                String registrationId = extractRegistrationIdFromRequest(request);
+                return customizeIfGithubHooks(req, registrationId, request);
+            }
+
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
+                return customizeIfGithubHooks(req, clientRegistrationId, request);
+            }
+
+            private OAuth2AuthorizationRequest customizeIfGithubHooks(OAuth2AuthorizationRequest req, String registrationId, HttpServletRequest request) {
+                if (req == null) return null;
+
+                // github-hooks 일 때만 redirectUri 강제 및 session->redis 이동
+                if ("github-hooks".equals(registrationId)) {
+                    OAuth2AuthorizationRequest swapped = OAuth2AuthorizationRequest.from(req)
+                            .redirectUri(fixedRedirectUri)
+                            .build();
+
+                    // 로그
+                    log.info("customResolver: github-hooks request. state={}, originalRedirectUri={}, swappedRedirectUri={}",
+                            swapped.getState(), req.getRedirectUri(), swapped.getRedirectUri());
+
+                    // session -> redis 저장 (state 기준)
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        Object pendingObj = session.getAttribute(GithubHookSessionKeys.PENDING_HOOK);
+                        if (pendingObj != null) {
+                            try {
+                                String key = "pending_hook:" + swapped.getState();
+                                String json = objectMapper.writeValueAsString(pendingObj);
+                                // TTL 10분 (필요시 조정)
+                                redisTemplate.opsForValue().set(key, json, 10, TimeUnit.MINUTES);
+                                log.info("customResolver: saved pending to redis key={}", key);
+                                session.removeAttribute(GithubHookSessionKeys.PENDING_HOOK);
+                            } catch (Exception e) {
+                                log.error("customResolver: failed to save pending to redis", e);
+                            }
+                        } else {
+                            log.debug("customResolver: session has no pending hook (sessionId={})", session.getId());
+                        }
+                    } else {
+                        log.warn("customResolver: no session available to read pending hook");
+                    }
+
+                    return swapped;
+                }
+
+                // other registrations (github 등)는 그대로 반환
+                return req;
+            }
+
+
+            // 안전한 registrationId 추출기 (URI에서 /oauth2/authorization/{registrationId} 형태를 파싱)
+            private String extractRegistrationIdFromRequest(HttpServletRequest request) {
+                String uri = request.getRequestURI();
+                String prefix = "/oauth2/authorization/";
+                if (uri == null || !uri.contains(prefix)) {
+                    return null;
+                }
+                String tail = uri.substring(uri.indexOf(prefix) + prefix.length());
+                // tail에 쿼리나 추가 경로가 있으면 ? 부터 자르기
+                int q = tail.indexOf('?');
+                if (q >= 0) tail = tail.substring(0, q);
+                // 만약 슬래시가 추가로 붙어있으면 첫 슬래시 이전까지
+                int s = tail.indexOf('/');
+                if (s >= 0) tail = tail.substring(0, s);
+                return tail;
+            }
+        };
+    }
+
+
 }

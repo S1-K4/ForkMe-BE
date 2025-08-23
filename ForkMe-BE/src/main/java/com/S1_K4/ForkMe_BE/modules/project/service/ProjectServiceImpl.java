@@ -9,12 +9,17 @@ import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.apply.entity.Apply;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyRepository;
 import com.S1_K4.ForkMe_BE.modules.apply.repository.ApplyTechStackRepository;
+import com.S1_K4.ForkMe_BE.modules.apply.service.ApplyService;
 import com.S1_K4.ForkMe_BE.modules.chatting.chatting_enum.RoomType;
 import com.S1_K4.ForkMe_BE.modules.chatting.entity.ChattingRoom;
+import com.S1_K4.ForkMe_BE.modules.chatting.repository.ChattingRoomRepository;
 import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
@@ -46,7 +51,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -81,7 +85,12 @@ public class ProjectServiceImpl implements ProjectService{
     private final CommentRepository commentRepository;
     private final ApplicationEventPublisher publisher;
 
+    private final ChattingRoomRepository chattingRoomRepository;
     private final ChattingService chattingService;
+    private final ApplyService applyService;
+    private final BoardInProjectRepository boardInProjectRepository;
+    private final BoardFileRepository boardFileRepository;
+    private final CommentInProjectRepository commentInProjectRepository;
 
     /*
      * 프로젝트 상세 조회
@@ -708,6 +717,20 @@ public class ProjectServiceImpl implements ProjectService{
         chattingService.performRemoveUserFromAllChattingRooms(project.getProjectPk(), target.getUser().getUserPk(), now);
     }
 
+    /*
+    * 해당 프로젝트에 참여중인 인원 조회
+    * */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectMemberListDTO> getProjectMembers(Long projectPk){
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        return projectMemberRepository.findMemberListByProjectPk(projectPk);
+    }
+
+
+
     //user, project 유효성 체크 및 팀장 여부 확인 메서드
     public Project checkValid(Long userPk, Long projectPk){
         userRepository.findByIdWithTechStacks(userPk)
@@ -774,15 +797,24 @@ public class ProjectServiceImpl implements ProjectService{
     }
 
 
+
+
     @Override
     @Transactional
-    public void withdrawUser(User user) {
-        log.info("project withdraw");
+    public void handleUserWithdrawal(User user) {
+
+        deleteProjectsByLeader(user);
+
+        deleteProjectsByMember(user);
+    }
+
+    private void deleteProjectsByLeader(User user){
+        log.info("deleted projects by leader");
         // 삭제할 프로젝트 조회
         List<Project> projectsDeleteList = projectRepository.findAllByUser(user);
 
         // 삭제할 프로젝트가 없으면 반환
-        if(projectsDeleteList.isEmpty()){
+        if (projectsDeleteList.isEmpty()) {
             log.info("project withdraw - no project");
             return;
         }
@@ -794,40 +826,63 @@ public class ProjectServiceImpl implements ProjectService{
         // 하드 딜리트
         // s3
         s3Repository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        log.info("project delete - s3_image delete");
         // like
         likeRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        log.info("project delete - like delete");
         // 프로젝트 기술 스택
         projectTechStackRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
+        log.info("project delete - tech stack delete");
+        // 지원서
+        applyService.deleteApplyByProjectPkInBulk(projectPkList);
+        log.info("project delete - apply delete");
         // 프로젝트 포지션
         projectPositionRepository.deleteByProjectProfile_ProjectProfilePkInBulk(projectProfilePkList);
-
+        log.info("project delete - project position delete");
         // 프로젝트 멤버
         projectMemberRepository.deleteByProject_ProjectPkInBulk(projectPkList);
-        // 지원서 기술 스택
-        applyTechStackRepository.deleteApplyTechStacksByApply_Project_ProjectPkInBulk(projectPkList);
-        // 지원서
-        applyRepository.deleteApplyByApplyByProject_ProjectPkInBulk(projectPkList);
+        log.info("project delete - project member delete");
+
+        // s3 파일
+        boardFileRepository.deleteByProjectPkInBulk(projectPkList);
+        // 댓글 인 프로젝트
+        commentInProjectRepository.deleteByProjectPkInBulk(projectPkList);
 
 
         // 소프트 딜리트
+        //board_in_project
+        boardInProjectRepository.softDeleteByProjectPkInBulk(projectPkList);
         // 댓글
         commentRepository.softDeleteByProjectProfilePkInBulk(projectProfilePkList);
+        log.info("project delete - comment soft_delete");
         // 프로젝트 프로필
         projectProfileRepository.softDeleteByProjectProfilePkInBulk(projectProfilePkList);
+        log.info("project delete - project_profile soft_delete");
         // 프로젝트
         projectRepository.softDeleteByProjectPkInBulk(projectPkList);
+        log.info("project delete - project soft_delete");
+        // 채팅방
+        chattingRoomRepository.softDeleteByProjectPkInBulk(projectPkList);
+        log.info("project delete - chatting_room soft_delete");
+
+        /*
+
+        일정 삭제 추가 해야함
+
+         */
+
+    }
 
 
-        //Delete 추가 필요
-            // 팀원 후기
-            // board_in_project
-            // comment_in_project
-            // github_timeline
-            // s3_file
-            // chatting_room
-            // chatting_message
-            // chatting_participant
+    private void deleteProjectsByMember(User user){
+        log.info("deleted projects by member");
 
+
+        // 참여중인 프로젝트 워크스페이스 글과 댓글은 삭제 X, 그대로 나뚬
+
+        // 프로젝트 맴버 삭제
+        projectMemberRepository.deleteByUserInBulk(user);
+        log.info("project delete - project_member delete by user");
 
         // 캐싱 무효화
         // 삭제된 프로젝트들이 존재할 때만 무효화 이벤트 발행 : 목록 캐싱 무효화

@@ -1,6 +1,7 @@
 package com.S1_K4.ForkMe_BE.modules.project.repository;
 
 import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberCountDto;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberListDTO;
 import com.S1_K4.ForkMe_BE.modules.project.entity.Project;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectMember;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -30,6 +31,23 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     boolean existsByProject_ProjectPkAndUser_UserPkAndIsLeader(
             Long projectPk, Long userPk, IsLeader isLeader
     );
+
+    //특정 프로젝트에 참여한 유저 조회
+    @Query("""
+        select new com.S1_K4.ForkMe_BE.modules.project.dto.ProjectMemberListDTO(
+            u.userPk,
+            u.profileUrl,
+            u.nickname,
+            cast(pm.isLeader as string)
+        )
+        from ProjectMember pm
+        join pm.user u
+        where pm.project.projectPk = :projectPk
+        order by 
+            case when pm.isLeader = com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader.LEADER then 0 else 1 end,
+            u.nickname
+        """)
+    List<ProjectMemberListDTO> findMemberListByProjectPk(@Param("projectPk") Long projectPk);
 
     // 프로젝트 + 유저로 멤버 조회
     @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.user = :user")
@@ -71,4 +89,6 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
     // 특정 프로젝트의 리더 찾기
     @Query("SELECT pm FROM ProjectMember pm WHERE pm.project = :project AND pm.isLeader = 'LEADER'")
     Optional<ProjectMember> findLeaderByProjectPk(@Param("project") Project project);
+
+    List<ProjectMember> findAllByUser(User user);
 }

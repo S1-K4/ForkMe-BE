@@ -8,6 +8,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 /**
  * @author : 김관중
@@ -43,7 +44,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     //STOMP 메시지 브로커 구성
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         //클라이언트가 서버로부터 메시지 받는 경로 - 뷰어 수 & 채팅 모두 구독 가능
-        registry.enableSimpleBroker("/sub", "/topic")
+        registry.enableSimpleBroker("/sub", "/topic","/queue")
                 .setTaskScheduler(wsTaskScheduler())
                 .setHeartbeatValue(new long[]{10000, 10000});// [추가] 10s/10s
 
@@ -56,14 +57,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-//                .addInterceptors(jwtHandshakeInterceptor) // 추가!
+                .setHandshakeHandler(new AnonPrincipalHandshakeHandler())
                 .setAllowedOriginPatterns("*") //CORS 허용
                 .withSockJS();
 
-        //Spring 이 내부적으로 경로 앞에 자동으로 슬래시(/)를 붙여서 처리
-        registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
-                .addInterceptors(jwtHandshakeInterceptor) // 접속중 로그인 추가
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+//        //Spring 이 내부적으로 경로 앞에 자동으로 슬래시(/)를 붙여서 처리
+//        registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
+//                .setHandshakeHandler(new AnonPrincipalHandshakeHandler())
+//                .addInterceptors(jwtHandshakeInterceptor) // 접속중 로그인 추가
+//                .setAllowedOriginPatterns("*")
+//                .withSockJS();
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+        registry
+                .setMessageSizeLimit(256 * 1024)      // 기본 64KB → 256KB
+                .setSendBufferSizeLimit(512 * 1024)   // 기본 512KB 유지/상향
+                .setSendTimeLimit(20_000);            // 전송 시간 한도
     }
 }

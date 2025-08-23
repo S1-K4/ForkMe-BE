@@ -16,6 +16,7 @@ public record PendingHookRequest(
         String repo,
         List<String> events,
         Boolean insecureSsl,
-        String overrideSecret
+        String overrideSecret,
+        Long projectPk
 ) implements Serializable {
 }

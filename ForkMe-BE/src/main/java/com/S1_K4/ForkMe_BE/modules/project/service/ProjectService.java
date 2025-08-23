@@ -67,12 +67,18 @@ public interface ProjectService {
     void kickMember(Long loginUserPk, Long projectPk, Long targetUserPk);
 
     /*
+    * 해당 프로젝트에 참여중인 인원 조회
+    * */
+    @Transactional(readOnly = true)
+    List<ProjectMemberListDTO> getProjectMembers(Long projectPk);
+
+    /*
      * 완료된 프로젝트 정보
      */
     List<CompletedProjectSummaryDto> getCompletedProjectSummaryList(Long userPk);
 
 
-    // 회원 탈퇴하면 프로젝트 삭제
-    void withdrawUser(User user);
+    // 회원 탈퇴하면 관련 프로젝트 삭제
+    void handleUserWithdrawal(User user);
 
 }

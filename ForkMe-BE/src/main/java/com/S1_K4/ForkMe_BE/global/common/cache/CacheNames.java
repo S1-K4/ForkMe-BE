@@ -23,6 +23,9 @@ public interface CacheNames {
 
         // 김송이 추가(워크스페이스)
         String BOARD_PROJECT_DETAIL = "board:project:detail";
-        String BOARD_PROJECT_LIST = "board:project:detail";
+        String BOARD_PROJECT_LIST = "board:project:list";
+        String REVIEW_LIST = "review:list";
+        String REVIEW_DETAIL = "review:detail";
+        
 
 }

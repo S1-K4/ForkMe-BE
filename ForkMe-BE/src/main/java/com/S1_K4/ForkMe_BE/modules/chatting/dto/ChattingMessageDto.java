@@ -28,7 +28,7 @@ public class ChattingMessageDto {
 
     private Long chattingRoomPk;
     private Long userPk;
-    private String nickName;   // ✅ 닉네임 추가
+    private String nickName;   // 닉네임 추가
     private String message;
 
     private ChattingMessageType chattingMessageType; //"JOIN", "CHAT", LEAVE"
