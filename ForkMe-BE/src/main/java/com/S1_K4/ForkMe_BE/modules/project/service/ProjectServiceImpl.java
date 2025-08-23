@@ -15,11 +15,15 @@ import com.S1_K4.ForkMe_BE.modules.chatting.service.ChattingService;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
 import com.S1_K4.ForkMe_BE.modules.like.repository.LikeRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.board.entity.BoardInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardFileRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardImageRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.board.repository.BoardInProjectRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.comment.entity.CommentInProject;
 import com.S1_K4.ForkMe_BE.modules.on_project.comment.repository.CommentInProjectRepository;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.dto.MemberReviewMypageDto;
 import com.S1_K4.ForkMe_BE.modules.on_project.review.repository.MemberReviewRepository;
+import com.S1_K4.ForkMe_BE.modules.on_project.schedule.repository.ScheduleRepository;
 import com.S1_K4.ForkMe_BE.modules.project.dto.*;
 import com.S1_K4.ForkMe_BE.modules.project.entity.*;
 import com.S1_K4.ForkMe_BE.modules.project.enums.IsLeader;
@@ -27,6 +31,7 @@ import com.S1_K4.ForkMe_BE.modules.project.enums.ProgressType;
 import com.S1_K4.ForkMe_BE.modules.project.enums.ProjectStatus;
 import com.S1_K4.ForkMe_BE.modules.project.repository.*;
 import com.S1_K4.ForkMe_BE.modules.s3.dto.ProjectImageDTO;
+import com.S1_K4.ForkMe_BE.modules.s3.entity.S3File;
 import com.S1_K4.ForkMe_BE.modules.s3.entity.S3Image;
 import com.S1_K4.ForkMe_BE.modules.s3.repository.S3Repository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
@@ -85,7 +90,9 @@ public class ProjectServiceImpl implements ProjectService{
     private final ApplyService applyService;
     private final BoardInProjectRepository boardInProjectRepository;
     private final BoardFileRepository boardFileRepository;
+    private final BoardImageRepository boardImageRepository;
     private final CommentInProjectRepository commentInProjectRepository;
+    private final ScheduleRepository scheduleRepository;
 
     /*
      * 프로젝트 상세 조회
@@ -374,12 +381,33 @@ public class ProjectServiceImpl implements ProjectService{
         likeRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());               //좋아요
         projectTechStackRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());   //프로젝트 기술스택
         projectPositionRepository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());    //프로젝트 모집분야
-        s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                 //s3이미지
+        s3Repository.deleteByProjectProfile_ProjectProfilePk(projectProfile.getProjectProfilePk());                //s3이미지
 
+        //프로젝트 삭제시 워크스페이스 게시글, 댓글, 이미지, 파일 삭제
+        List<BoardInProject> boardList = boardInProjectRepository.findByProject_ProjectPk(projectPk);
+        for (BoardInProject board : boardList) {
+            // 이미지 하드 삭제
+            List<S3Image> images = boardImageRepository.findByBoardInProject(board);
+            boardImageRepository.deleteAll(images);
 
+            // 파일 하드 삭제
+            List<S3File> files = boardFileRepository.findByBoardInProject(board);
+            boardFileRepository.deleteAll(files);
 
+            // 댓글 소프트 삭제
+            List<CommentInProject> commentList = commentInProjectRepository.findByBoardInProject(board);
+            for (CommentInProject comment : commentList) {
+                comment.markDeleted();
+            }
+            commentInProjectRepository.saveAll(commentList);
 
-        applyRepository.deleteByProject_ProjectPk(projectPk);
+            // 게시글 소프트 삭제
+            board.markDeleted();
+        }
+        boardInProjectRepository.saveAll(boardList);
+        //프로젝트 내 일정관리 하드삭제
+        scheduleRepository.deleteByProject_ProjectPk(projectPk);
+
     }
 
 

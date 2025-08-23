@@ -2,6 +2,9 @@ package com.S1_K4.ForkMe_BE.modules.on_project.schedule.repository;
 
 import com.S1_K4.ForkMe_BE.modules.on_project.schedule.entity.Schedule;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,5 +20,9 @@ import java.util.List;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     List<Schedule> findAllByProject_ProjectPk(Long projectPk);
+
+    @Modifying
+    @Query("DELETE FROM Schedule s WHERE s.project.projectPk = :projectPk")
+    void deleteByProject_ProjectPk(@Param("projectPk") Long projectPk);
 
 }
