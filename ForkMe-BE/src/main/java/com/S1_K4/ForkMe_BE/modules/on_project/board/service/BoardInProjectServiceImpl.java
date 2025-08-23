@@ -96,7 +96,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
 // 업로드한 이미지 정보로 이미지 저장
         if (uploadedImageInfos != null && !uploadedImageInfos.isEmpty()) {
             for (FileInfoResponse imageInfo : uploadedImageInfos) {
-                S3Image image = S3Image.create(imageInfo.getFileUrl(), projectProfile, board);
+                S3Image image = S3Image.create(imageInfo.getFileUrl(), null, board);
                 boardImageRepository.save(image);
             }
         }
@@ -250,7 +250,7 @@ public class BoardInProjectServiceImpl implements BoardInProjectService {
                 .collect(Collectors.toList());
 
         List<S3Image> newS3Images = uploadedImages.stream()
-                .map(fileInfo -> S3Image.create(fileInfo.getFileUrl(), projectProfile, board))
+                .map(fileInfo -> S3Image.create(fileInfo.getFileUrl(), null, board))
                 .collect(Collectors.toList());
         boardImageRepository.saveAll(newS3Images);
 
