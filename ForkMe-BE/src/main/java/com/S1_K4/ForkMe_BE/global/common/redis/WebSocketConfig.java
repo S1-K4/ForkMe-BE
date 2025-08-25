@@ -58,15 +58,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(new AnonPrincipalHandshakeHandler())
+                .addInterceptors(jwtHandshakeInterceptor)
                 .setAllowedOriginPatterns("*") //CORS 허용
                 .withSockJS();
 
-//        //Spring 이 내부적으로 경로 앞에 자동으로 슬래시(/)를 붙여서 처리
-//        registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
-//                .setHandshakeHandler(new AnonPrincipalHandshakeHandler())
-//                .addInterceptors(jwtHandshakeInterceptor) // 접속중 로그인 추가
-//                .setAllowedOriginPatterns("*")
-//                .withSockJS();
+        //Spring 이 내부적으로 경로 앞에 자동으로 슬래시(/)를 붙여서 처리
+        registry.addEndpoint("ws-stomp") //채팅용 엔드포인트
+                .setHandshakeHandler(new AnonPrincipalHandshakeHandler())
+                .addInterceptors(jwtHandshakeInterceptor) // 접속중 로그인 추가
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
     }
 
     @Override
