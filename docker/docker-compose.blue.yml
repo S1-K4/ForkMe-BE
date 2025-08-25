@@ -10,7 +10,7 @@ services:
     ports:
       - "8083:8080"
     env_file:
-      - ../ForkMe-BE/.env
+      - .env
     volumes:
       - ./app.jar:/app.jar
     networks:
