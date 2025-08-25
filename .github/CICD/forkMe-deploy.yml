@@ -1,4 +1,4 @@
-name: "ForKMe - CI/CD: PR + Deploy (dev)"
+name: "ForKMe - CI/CD: PR + Deploy (dev) test"
 
 on:
   push:
