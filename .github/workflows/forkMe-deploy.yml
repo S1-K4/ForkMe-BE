@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - feature/cicd
 
   pull_request:
     branches:
