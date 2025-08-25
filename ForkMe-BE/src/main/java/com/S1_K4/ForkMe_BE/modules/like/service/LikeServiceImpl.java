@@ -1,6 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.like.service;
 
 import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.EvictScope;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.ProjectCacheEvictEvent;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.like.dto.LikeDTO;
 import com.S1_K4.ForkMe_BE.modules.like.entity.Likes;
@@ -10,7 +12,9 @@ import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +31,11 @@ public class LikeServiceImpl implements LikeService{
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
     private final LikeRepository likeRepository;
+    private final ApplicationEventPublisher publisher;
 
     /**
     * 특정 profile의 좋아요 유무 확인하는 메서드
     * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional(readOnly = true)
     public boolean hasUserLikeProfile(Long userPk, Long profilePk){
@@ -41,7 +45,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 해당 프로젝트의 좋아요 수 카운트하는 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional(readOnly = true)
     public Long countLike(Long profilePk){
@@ -54,7 +57,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 특정 profile에 좋아요 추가하는 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional
     public LikeDTO createLike(Long userPk, Long profilePk){
@@ -74,6 +76,11 @@ public class LikeServiceImpl implements LikeService{
                 .build();
 
         likeRepository.save(like);
+
+        // 커밋 후 프로젝트 상세 + 목록 조회 캐싱 무효화
+        Long projectPk = profile.getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
         return LikeDTO.builder()
                 .isLiked(true)
                 .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk()))
@@ -83,7 +90,6 @@ public class LikeServiceImpl implements LikeService{
     /**
      * 좋아요 삭제 메서드
      * */
-    @CacheEvict(cacheNames = CacheNames.PROJECT_DETAIL, key = "#projectPk")
     @Override
     @Transactional
     public LikeDTO deleteLike(Long userPk, Long profilePk){
@@ -93,12 +99,16 @@ public class LikeServiceImpl implements LikeService{
                 .findByUser_UserPkAndProjectProfile_ProjectProfilePk(userPk, profilePk)
                 .orElseThrow(() -> new CustomException(CustomException.ErrorCode.LIKED_NOT_FOUND));
 
+        Long projectPk = like.getProjectProfile().getProject().getProjectPk();
+
         likeRepository.delete(like);
+
+        // 커밋 후 프로젝트 상세 + 목록 조회 캐싱 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
 
         return LikeDTO.builder()
                 .isLiked(false)
                 .likeCount(likeRepository.countByProjectProfile_ProjectProfilePk(profilePk))
                 .build();
     }
-
 }

@@ -1,5 +1,8 @@
 package com.S1_K4.ForkMe_BE.modules.comment.service;
 
+import com.S1_K4.ForkMe_BE.global.common.cache.CacheNames;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.EvictScope;
+import com.S1_K4.ForkMe_BE.global.common.cache.project.ProjectCacheEvictEvent;
 import com.S1_K4.ForkMe_BE.global.common.common_enum.Yn;
 import com.S1_K4.ForkMe_BE.global.exception.CustomException;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.CommentResponseDTO;
@@ -7,13 +10,22 @@ import com.S1_K4.ForkMe_BE.modules.comment.dto.CreateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.dto.UpdateCommentDTO;
 import com.S1_K4.ForkMe_BE.modules.comment.entity.Comment;
 import com.S1_K4.ForkMe_BE.modules.comment.repository.CommentRepository;
+import com.S1_K4.ForkMe_BE.modules.project.dto.ProjectDetailResponseDTO;
 import com.S1_K4.ForkMe_BE.modules.project.entity.ProjectProfile;
 import com.S1_K4.ForkMe_BE.modules.project.repository.ProjectProfileRepository;
 import com.S1_K4.ForkMe_BE.modules.user.entity.User;
 import com.S1_K4.ForkMe_BE.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.List;
 
 /**
  * @author : 선순주
@@ -29,6 +41,7 @@ public class CommentServiceImpl implements CommentService{
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final ProjectProfileRepository projectProfileRepository;
+    private final ApplicationEventPublisher publisher;
 
     /**
      * 댓글 등록 메서드
@@ -66,6 +79,10 @@ public class CommentServiceImpl implements CommentService{
 
         Comment saved = commentRepository.save(comment);
 
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        Long projectPk = profile.getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
         return CommentResponseDTO.builder()
                 .comment(saved.getComment())
                 .commentPk(saved.getCommentPk())
@@ -89,6 +106,10 @@ public class CommentServiceImpl implements CommentService{
 
         comment.updateComment(dto.getComment());
 
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        Long projectPk = comment.getProjectProfile().getProject().getProjectPk();
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
         return UpdateCommentDTO.builder()
                 .comment(comment.getComment())
                 .build();
@@ -111,8 +132,13 @@ public class CommentServiceImpl implements CommentService{
             throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
         }
 
-        comment.markDeleted();
-    }
+        Long projectPk = comment.getProjectProfile().getProject().getProjectPk();
 
+        comment.markDeleted();
+
+        //커밋 후 프로젝트 상세 + 목록 캐시 무효화
+        publisher.publishEvent(new ProjectCacheEvictEvent(projectPk, EvictScope.DETAIL_AND_LIST));
+
+    }
 
 }
