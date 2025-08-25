@@ -134,13 +134,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 }
 
                 Object id = (hook != null) ? hook.get("id") : null;
-                redirectUrl = UriComponentsBuilder.fromPath("/hook-result.html")
+                redirectUrl = UriComponentsBuilder.fromUriString("http://forkme.site:3000")
+                        .path("/hook-result.html")
                         .queryParam("ok", 1)
                         .queryParam("hookId", id)
                         .build().toUriString();
             } catch (Exception ex) {
                 log.error("Webhook creation failed: {}", ex.getMessage(), ex);
-                redirectUrl = UriComponentsBuilder.fromPath("/hook-result.html")
+                redirectUrl = UriComponentsBuilder.fromUriString("http://forkme.site:3000")
+                        .path("/hook-result.html")
                         .queryParam("ok", 0)
                         .queryParam("error", ex.getMessage())
                         .build().toUriString();
