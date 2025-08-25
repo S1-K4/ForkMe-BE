@@ -76,13 +76,11 @@ public class CacheConfig {
 
         //캐시 이름별로 다른 설정을 적용하기 위한 Map -> 특정 캐시이름별로 TTL을 다르게 줄 수 있다.
         Map<String, RedisCacheConfiguration> confs = new HashMap<>();
-        //상세보기 TTL
-        confs.put(CacheNames.PROJECT_DETAIL, defaultConf.entryTtl(Duration.ofMinutes(2)));
         //목록 TTL
         confs.put(CacheNames.PROJECT_LIST,   defaultConf.entryTtl(Duration.ofMinutes(1)));
 
         //상세 정적 파트 : 변동 적음 -> 5분
-        confs.put(CacheNames.PROJECT_DETAIL_STATIC, defaultConf.entryTtl(Duration.ofMinutes(3)));
+        confs.put(CacheNames.PROJECT_DETAIL_STATIC, defaultConf.entryTtl(Duration.ofMinutes(2)));
 
         //댓글 : 변동 잦음 -> (테스트용 1분)
         confs.put(CacheNames.PROJECT_COMMENTS, defaultConf.entryTtl(Duration.ofMinutes(1)));

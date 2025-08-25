@@ -121,7 +121,7 @@ public class ProjectServiceImpl implements ProjectService{
         //좋아요 수 조회
         Long likeCount = likeRepository.countByProjectProfile_ProjectProfilePk(profile.getProjectProfilePk());
 
-        //포지션, 기술스택 조회
+        //포지션, 기술스택 조회`
         List<PositionResponseDTO> positions = projectPositionRepository.findPositionsByProfilePk(profile.getProjectProfilePk());
         List<TechStackResponseDTO> teckStacks = projectTechStackRepository.findTechStacksByProfilePk(profile.getProjectProfilePk());
 
@@ -899,6 +899,19 @@ public class ProjectServiceImpl implements ProjectService{
         일정 삭제 추가 해야함
 
          */
+        // 캐싱 무효화
+        // 삭제된 프로젝트들이 존재할 때만 무효화 이벤트 발행 : 목록 캐싱 무효화
+        if (!projectsDeleteList.isEmpty()) {
+            publisher.publishEvent(new ProjectCacheEvictEvent(
+                    projectsDeleteList.get(0).getProjectPk(),
+                    EvictScope.LIST_ONLY
+            ));
+
+            //각 프로젝트 상세 캐시 개별 무효화
+            for (Long pk : projectPkList) {
+                publisher.publishEvent(new ProjectCacheEvictEvent(pk, EvictScope.DETAIL_AND_LIST));
+            }
+        }
 
     }
 
@@ -913,19 +926,7 @@ public class ProjectServiceImpl implements ProjectService{
         projectMemberRepository.deleteByUserInBulk(user);
         log.info("project delete - project_member delete by user");
 
-        // 캐싱 무효화
-        // 삭제된 프로젝트들이 존재할 때만 무효화 이벤트 발행 : 목록 캐싱 무효화
-        if (!projectsDeleteList.isEmpty()) {
-            publisher.publishEvent(new ProjectCacheEvictEvent(
-                    projectsDeleteList.get(0).getProjectPk(),
-                    EvictScope.LIST_ONLY
-            ));
 
-            //각 프로젝트 상세 캐시 개별 무효화
-            for (Long pk : projectPkList) {
-                publisher.publishEvent(new ProjectCacheEvictEvent(pk, EvictScope.DETAIL_AND_LIST));
-            }
-        }
 
     }
 
