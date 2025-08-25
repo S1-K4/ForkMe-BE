@@ -4,12 +4,13 @@ on:
   push:
     branches:
       - main
-      - develop
+      - dev
+      - feature/cicd
 
   pull_request:
     branches:
       - main
-      - develop
+      - dev
 
 jobs:
   build:
@@ -73,7 +74,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    if: >
 #      github.event_name == 'push' &&
-#      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+#      (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
 #
 #    steps:
 #      - name: ✅ Checkout repository
