@@ -51,10 +51,10 @@ public class ProjectController {
     /**
      * 프로젝트 목록 조회
      * */
-    @Operation(summary = "프로젝트 목록 조회", description = "프로젝트 목록을 조회합니다. 1페이지당 20개의 프로젝트를 조회합니다.")
+    @Operation(summary = "프로젝트 목록 조회", description = "프로젝트 목록을 조회합니다. 1페이지당 12개의 프로젝트를 조회합니다.")
     @GetMapping()
     private ResponseEntity<ApiResponse<PageResponse<ProjectListResponseDTO>>> getProjects(
-            @PageableDefault(size= 20, sort = "projectPk", direction = Sort.Direction.DESC)Pageable pageable){
+            @PageableDefault(size= 12, sort = "projectPk", direction = Sort.Direction.DESC)Pageable pageable){
         PageResponse<ProjectListResponseDTO> response = projectService.getProjectList(pageable);
         return ResponseEntity.ok(ApiResponse.success(response,"프로젝트 목록 조회 성공"));
     }
