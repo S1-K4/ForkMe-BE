@@ -164,8 +164,8 @@ jobs:
         run: |
           ssh -i key.pem ubuntu@${{ secrets.EC2_HOST }} <<EOF
           cd /home/ubuntu/docker
-          docker compose down
-          docker compose up -d --build
+          docker-compose -f docker-compose.blue.yml down
+          docker-compose -f docker-compose.blue.yml up -d --build
           EOF
 
 permissions:
