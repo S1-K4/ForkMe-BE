@@ -68,5 +68,105 @@ jobs:
               body: `✅ **CI 성공** (브랜치: \`${branchName}\`) - 빌드 및 테스트를 통과했습니다! 🎉`
             });
 
+
+  deploy:
+    name: 🚀 Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: ✅ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 🔧 Grant Gradle permission
+        run: chmod +x ./gradlew
+        working-directory: ./ForkMe-BE
+
+      - name: ✉️ Build JAR file
+        run: ./gradlew bootJar
+        working-directory: ./ForkMe-BE
+
+      - name: 🔄 Rename jar file to app.jar
+        run: mv ForkMe-BE/build/libs/ForkMe-BE-0.0.1-SNAPSHOT.jar ForkMe-BE/build/libs/app.jar
+
+      - name: 📦 Move app.jar to docker folder
+        run: cp ForkMe-BE/build/libs/app.jar docker/app.jar
+
+      - name: 📄 Write .env file safely
+        run: |
+          {
+            echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}"
+            echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}"
+            echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+
+            echo "S3_REGION_STATIC=${{ secrets.S3_REGION_STATIC }}"
+            echo "S3_ACCESSKEY=${{ secrets.S3_ACCESSKEY }}"
+            echo "S3_SECRETKEY=${{ secrets.S3_SECRETKEY }}"
+            echo "S3_BUCKET=${{ secrets.S3_BUCKET }}"
+
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}"
+
+            echo "GIT_CLIENT_ID=${{ secrets.GIT_CLIENT_ID }}"
+            echo "GIT_CLIENT_SECRET=${{ secrets.GIT_CLIENT_SECRET }}"
+            echo "GIT_HOOKS_CLIENT_ID=${{ secrets.GIT_HOOKS_CLIENT_ID }}"
+            echo "GIT_HOOKS_CLIENT_SECRET=${{ secrets.GIT_HOOKS_CLIENT_SECRET }}"
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+
+            echo "MONGO_INITDB_ROOT_USERNAME=${{ secrets.MONGO_INITDB_ROOT_USERNAME }}"
+            echo "MONGO_INITDB_ROOT_PASSWORD=${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}"
+            echo "ME_CONFIG_MONGODB_SERVER=${{ secrets.ME_CONFIG_MONGODB_SERVER }}"
+            echo "ME_CONFIG_MONGODB_PORT=${{ secrets.ME_CONFIG_MONGODB_PORT }}"
+            echo "ME_CONFIG_MONGODB_ADMINUSERNAME=${{ secrets.ME_CONFIG_MONGODB_ADMINUSERNAME }}"
+            echo "ME_CONFIG_MONGODB_ADMINPASSWORD=${{ secrets.ME_CONFIG_MONGODB_ADMINPASSWORD }}"
+            echo "ME_CONFIG_MONGODB_AUTH_DATABASE=${{ secrets.ME_CONFIG_MONGODB_AUTH_DATABASE }}"
+            echo "ME_CONFIG_BASICAUTH_USERNAME=${{ secrets.ME_CONFIG_BASICAUTH_USERNAME }}"
+            echo "ME_CONFIG_BASICAUTH_PASSWORD=${{ secrets.ME_CONFIG_BASICAUTH_PASSWORD }}"
+
+            echo "MONGO_DB_URI=${{ secrets.MONGO_DB_URI }}"
+
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}"
+          } > ForkMe-BE/.env
+
+      - name: 🔐 Save SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: 🛡️ Add EC2 host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 📂 Send server-docker (1-time setup)
+        run: |
+          scp -r -i key.pem \
+            docker/server-docker \
+            ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/docker/
+
+      - name: 🌐 Deploy to EC2 via SCP
+        run: |
+          scp -i key.pem \
+            ForkMe-BE/build/libs/app.jar \
+            ForkMe-BE/.env \
+            docker/docker-compose.blue.yml \
+            ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/docker/
+
+      - name: ⚡ SSH into EC2 and deploy with Docker Compose
+        run: |
+          ssh -i key.pem ubuntu@${{ secrets.EC2_HOST }} <<EOF
+          cd /home/ubuntu/docker
+          docker compose down
+          docker compose up -d --build
+          EOF
+
 permissions:
   pull-requests: write
