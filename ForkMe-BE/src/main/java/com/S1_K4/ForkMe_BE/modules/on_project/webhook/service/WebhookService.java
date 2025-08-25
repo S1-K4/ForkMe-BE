@@ -55,6 +55,8 @@ public class WebhookService {
         String actorLogin = optText(p.at("/sender/login"));
         String actorAvatar = optText(p.at("/sender/avatar_url"));
 
+        if(eventType.equals("OTHERS")) return;
+
         Webhook row = Webhook.builder()
                 .project(project)
                 .eventType(eventType)
