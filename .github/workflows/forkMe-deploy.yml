@@ -157,7 +157,6 @@ jobs:
           scp -i key.pem \
             ForkMe-BE/build/libs/app.jar \
             ForkMe-BE/.env \
-#              beanBa/.env.template \
             docker/docker-compose.blue.yml \
             ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/docker/
 
