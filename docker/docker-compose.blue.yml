@@ -14,8 +14,8 @@ services:
     volumes:
       - ./app.jar:/app.jar
     networks:
-      - prod_server
+      - app-net
 
 networks:
-  prod_server:
+  app-net:
     external: true
