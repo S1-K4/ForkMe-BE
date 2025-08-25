@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+
+  forkme-server-blue:
+    build:
+      context: ./server-docker
+      dockerfile: Dockerfile
+    container_name: fork-me-blue
+    ports:
+      - "8083:8080"
+    env_file:
+      - ../ForkMe-BE/.env
+    volumes:
+      - ./app.jar:/app.jar
+    networks:
+      - prod_server
+
+networks:
+  prod_server:
+    external: true
