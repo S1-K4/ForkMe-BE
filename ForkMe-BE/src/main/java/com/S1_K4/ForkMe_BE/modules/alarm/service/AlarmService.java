@@ -42,4 +42,8 @@ public interface                                                                
     //알람 전체 삭제
     void removeAllAlarms(Long userPk);
 
+
+    // 신청서 거절
+    void alarmDeniedToApplicant(User applicant, Project project, Apply apply, LocalDateTime now);
+
 }

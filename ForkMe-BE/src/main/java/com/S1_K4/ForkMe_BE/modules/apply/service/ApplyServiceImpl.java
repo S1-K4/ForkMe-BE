@@ -251,6 +251,7 @@ public class ApplyServiceImpl implements ApplyService{
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
         apply.cancel();
+
     }
 
     /**
@@ -327,12 +328,36 @@ public class ApplyServiceImpl implements ApplyService{
     @Override
     @Transactional
     public void rejectedApply(Long userPk, Long projectPk, Long applyPk){
-        checkValid(userPk, projectPk);
+        //이 부분에서 채팅이 project, user 엔티티를 필요로 해서 어쩔 수 없이 checkValid() 메서드를 사용하는 부분을 변경했습니다.
+        userRepository.findByIdWithTechStacks(userPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.USER_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectPk)
+                .orElseThrow(() -> new CustomException(CustomException.ErrorCode.PROJECT_NOT_FOUND));
+
+        //팀장 권한 검증
+        boolean isLeader = projectMemberRepository
+                .existsByProject_ProjectPkAndUser_UserPkAndIsLeader(projectPk, userPk, IsLeader.LEADER);
+
+
+        if (!isLeader) {
+            throw new CustomException(CustomException.ErrorCode.FORBIDDEN);
+        }
 
         Apply apply = applyRepository.findByApplyPkAndProject_ProjectPk(applyPk, projectPk)
                 .orElseThrow(()-> new CustomException(CustomException.ErrorCode.APPLY_NOT_FOUND));
 
+        //신청서 신청한 유저(팀원)
+        User applicant = apply.getUser();
+
         apply.reject();
+
+        /** 신청서 거절  알람**/
+        //멤버 거절 시간 가져오기
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        alarmService.alarmDeniedToApplicant(applicant, project, apply, now);
+
     }
 
     /**
