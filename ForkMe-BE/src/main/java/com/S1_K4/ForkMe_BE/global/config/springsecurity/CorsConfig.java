@@ -22,7 +22,7 @@ public class CorsConfig {
         CorsConfiguration c = new CorsConfiguration();
 //        c.setAllowedOrigins(List.of("http://forkme.site:3000", "http://127.0.0.1:3000","http://localhost:3000"));
         c.setAllowedOriginPatterns(List.of("*"));
-        c.setAllowedMethods(List.of("GET", "POST", "OPTIONS")); // 최소한의 추가(GET)
+        c.setAllowedMethods(List.of("GET", "POST", "OPTIONS","DELETE")); // 최소한의 추가(GET)
         c.setAllowedHeaders(List.of(
                 "Authorization","Content-Type", "X-Hub-Signature-256", "X-GitHub-Event", "X-GitHub-Delivery","*"
         ));
