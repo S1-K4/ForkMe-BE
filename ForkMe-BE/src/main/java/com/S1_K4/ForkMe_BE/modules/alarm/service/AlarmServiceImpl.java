@@ -99,6 +99,28 @@ public class AlarmServiceImpl implements  AlarmService{
     }
 
     @Override
+    public void alarmDeniedToApplicant(User applicant, Project project, Apply apply, LocalDateTime now){
+
+        Long applicantPk = applicant.getUserPk();
+
+        // 알림 메시지 조립
+        AlarmMessageRequest alarm = AlarmMessageRequest.builder()
+                .userPk(applicantPk)
+                .alarmContent("[" + project.getProjectTitle() + "] 에서 신청서가 거절됐습니다.")
+                .alarmType("APPLY")
+                .referenceId(apply.getApplyPk())
+                .createdAt(now)
+                .build();
+
+        //mongoDB 에 알림 메세지 저장
+        alarmMessageMongoRepository.save(AlarmMessageRequest.toDocument(alarm));
+
+        // Redis 발행
+        redisPublisher.publishAlarm(applicantPk, alarm);
+
+    }
+
+    @Override
     public void alarmChattingMessageToMember(
             Long chattingRoomPk,
             User senderUser,
