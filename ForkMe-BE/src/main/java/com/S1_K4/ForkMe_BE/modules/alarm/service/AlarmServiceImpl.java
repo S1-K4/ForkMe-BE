@@ -131,7 +131,7 @@ public class AlarmServiceImpl implements  AlarmService{
                 .collect(Collectors.toSet());
 
 
-        // 실제 알림을 보낼 대상: DB 후보 - (현재 접속중인 유저들)
+        // 실제 알림을 보낼 대상: DB 후보 - (현재 접속중인 유저들 제외)
         List<Long> targetUserPks = candidateUserPks.stream()
                 .filter(pk -> !onlineUserPks.contains(pk))
                 .toList();
