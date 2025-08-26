@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
  * -> 세션 상태를 보고, 입력 검증하고, 필요 시 GTPService 호출 후 그 결과를 ChatMessage[]로 만들어 돌려줌.
  */
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class ProjectTopicBotService {
 
     private final BotSessionStore store;                        // 세션보관/TTL
@@ -34,6 +34,22 @@ public class ProjectTopicBotService {
     // 선택: 특정 실행기 사용하고 싶으면 주입
     @Qualifier("botExecutor")
     private final Executor botExecutor;                         // 오래 걸리는 작업용 스레드풀
+
+    /** 생성자 직접 주입 방식으로 변경 **/
+    public ProjectTopicBotService(
+            BotSessionStore store,
+            GPTService gpt,
+            SimpMessagingTemplate messagingTemplate,
+            ChatSessionSummaryService summaryService,
+            @Qualifier("botExecutor") Executor botExecutor  // <-- 바로 여기에!
+    ) {
+        this.store = store;
+        this.gpt = gpt;
+        this.messagingTemplate = messagingTemplate;
+        this.summaryService = summaryService;
+        this.botExecutor = botExecutor;
+    }
+    /****/
 
     // 메시지에 GPT-봇을 찍어주는 헬퍼
     private ChatMessage bot(String text) {
