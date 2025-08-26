@@ -29,13 +29,14 @@ public class MyApplyListResponseDto {
 
     private Long userPk;
     private Long projectPk;
+    private String projectTitle;
 
     private Long positionPk;
     private String positionName;
 
     private List<TechStackResponseDTO> techStacks;
 
-    public MyApplyListResponseDto(Long applyPk, String content, ApplyStatus state, LocalDateTime createdAt, LocalDateTime updatedAt, Long userPk, Long projectPk, Long positionPk, String positionName) {
+    public MyApplyListResponseDto(Long applyPk, String content, ApplyStatus state, LocalDateTime createdAt, LocalDateTime updatedAt, Long userPk, Long projectPk, String projectTitle, Long positionPk, String positionName) {
         this.applyPk = applyPk;
         this.content = content;
         this.state = state;
@@ -44,6 +45,7 @@ public class MyApplyListResponseDto {
         this.userPk = userPk;
 
         this.projectPk = projectPk;
+        this.projectTitle = projectTitle;
 
         this.positionPk = positionPk;
         this.positionName = positionName;
