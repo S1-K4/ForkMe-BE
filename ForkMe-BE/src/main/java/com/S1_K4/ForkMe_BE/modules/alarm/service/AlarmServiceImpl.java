@@ -85,7 +85,7 @@ public class AlarmServiceImpl implements  AlarmService{
         AlarmMessageRequest alarm = AlarmMessageRequest.builder()
                 .userPk(applicantPk)
                 .alarmContent("[" + project.getProjectTitle() + "] 에서 신청서를 수락했습니다.")
-                .alarmType("APPLY")
+                .alarmType("APPROVE")
                 .referenceId(apply.getApplyPk())
                 .createdAt(now)
                 .build();
@@ -107,7 +107,7 @@ public class AlarmServiceImpl implements  AlarmService{
         AlarmMessageRequest alarm = AlarmMessageRequest.builder()
                 .userPk(applicantPk)
                 .alarmContent("[" + project.getProjectTitle() + "] 에서 신청서가 거절됐습니다.")
-                .alarmType("APPLY")
+                .alarmType("REJECT")
                 .referenceId(apply.getApplyPk())
                 .createdAt(now)
                 .build();
