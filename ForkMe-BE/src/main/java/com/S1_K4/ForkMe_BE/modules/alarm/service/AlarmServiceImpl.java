@@ -66,7 +66,7 @@ public class AlarmServiceImpl implements  AlarmService{
                 .alarmContent(applicant.getNickname() + "님이 [" + project.getProjectTitle() + "]에 지원했습니다.")
                 .alarmType("APPLY")
                 .referenceId(apply.getApplyPk())
-                .createdAt(LocalDateTime.now())
+                .createdAt(now)
                 .build();
 
         //mongoDB 에 알림 메세지 저장
@@ -87,7 +87,7 @@ public class AlarmServiceImpl implements  AlarmService{
                 .alarmContent("[" + project.getProjectTitle() + "] 에서 신청서를 수락했습니다.")
                 .alarmType("APPLY")
                 .referenceId(apply.getApplyPk())
-                .createdAt(LocalDateTime.now())
+                .createdAt(now)
                 .build();
 
         //mongoDB 에 알림 메세지 저장
