@@ -51,6 +51,12 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
+	//elasticsearch
+	implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+	implementation 'co.elastic.clients:elasticsearch-java:8.12.2'
+	//kafka
+	implementation 'org.springframework.kafka:spring-kafka'
+
 
 	//redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
