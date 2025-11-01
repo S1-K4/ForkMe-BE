@@ -1,9 +1,6 @@
 package com.S1_K4.ForkMe_BE.reference.position.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 /**
  * @author : 선순주
@@ -15,6 +12,7 @@ import lombok.Setter;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PositionResponseDTO {
     private Long positionPk;
     private String positionName;
